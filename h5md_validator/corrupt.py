@@ -1,16 +1,16 @@
 """
-Negative tests: deliberately corrupted files with known expected violations.
+Deliberately corrupted files with known expected violations.
 
-Validation 4 of the technical validation plan.  Proving that valid files pass is
-only half of a schema claim; the other half is that invalid metadata is caught.
-Each :class:`Corruption` below injects exactly one defect into a copy of a valid
-file and declares which finding code the validator is required to raise.  A
-corruption whose expected code is not raised is a detection failure and is
-reported as such -- the test set is fixed and known, so the target is 100%.
+Proving that valid files pass is only half of a schema claim; the other half is
+that invalid metadata is caught. Each :class:`Corruption` injects exactly one
+defect into a copy of a valid file and declares the finding code the validator
+must raise. An expected code that is not raised is a detection failure.
 
-Corruptions that do not apply to a particular base file (because the file has no
-barostat group, no selections, ...) return False and are skipped rather than
-counted as failures.
+A corruption that does not apply to a base file (no barostat group, no
+selections, ...) returns False and is skipped, not counted as a failure.
+
+Used by:
+    Validation 4: negative tests
 """
 
 from __future__ import annotations

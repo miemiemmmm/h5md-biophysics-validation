@@ -1,5 +1,5 @@
 """
-Round-trip fidelity test (Validation 2).
+Round-trip fidelity test: does the metadata come back unchanged?
 
     GROMACS run input (.tpr)
         -> gmx dump            [source side,  h5md_validator.gmxdump]
@@ -7,15 +7,18 @@ Round-trip fidelity test (Validation 2).
         -> parse H5MD          [target side,  this module]
         -> compare
 
-Both sides are reduced to the same flat vocabulary of metadata items, so every
-item is either matched, mismatched, or absent on one side.  The same reduction
-produces the coverage matrix of Validation 1: an item present in the source and
-absent in the file is exactly a coverage gap.
+Both sides reduce to the same flat vocabulary of metadata items, so every item
+is matched, mismatched, or absent on one side. That same reduction gives the
+coverage matrix: an item in the source and not in the file is a coverage gap.
 
-Numerical comparison uses a tolerance derived per value rather than a single
-global epsilon.  ``gmx dump`` prints floats as text with field-dependent
-precision, and the file stores them as float32 or float64; the admissible
-difference is bounded by whichever of the two is coarser.
+Numerical comparison uses a per-value tolerance rather than one global epsilon,
+bounded by whichever is coarser -- ``gmx dump``'s field-dependent text
+precision, or the file's float32 / float64 storage.
+
+Used by:
+    Validation 1: schema coverage
+    Validation 2: round-trip test
+    Validation 6: cross-engine mapping
 """
 
 from __future__ import annotations

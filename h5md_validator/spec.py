@@ -1,14 +1,14 @@
 """
 Declarative model of the H5MD ``biophysics`` module, version 1.0.
 
-The single normative source for everything in this file is the supplementary
-specification ``si-specification.tex``.  Section numbers in the comments below
-(S4, S5, ...) refer to the sections of that document.
+Normative source: ``si-specification.tex``; section numbers in the comments
+below (S4, S5, ...) refer to it. Nothing here is derived from the GROMACS
+reference implementation -- disagreements are recorded in
+:mod:`h5md_validator.deviations` rather than absorbed into the model.
 
-Nothing in this file is derived from the GROMACS reference implementation.
-Where the implementation and the specification disagree, the disagreement is
-recorded in :mod:`h5md_validator.deviations` and reported separately -- it is
-never silently absorbed into the model here.
+Used by:
+    Validation 1: schema coverage
+    Validation 3: internal consistency
 """
 
 from __future__ import annotations

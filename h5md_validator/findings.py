@@ -1,4 +1,14 @@
-"""Finding types emitted by the validator."""
+"""
+Finding types emitted by the validator.
+
+One :class:`Finding` per problem, carrying a check code and a severity; a
+:class:`Report` collects the findings of one file and decides its verdict --
+conformant means no ERROR, deviations excluded.
+
+Used by:
+    Validation 3: internal consistency
+    Validation 4: negative tests
+"""
 
 from __future__ import annotations
 

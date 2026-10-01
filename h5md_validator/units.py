@@ -14,7 +14,7 @@ Exponents are always written with an explicit sign, which is what distinguishes
 ``nm+3`` (a volume) from a symbol that merely ends in a digit.
 
 Used by:
-    Validation 3: the UNIT family of checks in :mod:`h5md_validator.validate`
+    Validation 3: internal consistency
 """
 
 from __future__ import annotations

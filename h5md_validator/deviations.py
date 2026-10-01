@@ -1,16 +1,17 @@
 """
 Registry of specification-vs-implementation mismatches.
 
-The specification (``si-specification.tex``) is normative for this validator.
-Where the GROMACS reference implementation writes something the specification
-does not describe -- or describes differently -- the validator does not bend the
-schema model to accommodate it.  It raises a :class:`~findings.Severity.DEVIATION`
-finding carrying one of the identifiers below, and the mismatch is listed here
-for an explicit editorial decision.
+``si-specification.tex`` is normative here: where the GROMACS reference
+implementation writes something it does not describe, the schema model is not
+bent to accommodate it. The validator raises a DEVIATION finding carrying one
+of the codes below, so the mismatch waits for an editorial decision instead of
+being reported as a file error.
 
-Each entry records where both sides say what they say, so the decision can be
-made from the registry alone.  ``status`` is ``OPEN`` until that decision is
-taken; ``resolution`` records what the decision was.
+Each entry quotes both sides, so the decision can be made from the registry
+alone. ``status`` is OPEN until it is taken; ``resolution`` records what it was.
+
+Used by:
+    Validation 3: internal consistency
 """
 
 from __future__ import annotations

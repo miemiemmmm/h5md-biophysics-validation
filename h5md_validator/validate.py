@@ -1,9 +1,8 @@
 """
-Conformance and internal-consistency validator for the H5MD ``biophysics`` module.
+Conformance and internal-consistency validator for the ``biophysics`` module.
 
-Implements the checks of Validation 3 (internal consistency) of the technical
-validation plan, on top of a structural conformance pass against the normative
-schema model in :mod:`h5md_validator.spec`.
+Checks run on top of a structural conformance pass against the normative schema
+model in :mod:`h5md_validator.spec`.
 
 Check families, by code prefix:
 
@@ -19,10 +18,8 @@ Check families, by code prefix:
     CONN    connectivity bounds
 
 Used by:
-    Validation 3: conformance and internal consistency
-    Validation 4: negative / corruption tests -- the same checks are what the
-                  deliberately broken files of :mod:`h5md_validator.corrupt`
-                  have to fail
+    Validation 3: internal consistency
+    Validation 4: negative tests
 """
 
 from __future__ import annotations

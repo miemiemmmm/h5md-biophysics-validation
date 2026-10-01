@@ -1,10 +1,13 @@
 """
 Parser for ``gmx dump -s run.tpr`` output.
 
-This is the *source* side of the round-trip test (Validation 2): the metadata as
-GROMACS itself holds it, read back out of the run input file by GROMACS's own
-dumper.  Nothing here reads an H5MD file, so the two sides of the comparison
-share no code path.
+The *source* side of the round-trip: the metadata as GROMACS itself holds it,
+read back out of the run input by GROMACS's own dumper. Nothing here reads an
+H5MD file, so the two sides of the comparison share no code path.
+
+Used by:
+    Validation 1: schema coverage
+    Validation 2: round-trip test
 """
 
 from __future__ import annotations
