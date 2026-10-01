@@ -51,7 +51,7 @@ echo "==> coverage analysis"
 $PY_EXE scripts/validation1_schema_coverage.py
 $PY_EXE scripts/validation1_interaction_coverage.py
 $PY_EXE scripts/provenance_recoverability.py
-$PY_EXE scripts/validation1_parameter_surface.py "$DATASET"/_data/mdout/*.mdp || echo "(skipped)"
+$PY_EXE scripts/validation1_parameter_surface.py "$DATASET"/_data/resolved_mdp/*.mdp || echo "(skipped)"
 
 echo "==> negative tests"
 # The bases are declared in config/matrix.py so that a renamed system carries

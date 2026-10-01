@@ -2,9 +2,9 @@
 """
 Cross-engine interoperability: the same molecule, two engines, one schema.
 
-The mapping table in `h5md_validator/cross_engine.py` asserts that engine-specific
-parameter names denote the same schema-level concepts.  This script tests the
-topology half of that assertion with data rather than with a table.
+The interoperability claim is that engine-specific names denote the same
+schema-level concepts.  This script tests the topology half of that claim with
+data: not a stated correspondence, but one molecule compared item by item.
 
 The same B-DNA dodecamer (PDB 1BNA) is prepared twice and independently:
 

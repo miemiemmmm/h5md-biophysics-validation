@@ -69,13 +69,13 @@ def build_tpr(system, protocol, work: Path, force=False) -> Path:
 
     # Keep grompp's resolved option list: the complete .mdp including every
     # default, which is what scripts/validation1_parameter_surface.py measures.
-    # The work directory is deleted after each pair, so it lands elsewhere.
-    mdout = ROOT / "mdout" / f"{system.id}__{protocol.id}.mdp"
-    mdout.parent.mkdir(parents=True, exist_ok=True)
+    # The scratch directory is deleted after each pair, so it lands elsewhere.
+    resolved_mdp = ROOT / "resolved_mdp" / f"{system.id}__{protocol.id}.mdp"
+    resolved_mdp.parent.mkdir(parents=True, exist_ok=True)
 
     cmd = [GMX, "-quiet", "-nobackup", "grompp",
            "-f", mdp, "-c", prep["structure"], "-r", prep["structure"],
-           "-p", prep["topology"], "-o", tpr, "-po", mdout, "-maxwarn", "20"]
+           "-p", prep["topology"], "-o", tpr, "-po", resolved_mdp, "-maxwarn", "20"]
     if prep.get("index"):
         cmd += ["-n", prep["index"]]
     run(cmd, cwd=work)
@@ -150,7 +150,7 @@ def main():
             if (protocol.mdp.get("pbc") == "no") != (not system.periodic):
                 continue
             key = f"{system.id}__{protocol.id}"
-            work = ROOT / "work" / key
+            work = ROOT / "scratch" / key
             print(f"--- {key}")
             try:
                 tpr = build_tpr(system, protocol, work, force=args.force)

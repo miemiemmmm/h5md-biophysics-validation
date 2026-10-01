@@ -25,9 +25,10 @@ import sys
 import pathlib
 from pathlib import Path
 
-from config.matrix import DATA_ROOT
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from config.matrix import RESULTS_DIR
+from config.matrix import DATA_ROOT, RESULTS_DIR
 
 #: Option families and the master switch that governs them. A family counts as
 #: inert when its switch is absent, "no", "none" or zero.

@@ -47,7 +47,7 @@ from h5md_validator import Validator
 from h5md_validator import gmxdump, roundtrip
 from config.matrix import DATA_ROOT, GMX
 
-DUMPS = Path(DATA_ROOT) / "dumps"
+DUMPS = Path(DATA_ROOT) / "tpr_dumps"
 
 #: Root groups that carry metadata rather than trajectory frames.  Used for the
 #: storage-overhead measurement of Validation 5.

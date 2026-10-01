@@ -33,10 +33,16 @@ VALIDATION_SYSTEMS = os.environ.get(
     os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
         os.path.abspath(__file__)))), "validation_systems"))
 
-#: Everything the harness produces on the way to a result -- the per-system work
-#: cache, the .tpr files, the gmx dump cache, the reference .h5md corpus. It
-#: lives inside the dataset directory but is not part of the dataset, which the
-#: leading underscore is there to say. Several GB per full run; safe to delete.
+#: Everything the harness produces on the way to a result. It lives inside the
+#: dataset directory but is not part of the dataset, which the leading
+#: underscore is there to say. Several GB per full run; safe to delete.
+#:
+#:     _data/tprs/             grompp output, the round-trip source
+#:     _data/resolved_mdp/     grompp -po: the .mdp with every default filled in
+#:     _data/reference_files/  the .h5md corpus mdrun writes
+#:     _data/tpr_dumps/        cached `gmx dump -s` text, so it runs once per tpr
+#:     _data/scratch/          per-pair scratch, deleted after each pair; a
+#:                             leftover directory names a run that was interrupted
 DATA_ROOT = os.path.join(VALIDATION_SYSTEMS, "_data")
 
 #: What a run concludes: the JSON measurements, the rendered report, the LaTeX

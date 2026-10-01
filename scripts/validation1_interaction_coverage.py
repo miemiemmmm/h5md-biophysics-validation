@@ -49,7 +49,7 @@ import h5py
 from h5md_validator import gmxdump, vocabulary as vocab
 from config.matrix import DATA_ROOT
 
-DUMPS = Path(DATA_ROOT) / "dumps"
+DUMPS = Path(DATA_ROOT) / "tpr_dumps"
 
 
 def source_counts(dump) -> dict:

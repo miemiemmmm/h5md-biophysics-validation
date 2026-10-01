@@ -82,7 +82,7 @@ def main():
     targets = {k: v for k, v in manifest.items()
                if "error" not in v and v["protocol"] == args.protocol}
 
-    work = ROOT / "work" / "overhead"
+    work = ROOT / "scratch" / "overhead"
     scratch = ROOT / "overhead"
     scratch.mkdir(parents=True, exist_ok=True)
     rows = []
