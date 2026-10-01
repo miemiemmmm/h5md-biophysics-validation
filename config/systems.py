@@ -503,7 +503,7 @@ SYSTEMS_BY_ID = {s.id: s for s in SYSTEMS}
 
 
 
-def prepare_system(system: System, work: Path = None, gmx=None, run=None) -> dict:
+def prepare_system(system: System) -> dict:
     """Name the grompp inputs of a shipped system. Nothing is built or copied.
 
     Systems arrive ready: ``validation_systems/`` holds the topology, the

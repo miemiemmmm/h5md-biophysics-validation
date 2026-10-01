@@ -21,7 +21,7 @@ as a finding rather than absorbed into the model; the list is in
 | 2 | Does serialising and parsing preserve it? | `h5md_validator/roundtrip.py` |
 | 3 | Is a file internally consistent? | `h5md_validator/validate.py` |
 | 4 | Are invalid files detected? | `h5md_validator/corrupt.py` |
-| 5 | What does the metadata cost? | `scripts/run_validation.py` (storage), `scripts/validation5_write_overhead.py` (time) |
+| 5 | What does the metadata cost? | `scripts/check_reference_files.py` (storage), `scripts/validation5_write_overhead.py` (time) |
 | 6 | Do other engines' parameters map onto the same concepts? | `h5md_validator/cross_engine.py`, `scripts/validation6_amber_interop.py` |
 
 Fidelity and coverage are kept apart throughout. A file can carry back everything
@@ -82,11 +82,11 @@ or step by step:
 
 ```bash
 # 1. build the reference files: systems x protocols -> .tpr + .h5md
-$PY_EXE scripts/generate.py --list          # show the test matrix
-$PY_EXE scripts/generate.py --all
+$PY_EXE scripts/build_reference_files.py --list          # show the test matrix
+$PY_EXE scripts/build_reference_files.py --all
 
 # 2. conformance + round-trip + storage, per reference file
-$PY_EXE scripts/run_validation.py
+$PY_EXE scripts/check_reference_files.py
 
 # 3. coverage, over the corpus and over bonded interactions
 $PY_EXE scripts/validation1_schema_coverage.py
@@ -138,7 +138,7 @@ decision), `WARNING` (violates a SHOULD), and `INFO`.
 ## Layout
 
 ```
-h5md_validator/
+h5md_validator/      the library: schema model and the checks, no knowledge of the dataset
     spec.py          schema model, transcribed from the specification
     validate.py      conformance and internal-consistency checks
     findings.py      finding and report types
@@ -147,26 +147,30 @@ h5md_validator/
     vocabulary.py    GROMACS <-> schema translation tables
     roundtrip.py     item-by-item comparison of source against file
     corrupt.py       the corruption catalogue for the negative tests
-    deviations.py    static report: registry of specification-versus-implementation mismatches
-    defects.py       static report: registry of reference-implementation defects
-    limitations.py   static report: registry of configurations the test set could not produce
-    cross_engine.py  static report: concept mapping across GROMACS/AMBER/NAMD/OpenMM/LAMMPS
-scripts/
-    matrix.py        simulation protocols of the test matrix
-    systems.py       chemical systems of the test matrix, and how to build them
-    generate.py      produce the reference files
-    run_validation.py      validate + round-trip + measure every reference file
-    coverage.py            element and item coverage over the corpus
-    interaction_coverage.py  bonded interactions: source counts against file counts
-    provenance_recoverability.py  where force-field provenance could come from
-    run_negative_tests.py  corruption tests
-    measure_write_overhead.py  H5MD against trajectory-only output, same .tpr
-    amber_interop.py       the same molecule prepared in GROMACS and in AMBER
-    make_figures.py        the two figures
-    report.py              assemble reports and LaTeX tables
-    run_all.sh             chain all of the above
-results/             machine-readable results (JSON)
-reports/             the written report, LaTeX tables and figures
+    deviations.py    registry of specification-versus-implementation mismatches
+config/              what this test set is, and where it lives
+    matrix.py        protocols, dataset paths, negative-test bases, interop pairs
+    systems.py       the 58 chemical systems of the test matrix
+records/             authored claims the report quotes; nothing here is measured
+    defects.py       registry of reference-implementation defects
+    limitations.py   registry of configurations the test set could not produce
+    cross_engine.py  concept mapping across GROMACS/AMBER/NAMD/OpenMM/LAMMPS
+scripts/             the stages, each writing one JSON artifact
+    build_reference_files.py          grompp + mdrun every (system, protocol) pair
+    check_reference_files.py          Validations 2, 3 and 5, one pass per file
+    validation1_schema_coverage.py    element and item coverage over the corpus
+    validation1_interaction_coverage.py  bonded interactions: source against file
+    validation1_parameter_surface.py  how much of a flat .mdp is actually in force
+    validation4_negative_tests.py     corruption tests
+    validation5_write_overhead.py     H5MD against trajectory-only output, same .tpr
+    validation6_amber_interop.py      the same molecule in GROMACS and in AMBER
+    provenance_recoverability.py      where force-field provenance could come from
+    make_figures.py                   the two figures
+    report.py                         assemble reports and LaTeX tables
+    run_all.sh                        chain all of the above
+$H5MD_VALIDATION_DATA/
+    _data/           transient: tprs, gmx dump cache, the reference .h5md corpus
+    _results/        the JSON measurements, the rendered report, tables and figures
 ```
 
 ## Three registries

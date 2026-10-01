@@ -2,7 +2,7 @@
 """
 Run the conformance validator and the round-trip test over every reference file.
 
-    python scripts/run_validation.py --manifest results/reference_files.json
+    python scripts/check_reference_files.py --manifest results/reference_files.json
 
 Writes results/validation.json keyed by reference file, each entry holding a
 ``validation``, ``roundtrip`` and ``storage`` section. Three validations share

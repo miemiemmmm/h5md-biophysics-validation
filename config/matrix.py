@@ -107,6 +107,8 @@ class System:
     minimise: bool = False
     #: False for a vacuum system: no periodic boundary, infinite cut-offs
     periodic: bool = True
+    #: protocol ids this system is run under; None means every protocol
+    protocols: tuple = None
 
 
 @dataclass

@@ -41,11 +41,11 @@ cd "$(dirname "$0")/.."
 
 if [ "${1:-}" = "--generate" ]; then
     echo "==> generating reference files"
-    $PY_EXE -u scripts/generate.py --all --ntomp 16
+    $PY_EXE -u scripts/build_reference_files.py --all --ntomp 16
 fi
 
 echo "==> conformance, round-trip and storage, per reference file"
-$PY_EXE scripts/run_validation.py
+$PY_EXE scripts/check_reference_files.py
 
 echo "==> coverage analysis"
 $PY_EXE scripts/validation1_schema_coverage.py
