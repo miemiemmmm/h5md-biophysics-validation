@@ -48,10 +48,10 @@ echo "==> conformance, round-trip and storage, per reference file"
 $PY_EXE scripts/run_validation.py
 
 echo "==> coverage analysis"
-$PY_EXE scripts/coverage.py
-$PY_EXE scripts/interaction_coverage.py
+$PY_EXE scripts/validation1_schema_coverage.py
+$PY_EXE scripts/validation1_interaction_coverage.py
 $PY_EXE scripts/provenance_recoverability.py
-$PY_EXE scripts/parameter_surface.py "$DATASET"/_data/mdout/*.mdp || echo "(skipped)"
+$PY_EXE scripts/validation1_parameter_surface.py "$DATASET"/_data/mdout/*.mdp || echo "(skipped)"
 
 echo "==> negative tests"
 # The bases are declared in config/matrix.py so that a renamed system carries
@@ -61,10 +61,10 @@ for name in $($PY_EXE -c "from config.matrix import NEGATIVE_TEST_BASES; print('
     f="$REF/$name.h5md"
     [ -f "$f" ] && BASES="$BASES $f"
 done
-$PY_EXE scripts/run_negative_tests.py $BASES
+$PY_EXE scripts/validation4_negative_tests.py $BASES
 
 echo "==> write overhead"
-$PY_EXE scripts/measure_write_overhead.py --repeats 5 || echo "(skipped)"
+$PY_EXE scripts/validation5_write_overhead.py --repeats 5 || echo "(skipped)"
 
 echo "==> cross-engine interoperability"
 # Each pair names a reference file and the prmtop of the SAME molecule; pairing
@@ -76,7 +76,7 @@ while IFS=$'\t' read -r key prmtop; do
     h5="$REF/$key.h5md"
     top="$DATASET/$prmtop"
     if [ -f "$h5" ] && [ -f "$top" ]; then
-        $PY_EXE scripts/amber_interop.py --h5md "$h5" --prmtop "$top"
+        $PY_EXE scripts/validation6_amber_interop.py --h5md "$h5" --prmtop "$top"
     else
         echo "(skipped $key: missing $( [ -f "$h5" ] || echo "$h5" ) $( [ -f "$top" ] || echo "$top" ))"
     fi

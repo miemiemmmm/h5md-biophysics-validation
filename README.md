@@ -17,17 +17,17 @@ as a finding rather than absorbed into the model; the list is in
 
 | | Question | Implemented by |
 |:--|:--|:--|
-| 1 | Can the schema represent the metadata of realistic MD systems? | `scripts/coverage.py`, `scripts/interaction_coverage.py` |
+| 1 | Can the schema represent the metadata of realistic MD systems? | `scripts/validation1_schema_coverage.py`, `scripts/validation1_interaction_coverage.py` |
 | 2 | Does serialising and parsing preserve it? | `h5md_validator/roundtrip.py` |
 | 3 | Is a file internally consistent? | `h5md_validator/validate.py` |
 | 4 | Are invalid files detected? | `h5md_validator/corrupt.py` |
-| 5 | What does the metadata cost? | `scripts/run_validation.py` (storage), `scripts/measure_write_overhead.py` (time) |
-| 6 | Do other engines' parameters map onto the same concepts? | `h5md_validator/cross_engine.py`, `scripts/amber_interop.py` |
+| 5 | What does the metadata cost? | `scripts/run_validation.py` (storage), `scripts/validation5_write_overhead.py` (time) |
+| 6 | Do other engines' parameters map onto the same concepts? | `h5md_validator/cross_engine.py`, `scripts/validation6_amber_interop.py` |
 
 Fidelity and coverage are kept apart throughout. A file can carry back everything
 it holds without change and still have come from a source the schema could not
 fully represent; conflating the two would let a coverage gap read as a success.
-`scripts/interaction_coverage.py` is the sharpest form of the coverage question:
+`scripts/validation1_interaction_coverage.py` is the sharpest form of the coverage question:
 it counts bonded interaction entries in the run input against the file.
 
 ## What is in here, and what is not
@@ -89,18 +89,18 @@ $PY_EXE scripts/generate.py --all
 $PY_EXE scripts/run_validation.py
 
 # 3. coverage, over the corpus and over bonded interactions
-$PY_EXE scripts/coverage.py
-$PY_EXE scripts/interaction_coverage.py
+$PY_EXE scripts/validation1_schema_coverage.py
+$PY_EXE scripts/validation1_interaction_coverage.py
 $PY_EXE scripts/provenance_recoverability.py
 
 # 4. negative tests
-$PY_EXE scripts/run_negative_tests.py <a valid .h5md> [more .h5md ...]
+$PY_EXE scripts/validation4_negative_tests.py <a valid .h5md> [more .h5md ...]
 
 # 5. what the metadata costs to write
-$PY_EXE scripts/measure_write_overhead.py --repeats 5
+$PY_EXE scripts/validation5_write_overhead.py --repeats 5
 
 # 6. cross-engine: the same molecule prepared in AMBER
-$PY_EXE scripts/amber_interop.py --h5md <dna .h5md> --prmtop <dna.prmtop>
+$PY_EXE scripts/validation6_amber_interop.py --h5md <dna .h5md> --prmtop <dna.prmtop>
 
 # 7. figures and report
 $PY_EXE scripts/make_figures.py

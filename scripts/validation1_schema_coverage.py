@@ -1,0 +1,306 @@
+#!/usr/bin/env python
+"""
+Validation 1 -- schema coverage.
+
+Three questions, kept separate because they have different answers:
+
+1. ELEMENT COVERAGE.  Of the elements the specification defines, which ones does
+   the corpus of reference files actually contain?  An element that is specified
+   but never written by any run is not evidence that the schema works -- it is an
+   untested branch, and the report names it as such.
+
+2. ITEM FIDELITY.  Of the metadata items present in the GROMACS source, which are
+   represented in the file, and are they correct?  This is the plan's coverage
+   table: source contains / schema represents / correct / unsupported.
+
+3. DIMENSION COVERAGE.  Which of the chemical and protocol dimensions of the test
+   matrix are exercised at all.
+
+    python scripts/validation1_schema_coverage.py --validation results/validation.json
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+from collections import defaultdict
+import pathlib
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from config.matrix import RESULTS_DIR
+
+
+
+def _r(name: str) -> str:
+    return str(pathlib.Path(RESULTS_DIR) / name)
+
+
+
+import h5py
+import numpy as np
+
+from h5md_validator import spec
+
+
+# --------------------------------------------------------------------------
+def specified_elements():
+    """Every element path the specification defines, with its obligation."""
+    out = {}
+
+    def walk_group(node: spec.Group, prefix: str):
+        path = f"{prefix}/{node.name}" if prefix else node.name
+        out[path] = "required" if node.required else "optional"
+        for ds in node.datasets:
+            out[f"{path}/{ds.name}"] = "required" if ds.required else "optional"
+        for sub in node.groups:
+            walk_group(sub, path)
+
+    walk_group(spec.PARAMETERS, "")
+
+    for name in spec.OBSERVABLES:
+        out[f"observables/{name}"] = "optional"
+
+    for name, itype in spec.INTERACTION_TYPES.items():
+        layer = "bonded" if itype.bonded else "nonbonded"
+        out[f"force_field/{layer}/{name}/parameters"] = "optional"
+        if itype.bonded:
+            out[f"topology/<molecule>/interactions/{name}"] = "optional"
+
+    # S8 provenance attributes on the force_field group. These are optional but
+    # they are the elements that say *which* force field a trajectory used, so
+    # leaving them out of the count would flatter the coverage figure.
+    for attr in spec.FORCE_FIELD_ATTRS:
+        out[f"force_field/@{attr.name}"] = "optional"
+    out["topology/@total_particle_count"] = "required"
+    out["topology/@total_component_count"] = "required"
+
+    for name in ("topology/molecule_blocks", "topology/<molecule>/particle_data",
+                 "topology/<molecule>/sequence", "topology/<molecule>/exclusions",
+                 "topology/<molecule>/particle_name_table",
+                 "topology/<molecule>/component_name_table",
+                 "connectivity/bonds", "selections/<group>/ranges",
+                 "selections/<group>/indices", "selections/<group>/selection",
+                 "selections/<group>/software"):
+        out[name] = "optional"
+    return out
+
+
+def observed_values(h5_path):
+    """Attribute and scalar values per element path, for the constancy check.
+
+    An element that is present in every file but carries the same value in all
+    of them is exercised in form only. A writer that emits a fixed placeholder
+    -- 'not declared', say -- would otherwise count as coverage, which would
+    flatter the figure without demonstrating any capability.
+    """
+    values = {}
+
+    def record(path, value):
+        if isinstance(value, bytes):
+            value = value.decode("utf-8", "replace")
+        elif isinstance(value, np.ndarray):
+            if value.size > 8:
+                return
+            value = tuple(value.ravel().tolist())
+        elif isinstance(value, np.generic):
+            value = value.item()
+        values[path] = repr(value)[:120]
+
+    with h5py.File(h5_path, "r") as f:
+        def visit(name, obj):
+            parts = name.split("/")
+            if parts[0] == "topology" and len(parts) > 1 \
+                    and parts[1] != "molecule_blocks":
+                parts[1] = "<molecule>"
+            elif parts[0] == "selections" and len(parts) > 1:
+                parts[1] = "<group>"
+            elif parts[0] == "particles":
+                return
+            canonical = "/".join(parts)
+            for attr, value in obj.attrs.items():
+                record(f"{canonical}/@{attr}", value)
+            if isinstance(obj, h5py.Dataset) and obj.shape == () \
+                    and obj.dtype.names is None:
+                record(canonical, obj[()])
+        f.visititems(visit)
+        for attr, value in f.attrs.items():
+            record(f"@{attr}", value)
+    return values
+
+
+def observed_elements(h5_path):
+    """Element paths actually present in one file, in the same vocabulary."""
+    seen = set()
+    with h5py.File(h5_path, "r") as f:
+        def visit(name, obj):
+            for attr in obj.attrs:
+                parts = name.split("/")
+                if parts[0] == "topology" and len(parts) > 1 \
+                        and parts[1] != "molecule_blocks":
+                    parts[1] = "<molecule>"
+                elif parts[0] == "selections" and len(parts) > 1:
+                    parts[1] = "<group>"
+                seen.add("/".join(parts) + f"/@{attr}")
+            parts = name.split("/")
+            if parts[0] == "topology" and len(parts) > 1 and parts[1] != "molecule_blocks":
+                parts[1] = "<molecule>"
+            elif parts[0] == "selections" and len(parts) > 1:
+                parts[1] = "<group>"
+            elif parts[0] == "particles":
+                return
+            seen.add("/".join(parts))
+        f.visititems(visit)
+        for root in f:
+            seen.add(root)
+    return seen
+
+
+# --------------------------------------------------------------------------
+def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--validation", default=_r("validation.json"))
+    ap.add_argument("--out", default=_r("coverage.json"))
+    args = ap.parse_args()
+
+    results = json.loads(Path(args.validation).read_text())
+    ok = {k: v for k, v in results.items() if v.get("status") == "ok"}
+
+    # ---- 1. element coverage -------------------------------------------
+    specified = specified_elements()
+    observed = set()
+    per_file_elements = {}
+    distinct_values = defaultdict(set)
+    for key, rec in ok.items():
+        path = rec["validation"]["file"]
+        try:
+            elems = observed_elements(path)
+            vals = observed_values(path)
+        except OSError:
+            continue
+        per_file_elements[key] = elems
+        observed |= elems
+        for epath, value in vals.items():
+            distinct_values[epath].add(value)
+
+    element_rows = []
+    for path, obligation in sorted(specified.items()):
+        present = path in observed
+        n_files = sum(1 for e in per_file_elements.values() if path in e)
+        seen_values = distinct_values.get(path)
+        row = {"element": path, "obligation": obligation,
+               "observed": present, "n_files": n_files}
+        if present and seen_values is not None:
+            row["n_distinct_values"] = len(seen_values)
+            if len(seen_values) == 1 and n_files > 1:
+                row["constant_value"] = next(iter(seen_values))
+        element_rows.append(row)
+    never = [r for r in element_rows if not r["observed"]]
+    constant = [r for r in element_rows if r.get("constant_value") is not None]
+
+    # ---- 2. item fidelity ----------------------------------------------
+    items = defaultdict(lambda: {"category": "", "files": 0, "match": 0,
+                                 "mismatch": 0, "missing_in_file": 0,
+                                 "extra_in_file": 0})
+    for key, rec in ok.items():
+        for comp in rec.get("roundtrip", {}).get("comparisons", []):
+            # collapse the per-molecule-type prefix so items aggregate
+            name = comp["key"]
+            parts = name.split(".")
+            if parts[0] == "topology" and len(parts) > 2:
+                parts[1] = "<molecule>"
+                name = ".".join(parts)
+            e = items[name]
+            e["category"] = comp["category"]
+            if comp["status"] in ("match", "match_unordered"):
+                e["files"] += 1; e["match"] += 1
+            elif comp["status"] == "mismatch":
+                e["files"] += 1; e["mismatch"] += 1
+            elif comp["status"] == "missing_in_file":
+                e["missing_in_file"] += 1
+            elif comp["status"] == "missing_in_source":
+                e["extra_in_file"] += 1
+
+    item_rows = [{"item": k, **v} for k, v in sorted(items.items())]
+    represented = [r for r in item_rows if r["match"] or r["mismatch"]]
+    unsupported = [r for r in item_rows if r["missing_in_file"] and not r["match"]]
+    incorrect = [r for r in item_rows if r["mismatch"]]
+
+    # ---- 3. dimension coverage ------------------------------------------
+    dims = defaultdict(list)
+    for key, rec in ok.items():
+        for d in rec.get("dimensions", []):
+            dims[d].append(rec["system"])
+    exercises = defaultdict(list)
+    for key, rec in ok.items():
+        for e in rec.get("exercises", []):
+            exercises[e].append(rec["protocol"])
+
+    not_generated = {k: v.get("error", "") for k, v in results.items()
+                     if v.get("status") == "not_generated"}
+
+    summary = {
+        "n_reference_files": len(ok),
+        "element_coverage": {
+            "n_specified": len(specified),
+            "n_observed": sum(1 for r in element_rows if r["observed"]),
+            "n_never_observed": len(never),
+            "never_observed": [r["element"] for r in never],
+            "n_constant": len(constant),
+            "constant": [{"element": r["element"], "value": r["constant_value"],
+                          "n_files": r["n_files"]} for r in constant],
+            "rows": element_rows,
+        },
+        "item_fidelity": {
+            "n_items": len(item_rows),
+            "n_represented": len(represented),
+            "n_unsupported": len(unsupported),
+            "n_incorrect": len(incorrect),
+            "unsupported": [r["item"] for r in unsupported],
+            "incorrect": [r["item"] for r in incorrect],
+            "rows": item_rows,
+        },
+        "dimensions": {k: sorted(set(v)) for k, v in sorted(dims.items())},
+        "protocol_targets": {k: sorted(set(v)) for k, v in sorted(exercises.items())},
+        "not_generated": not_generated,
+    }
+
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(summary, indent=2))
+
+    ec = summary["element_coverage"]
+    itf = summary["item_fidelity"]
+    print(f"reference files              : {summary['n_reference_files']}")
+    print(f"specified elements           : {ec['n_specified']}")
+    print(f"  observed in the corpus     : {ec['n_observed']}")
+    print(f"  never observed             : {ec['n_never_observed']}")
+    print(f"metadata items compared      : {itf['n_items']}")
+    print(f"  represented in the files   : {itf['n_represented']}")
+    print(f"  present in source, absent  : {itf['n_unsupported']}")
+    print(f"  represented but incorrect  : {itf['n_incorrect']}")
+    print(f"chemical dimensions covered  : {len(summary['dimensions'])}")
+    if ec["never_observed"]:
+        print("\nspecified but never written by any run:")
+        for e in ec["never_observed"]:
+            print(f"  {e}")
+    if ec["constant"]:
+        print(f"\npresent but carrying one value in every file "
+              f"({ec['n_constant']} element(s)) -- exercised in form, not in "
+              "substance:")
+        for r in ec["constant"]:
+            print(f"  {r['element']:52s} = {r['value']}")
+    if itf["unsupported"]:
+        print("\npresent in the GROMACS source but absent from every file:")
+        for e in itf["unsupported"]:
+            print(f"  {e}")
+    print(f"\nwritten to {out}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

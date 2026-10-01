@@ -5,7 +5,7 @@ Validation 4 -- negative / corruption tests.
 Generates one deliberately corrupted file per corruption per base file, runs the
 validator over each, and checks that the expected finding code was raised.
 
-    python scripts/run_negative_tests.py BASE.h5md [BASE2.h5md ...] \
+    python scripts/validation4_negative_tests.py BASE.h5md [BASE2.h5md ...] \
         --out-dir results/negative --json results/negative_tests.json
 """
 

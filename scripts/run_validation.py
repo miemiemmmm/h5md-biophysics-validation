@@ -4,9 +4,20 @@ Run the conformance validator and the round-trip test over every reference file.
 
     python scripts/run_validation.py --manifest results/reference_files.json
 
-Writes results/validation.json holding, per reference file: the validator's
-findings (Validation 3), the item-by-item round-trip comparison (Validation 2),
-and the metadata storage breakdown (Validation 5).
+Writes results/validation.json keyed by reference file, each entry holding a
+``validation``, ``roundtrip`` and ``storage`` section. Three validations share
+one pass because they share its cost: opening the HDF5 file and running
+``gmx dump`` on the .tpr. Splitting them would mean three passes over 379 files
+and three dumps per system, which is why this script carries no index in its
+name while the single-validation stages do.
+
+Validation 1 draws on the ``roundtrip`` sections of the same artifact.
+
+Used by:
+    Validation 2: round-trip test
+    Validation 3: internal consistency
+    Validation 5: storage overhead (the per-file breakdown; the write-time
+                  measurement is scripts/validation5_write_overhead.py)
 """
 
 from __future__ import annotations

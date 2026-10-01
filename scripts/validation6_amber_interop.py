@@ -24,7 +24,7 @@ the comparison say different things and are reported separately:
     matters is that the same schema elements hold both without either engine
     needing an element the other does not.
 
-    python scripts/amber_interop.py --h5md <dna .h5md> --prmtop <dna.prmtop>
+    python scripts/validation6_amber_interop.py --h5md <dna .h5md> --prmtop <dna.prmtop>
 """
 
 from __future__ import annotations

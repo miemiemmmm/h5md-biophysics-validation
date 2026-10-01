@@ -714,7 +714,7 @@ class RoundTripReport:
 
         Deliberately independent of what happens to terms outside the
         predefined set, which is reported by ``all_terms_written`` and by
-        scripts/interaction_coverage.py.
+        scripts/validation1_interaction_coverage.py.
         """
         return not self.mismatches and not self.missing_in_file
 
