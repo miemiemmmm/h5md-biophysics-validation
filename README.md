@@ -4,7 +4,7 @@ This directory holds everything needed to reproduce the Technical Validation of 
 The specification (`si-specification.tex` in the supplementary material) is the normative source of the validation suite.
 The schema model in `h5md_validator/spec.py` is transcribed from the specification rather than the GROMACS reference implementation.
 By generating the H5MD outputs from the GROMACS reference implementation, the validation suite can compare them against the schema model to identify any discrepancies.
-Where the two disagree, the disagreement is reported as a finding rather than absorbed into the model; the list is in `$H5MD_VALIDATION_DATA/_results/specification_findings.md`.
+Where the two disagree, the disagreement is reported as a finding rather than absorbed into the model.
 
 ## The six validations
 
@@ -12,7 +12,7 @@ Where the two disagree, the disagreement is reported as a finding rather than ab
 |:--|:--|:--|
 | 1 | Can the schema represent the metadata of realistic MD systems? | `coverage.json`, `interaction_coverage.json`, `parameter_surface.json` |
 | 2 | Does serialising and parsing preserve it? | `validation.json` → `roundtrip` |
-| 3 | Is a file internally consistent? | `validation.json` → `validation` |
+| 3 | Is a file internally consistent? | `validation.json` → `conformance` |
 | 4 | Are invalid files detected? | `negative_tests.json` |
 | 5 | What does the metadata cost? | `validation.json` → `storage`, `write_overhead.json` |
 | 6 | Do other engines' parameters map onto the same concepts? | `amber_interop.json` |
@@ -21,76 +21,77 @@ Fidelity and coverage are kept apart throughout. A file can carry back everythin
 it holds without change and still have come from a source the schema could not
 fully represent; conflating the two would let a coverage gap read as a success.
 
+All artifacts are produced within the `$H5MD_VALIDATION_DATA/_results` directory.
+
 ## Before doing validation
 
 ### Setup
 
-Requires `h5py` and `numpy`, and a GROMACS build with the `biophysics` H5MD
-writer. Three variables are needed by every step below:
+Requires `h5py` and `numpy`, and a GROMACS build with the H5MD `biophysics` schema (gromacs-biophysics-metadata.zip). 
+Two variables are needed by every step below, and a third, `H5MD_VALIDATION_DATA`, is set in the next section:
 
 ```bash
 export PY_EXE=/path/to/python/env/bin/python   # needs h5py and numpy
 export GMX_BIN=/path/to/gromacs/bin/gmx        # a build with the biophysics writer
 ```
 
+### Validation dataset
 
-To run everything in order, including the report:
-
-```bash
-bash scripts/run_all.sh              # analysis only, reference files must exist
-bash scripts/run_all.sh --generate   # build the reference files first (hours)
-```
-
-The rest of this file is that chain, one validation at a time.
-
-### Download the validation dataset
-Download the validation dataset and unpack it. Then setup the `H5MD_VALIDATION_DATA` environment variable to point at the extracted directory.
+Download the validation dataset from [TODO: add url here]() and unpack it. Then setup the `H5MD_VALIDATION_DATA` environment variable to point at the extracted directory.
 
 ```bash
 export H5MD_VALIDATION_DATA=/path/to/validation_systems
 ```
 
-Main results and artifacts will be run put into:
-
-```text
-$H5MD_VALIDATION_DATA/
-    _data/      Reference files, tprs and output H5MD files. Transient, several GB, safe to delete.
-    _results/   Measurements, reports, the tables and the figures.
-```
-
 
 ### Build the reference files
 
-Every validation reads this corpus, so it is built once.
-
-**Objective.** Produce one H5MD file per (system, protocol) pair, together with
-the `.tpr` it came from. Both sides are kept: the `.tpr` is the source of the
-round-trip comparison, so the test never compares the writer against itself.
+Every validation reads this corpus, so reference files are built only once. 
+This produces one H5MD file per (system, protocol) pair, together with
+the `.tpr` it came from. Both files are kept: the `.tpr` is the source of the
+round-trip comparison.
 
 ```bash
 $PY_EXE scripts/build_reference_files.py --list   # show the test matrix
 $PY_EXE scripts/build_reference_files.py --all    # grompp + mdrun every pair
 ```
 
-Existing `.tpr` and `.h5md` files are reused; `--force` rebuilds them.
+Existing `.tpr` and `.h5md` files are reused; add `--force` flag to rebuild them.
+Main reference files and result artifacts will be run put into `$H5MD_VALIDATION_DATA`:
 
-**Artifacts**
+```text
+$H5MD_VALIDATION_DATA/
+    _data/      tprs, the H5MD corpus, resolved .mdp files and the gmx dump cache. Transient, several GB, safe to delete.
+    _results/   Measurements, reports, the tables and the figures.
+```
+
+**Result artifacts**
 
 | Path | What it is |
 |:--|:--|
 | `_results/reference_files.json` | the manifest: one entry per pair, with its dimensions and protocol targets |
 | `_data/tprs/` | grompp output, the round-trip source side |
-| `_data/resolved_mdp/` | grompp `-po`: the complete `.mdp` with every default filled in |
 | `_data/reference_files/` | the H5MD corpus |
+| `_data/resolved_mdp/` | grompp `-po`: the complete `.mdp` with every default filled in |
 | `_data/tpr_dumps/` | cached `gmx dump -s` text, written on first read |
 | `_data/scratch/` | per-pair scratch, deleted after each pair |
 
-A clean run reports **379/379 reference files available**. A leftover directory
-under `_data/scratch/` names a pair whose run was interrupted.
+A leftover directory under `_data/scratch/` names a pair whose run was
+interrupted.
 
----
 
-## Validation 1 — schema coverage
+## Quick validation
+
+To run the full validation chain in order, run the following commands:
+
+```bash
+bash scripts/run_all.sh              # analysis only, reference files must exist
+bash scripts/run_all.sh --generate   # build the reference files first (hours)
+```
+
+The following sections are each step in that chain, one validation at a time.
+
+### Validation 1 — schema coverage
 
 **Objective.** Establish that the schema can hold the metadata real simulations
 produce, and say exactly which parts of it no run exercised. An element that no
@@ -119,20 +120,16 @@ the `.tpr` dumps directly and needs no other stage.
 | `_results/interaction_coverage.json` | `per_system`, `per_file`, `unsupported` |
 | `_results/parameter_surface.json` | per-option classification of the resolved `.mdp` files |
 
-**A clean run.** 123 of 145 specified elements observed, 103 of them with more
-than one distinct value; 92 of 93 source items represented; **0** interaction
-types unsupported and **0** entries dropped.
-
-Two numbers deserve reading rather than quoting. The 22 never-observed elements
-are each explained in the report by a registered deviation or limitation, and
-any element with no recorded explanation is flagged there by name. The one
-unrepresented item is `cmap.parameters`, which cannot be verified at all:
-`gmx dump` emits the CMAP type index and never the grid values, so there is
-nothing on the source side to compare against.
+Two results need reading rather than quoting. Every never-observed element is
+explained in the report by a registered deviation or limitation, and any element
+with no recorded explanation is flagged there by name. Separately,
+`cmap.parameters` cannot be verified at all: `gmx dump` emits the CMAP type
+index and never the grid values, so there is nothing on the source side to
+compare against.
 
 ---
 
-## Validation 2 — round-trip fidelity
+### Validation 2 — round-trip fidelity
 
 **Objective.** Show that metadata written to H5MD and read back is unchanged.
 The comparison runs against `gmx dump` output rather than the writer's own view,
@@ -150,14 +147,13 @@ the file opened and the `.tpr` dumped. Dumps are cached after the first run.
 `match`, `mismatch`, `missing_in_file` or `missing_in_source`, plus the
 per-category totals and a `faithful` verdict.
 
-**A clean run.** 379 files compared, **379 faithful**, 0 mismatches, 0 items
-missing from a file. Numerical comparison uses a per-value tolerance bounded by
-whichever is coarser — `gmx dump`'s text precision or the file's float width —
-rather than one global epsilon.
+Numerical comparison uses a per-value tolerance bounded by whichever is coarser
+— `gmx dump`'s text precision or the file's float width — rather than one global
+epsilon.
 
 ---
 
-## Validation 3 — internal consistency
+### Validation 3 — internal consistency
 
 **Objective.** Show that each file is conformant on its own terms: declared
 types and shapes, enumerated values, unit attributes, time alignment, and the
@@ -169,11 +165,9 @@ Same command as Validation 2; the two are produced together.
 $PY_EXE scripts/check_reference_files.py
 ```
 
-**Artifacts.** `_results/validation.json` → the `validation` section of each
+**Artifacts.** `_results/validation.json` → the `conformance` section of each
 entry: a list of findings with a stable code, a severity and the HDF5 path it is
 anchored to, plus a `conformant` verdict.
-
-**A clean run.** **379/379 conformant, 0 ERROR-level findings.**
 
 Deviations are counted separately and do not make a file non-conformant. Each
 one is a registered disagreement between the specification text and the writer,
@@ -182,7 +176,7 @@ listed in `specification_findings.md`.
 
 ---
 
-## Validation 4 — negative tests
+### Validation 4 — negative tests
 
 **Objective.** Show the validator has teeth. Proving that valid files pass is
 only half of a schema claim; the other half is that invalid metadata is caught.
@@ -197,16 +191,14 @@ $PY_EXE scripts/validation4_negative_tests.py <a valid .h5md> [more .h5md ...]
 different shapes so that as many corruptions as possible apply.
 
 **Artifacts.** `_results/negative_tests.json` — `by_category`, the per-file
-outcomes, and the counts below.
+outcomes, and the detection counts.
 
-**A clean run.** 51 corruption kinds over 5 base files, **249 tested, 249
-detected, 0 missed**, detection rate 100%. A corruption that cannot apply to a
-particular base (no barostat group, no selections) is skipped and reported as
-such rather than counted as a pass.
+A corruption that cannot apply to a particular base (no barostat group, no
+selections) is skipped and reported as such rather than counted as a pass.
 
 ---
 
-## Validation 5 — what the metadata costs
+### Validation 5 — what the metadata costs
 
 **Objective.** Show that carrying the metadata is cheap enough to be
 unobjectionable, in bytes and in write time. Both halves matter: a schema
@@ -228,12 +220,9 @@ $PY_EXE scripts/validation5_write_overhead.py --repeats 5      # time
 | `_results/validation.json` → `storage` | per file: metadata bytes, trajectory bytes, bytes per particle, ratio |
 | `_results/write_overhead.json` | per system: both wall times and their difference, over `--repeats` runs |
 
-**A clean run.** Metadata costs **11–363 bytes per particle**, and writing it
-adds a **median of +8 ms, at most +152 ms** over trajectory-only output.
-
 ---
 
-## Validation 6 — cross-engine interoperability
+### Validation 6 — cross-engine interoperability
 
 **Objective.** Show that the schema's concepts are not GROMACS concepts under
 another name. The same molecule is prepared independently in two engines with
@@ -254,15 +243,15 @@ stated in one place rather than left to the person passing the flags.
 and `PARAMETRISATION`, the alias table used to align atom names, and an
 `interoperable` verdict.
 
-**A clean run.** **9 of 9 chemistry items agree**: particle and residue counts,
-molecular formula, bond count and bond topology, total charge, masses and
-atomic numbers. Naming differences are resolved by an alias table and reported
-rather than hidden — `O1P`/`OP1`, `H3T`/`HO3*`, and terminal residues named
-`DA5`/`DA3` against plain `DA`.
+The chemistry items compared are particle and residue counts, molecular
+formula, bond count and bond topology, total charge, masses and atomic numbers.
+Naming differences are resolved by an alias table and reported rather than
+hidden — `O1P`/`OP1`, `H3T`/`HO3*`, and terminal residues named `DA5`/`DA3`
+against plain `DA`.
 
 ---
 
-## Supporting analysis
+### Supporting analysis
 
 Not one of the six, but run by `run_all.sh` and cited by the report:
 
@@ -274,7 +263,9 @@ Measures whether force-field provenance could be recovered automatically from a
 file's contents, which is the evidence behind `DEV-FF-PROVENANCE-UNWRITTEN`.
 Writes `_results/provenance_recoverability.json`.
 
-## Report and figures
+---
+
+### Report and figures
 
 ```bash
 $PY_EXE scripts/make_figures.py
@@ -299,6 +290,8 @@ results kept elsewhere:
 RESULTS_DIR=/some/other/results $PY_EXE scripts/report.py
 ```
 
+---
+
 ## Validating a single file
 
 ```python
@@ -314,6 +307,7 @@ come at four levels: `ERROR` (violates a MUST of the specification), `DEVIATION`
 (a registered specification-versus-implementation mismatch, pending an editorial
 decision), `WARNING` (violates a SHOULD), and `INFO`.
 
+<!-- 
 ## Layout
 
 ```
@@ -348,14 +342,17 @@ scripts/             the stages, each writing one JSON artifact
 $H5MD_VALIDATION_DATA/
     _data/           transient: tprs, resolved_mdp, reference_files, tpr_dumps, scratch
     _results/        the JSON measurements, the rendered report, tables and figures
-```
+``` 
 
 The prepared systems live outside this directory, in `../validation_systems/`:
 one directory per system, holding the grompp inputs the validation was computed
 from. They are kept separate because they are large and are archived rather
 than versioned.
 
-## Two registries
+-->
+
+
+<!-- ## Two registries
 
 Findings are kept in two separate registries rather than one list, because they
 need different actions from different people:
@@ -367,7 +364,7 @@ need different actions from different people:
 
 Defects found in the reference implementation during validation were fixed in
 the writer rather than tracked here; the corpus is regenerated after each fix,
-so the current results describe the fixed implementation.
+so the current results describe the fixed implementation. -->
 
 ## Check codes
 

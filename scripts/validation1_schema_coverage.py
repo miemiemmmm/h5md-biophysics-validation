@@ -176,7 +176,7 @@ def main():
     per_file_elements = {}
     distinct_values = defaultdict(set)
     for key, rec in ok.items():
-        path = rec["validation"]["file"]
+        path = rec["conformance"]["file"]
         try:
             elems = observed_elements(path)
             vals = observed_values(path)

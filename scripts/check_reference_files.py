@@ -5,7 +5,7 @@ Run the conformance validator and the round-trip test over every reference file.
     python scripts/check_reference_files.py --manifest results/reference_files.json
 
 Writes results/validation.json keyed by reference file, each entry holding a
-``validation``, ``roundtrip`` and ``storage`` section. Three validations share
+``conformance``, ``roundtrip`` and ``storage`` section. Three validations share
 one pass because they share its cost: opening the HDF5 file and running
 ``gmx dump`` on the .tpr. Splitting them would mean three passes over 379 files
 and three dumps per system, which is why this script carries no index in its
@@ -121,7 +121,7 @@ def main():
                   "wall_seconds": entry.get("wall_seconds")}
 
         report = validator.validate(h5)
-        record["validation"] = report.to_dict()
+        record["conformance"] = report.to_dict()
 
         if not args.skip_roundtrip and Path(entry["tpr"]).exists():
             try:
@@ -137,7 +137,7 @@ def main():
             record["storage_error"] = f"{type(exc).__name__}: {exc}"
 
         results[key] = record
-        v = record["validation"]
+        v = record["conformance"]
         r = record.get("roundtrip", {})
         print(f"  {'PASS' if v['conformant'] else 'FAIL'}  {key:44s} "
               f"err={v['counts']['ERROR']:<3d} dev={v['counts']['DEVIATION']:<3d} "
@@ -150,7 +150,7 @@ def main():
     out.write_text(json.dumps(results, indent=2))
 
     ok = [r for r in results.values() if r.get("status") == "ok"]
-    conformant = [r for r in ok if r["validation"]["conformant"]]
+    conformant = [r for r in ok if r["conformance"]["conformant"]]
     faithful = [r for r in ok if r.get("roundtrip", {}).get("faithful")]
     complete = [r for r in ok if r.get("roundtrip", {}).get("all_terms_written")]
     print("\n" + "=" * 72)
