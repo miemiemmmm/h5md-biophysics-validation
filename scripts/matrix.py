@@ -1,0 +1,222 @@
+"""
+The validation test matrix: chemical systems x simulation protocols.
+
+Validation 1 asks whether the schema can represent the metadata encountered in
+realistic biomolecular MD.  That has two independent axes, and this module keeps
+them separate:
+
+* CHEMICAL SYSTEMS -- what is in the box (protein, nucleic acid, membrane,
+  ligand, ion, solvent), each maps to a topology on validation systems.
+* PROTOCOLS -- how the simulation is run (integrator, thermostat, barostat,
+  constraints, electrostatics, boundary conditions), expressed as .mdp overrides.
+
+Every protocol exercises a different branch of the ``parameters`` tree of S7, so
+the product of the two axes covers the schema rather than merely repeating one
+configuration on many molecules.
+"""
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass, field
+
+
+#: The extracted validation dataset: the systems the harness runs on. Download
+#: it, unpack it, and point this at the directory that results.
+#:
+#:     export H5MD_VALIDATION_DATA=/scratch/$USER/validation_systems
+#:
+#: The default is the copy that sits beside this repository, so a checkout runs
+#: without any environment set.
+VALIDATION_SYSTEMS = os.environ.get(
+    "H5MD_VALIDATION_DATA",
+    os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__)))), "validation_systems"))
+
+#: Everything the harness produces on the way to a result -- the per-system work
+#: cache, the .tpr files, the gmx dump cache, the reference .h5md corpus. It
+#: lives inside the dataset directory but is not part of the dataset, which the
+#: leading underscore is there to say. Several GB per full run; safe to delete.
+DATA_ROOT = os.path.join(VALIDATION_SYSTEMS, "_data")
+
+#: What a run concludes: the JSON measurements, the rendered report, the LaTeX
+#: tables and the figures. Small, and the thing worth keeping when ``_data`` is
+#: deleted. RESULTS_DIR overrides it for a one-off run somewhere else.
+RESULTS_ROOT = os.path.join(VALIDATION_SYSTEMS, "_results")
+
+@dataclass
+class System:
+    """A chemical system, defined by whatever is needed to grompp it."""
+    id: str
+    description: str
+    #: dimensions of Validation 1's coverage table that this system exercises
+    dimensions: tuple
+    #: how to obtain it: 'dataset' (simulation_dataset session), 'topology'
+    #: (a directory holding topol.top + structure), or 'built' (constructed here)
+    source: str
+    #: session id, or directory, depending on source
+    location: str = ""
+    structure: str = ""
+    topology: str = ""
+    index: str = ""
+    force_field: str = ""
+    water_model: str = ""
+    n_atoms: int = 0
+    #: .mdp settings this system requires regardless of protocol (coupling
+    #: groups, mostly), applied on top of the protocol's settings
+    mdp: dict = field(default_factory=dict)
+    #: index groups this system needs passed to grompp
+    use_index: bool = False
+    #: for source='subset': the parent system id and the molecule types to keep
+    parent: str = ""
+    keep: tuple = ()
+    #: True when the starting structure must be relaxed before dynamics
+    minimise: bool = False
+    #: False for a vacuum system: no periodic boundary, infinite cut-offs
+    periodic: bool = True
+
+
+@dataclass
+class Protocol:
+    """A set of .mdp overrides exercising one branch of the parameters tree."""
+    id: str
+    description: str
+    #: schema elements this protocol is meant to populate
+    exercises: tuple
+    mdp: dict = field(default_factory=dict)
+
+
+# ==========================================================================
+# Protocols -- each one lights up a different part of S7
+# ==========================================================================
+_BASE_MD = {
+    "integrator": "md",
+    "dt": "0.002",
+    "nsteps": "500",
+    "nstxout": "100",
+    "nstvout": "0",
+    "nstfout": "0",
+    "nstenergy": "100",
+    "nstlog": "100",
+    "nstlist": "20",
+    "cutoff-scheme": "Verlet",
+    "coulombtype": "PME",
+    "rcoulomb": "1.2",
+    "vdwtype": "Cut-off",
+    "vdw-modifier": "Potential-shift",
+    "rvdw": "1.2",
+    "pbc": "xyz",
+    "constraints": "h-bonds",
+    "constraint-algorithm": "lincs",
+    "lincs-order": "4",
+    "lincs-iter": "1",
+    "tcoupl": "V-rescale",
+    "tc-grps": "System",
+    "tau-t": "0.1",
+    "ref-t": "300",
+    "pcoupl": "no",
+    "comm-mode": "Linear",
+    "nstcomm": "100",
+    "gen-vel": "no",
+}
+
+
+def _md(**overrides):
+    out = dict(_BASE_MD)
+    out.update({k.replace("_", "-"): str(v) for k, v in overrides.items()})
+    return out
+
+
+PROTOCOLS = [
+    Protocol("nvt-vrescale", "NVT, leap-frog, stochastic velocity rescaling",
+             ("run_control/molecular_dynamics", "temperature_coupling/stochastic_velocity_rescaling"),
+             _md()),
+    Protocol("npt-prahman", "NPT, Parrinello-Rahman barostat",
+             ("pressure_coupling/parrinello_rahman",),
+             _md(pcoupl="Parrinello-Rahman", tau_p="2.0", ref_p="1.0",
+                 compressibility="4.5e-5", pcoupltype="isotropic",
+                 refcoord_scaling="com")),
+    Protocol("npt-crescale", "NPT, stochastic cell rescaling barostat",
+             ("pressure_coupling/stochastic_cell_rescaling",),
+             _md(pcoupl="C-rescale", tau_p="2.0", ref_p="1.0",
+                 compressibility="4.5e-5", pcoupltype="isotropic")),
+    Protocol("npt-berendsen", "NPT, Berendsen barostat",
+             ("pressure_coupling/berendsen",),
+             _md(pcoupl="Berendsen", tau_p="2.0", ref_p="1.0",
+                 compressibility="4.5e-5", pcoupltype="isotropic")),
+    Protocol("npt-semiisotropic", "NPT, semi-isotropic coupling (anisotropic tensor)",
+             ("pressure_coupling/reference_pressure as tensor",),
+             _md(pcoupl="Parrinello-Rahman", pcoupltype="semiisotropic",
+                 tau_p="5.0", ref_p="1.0 1.0",
+                 compressibility="4.5e-5 4.5e-5")),
+    Protocol("nvt-nosehoover", "NVT, Nose-Hoover thermostat with velocity Verlet",
+             ("temperature_coupling/nose_hoover",),
+             _md(integrator="md-vv", tcoupl="nose-hoover", tau_t="1.0",
+                 nh_chain_length="10")),
+    Protocol("nvt-andersen",
+             "NVT, Andersen (massive) thermostat with velocity Verlet",
+             ("temperature_coupling/andersen",),
+             _md(integrator="md-vv", tcoupl="andersen-massive", tau_t="0.1",
+                 constraints="none", dt="0.0005", nsttcouple="10")),
+    Protocol("nvt-berendsen", "NVT, Berendsen thermostat",
+             ("temperature_coupling/berendsen",),
+             _md(tcoupl="berendsen", tau_t="0.5")),
+    Protocol("nve", "NVE, no temperature or pressure coupling",
+             ("run_control without coupling groups",),
+             _md(tcoupl="no", pcoupl="no")),
+    Protocol("sd-langevin", "Stochastic dynamics (Langevin) integrator",
+             ("run_control/stochastic_dynamics",),
+             _md(integrator="sd", tau_t="1.0", ld_seed="1993")),
+    Protocol("em-steep", "Energy minimisation, steepest descent",
+             ("run_control/energy_minimization",),
+             {"integrator": "steep", "nsteps": "50", "emtol": "1000.0",
+              "emstep": "0.01", "nstenergy": "10", "nstlog": "10",
+              "nstxout": "10", "cutoff-scheme": "Verlet", "nstlist": "20",
+              "coulombtype": "PME", "rcoulomb": "1.2", "vdwtype": "Cut-off",
+              "rvdw": "1.2", "pbc": "xyz", "constraints": "none"}),
+    Protocol("em-cg", "Energy minimisation, conjugate gradient",
+             ("run_control/energy_minimization",),
+             {"integrator": "cg", "nsteps": "50", "emtol": "1000.0",
+              "emstep": "0.01", "nstcgsteep": "100", "nstenergy": "10",
+              "nstlog": "10", "nstxout": "10", "cutoff-scheme": "Verlet",
+              "nstlist": "20", "coulombtype": "PME", "rcoulomb": "1.2",
+              "vdwtype": "Cut-off", "rvdw": "1.2", "pbc": "xyz",
+              "constraints": "none"}),
+    Protocol("constraints-none", "No bond constraints",
+             ("constraints absent; bonds retained as interactions",),
+             _md(constraints="none", dt="0.0005")),
+    Protocol("constraints-allbonds", "All bonds constrained",
+             ("constraints/mode = all_bonds",),
+             _md(constraints="all-bonds")),
+    Protocol("constraints-shake", "SHAKE constraint algorithm",
+             ("constraints/shake",),
+             _md(constraint_algorithm="shake", shake_tol="1e-5",
+                 integrator="md-vv", tcoupl="no")),
+    Protocol("coulomb-rf", "Reaction-field electrostatics",
+             ("coulomb_interactions/reaction_field",),
+             _md(coulombtype="Reaction-Field", epsilon_rf="78", rcoulomb="1.2")),
+    Protocol("coulomb-cutoff", "Plain cut-off electrostatics",
+             ("coulomb_interactions/cutoff",),
+             _md(coulombtype="Cut-off", coulomb_modifier="Potential-shift")),
+    Protocol("vdw-forceswitch", "Van der Waals force switch",
+             ("vdw_interactions/cutoff with force_switch",),
+             _md(vdw_modifier="Force-switch", rvdw_switch="1.0")),
+    Protocol("vdw-potswitch", "Van der Waals potential switch",
+             ("vdw_interactions/cutoff with potential_switch",),
+             _md(vdw_modifier="Potential-switch", rvdw_switch="1.0")),
+    Protocol("dispcorr", "Analytical dispersion correction",
+             ("vdw_interactions/dispersion_correction",),
+             _md(DispCorr="EnerPres")),
+    Protocol("selection-noncontiguous",
+             "Non-contiguous energy group, exercising index-based selections",
+             ("selections/<group>/indices", "selections/<group>/ranges"),
+             _md(energygrps="C-alpha")),
+    Protocol("tcoupl-multigroup", "Two temperature coupling groups",
+             ("temperature_coupling with per-group arrays",),
+             _md(tc_grps="Protein Non-Protein", tau_t="0.1 0.1", ref_t="300 300")),
+    Protocol("mass-repartition", "Hydrogen mass repartitioning",
+             ("run_control/mass_repartitioning",),
+             _md(mass_repartition_factor="3", dt="0.004")),
+]
+
+PROTOCOLS_BY_ID = {p.id: p for p in PROTOCOLS}
