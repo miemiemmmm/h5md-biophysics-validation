@@ -54,12 +54,10 @@ $PY_EXE scripts/provenance_recoverability.py
 $PY_EXE scripts/parameter_surface.py "$DATASET"/_data/mdout/*.mdp || echo "(skipped)"
 
 echo "==> negative tests"
-# Three bases with different shapes, so that as many corruptions as possible apply:
-# a small protein, a nucleic acid, and a multicomponent membrane system.
+# The bases are declared in config/matrix.py so that a renamed system carries
+# through here instead of silently dropping out of the test.
 BASES=""
-for name in bena_12k__selection-noncontiguous dna_amber__nvt-vrescale \
-            memprotmd_5bkf__nvt-vrescale solvent_ions__nvt-vrescale \
-            protein_dna__nvt-vrescale; do
+for name in $($PY_EXE -c "from config.matrix import NEGATIVE_TEST_BASES; print(' '.join(NEGATIVE_TEST_BASES))"); do
     f="$REF/$name.h5md"
     [ -f "$f" ] && BASES="$BASES $f"
 done
@@ -69,14 +67,20 @@ echo "==> write overhead"
 $PY_EXE scripts/measure_write_overhead.py --repeats 5 || echo "(skipped)"
 
 echo "==> cross-engine interoperability"
-PRMTOP=${PRMTOP:-}
-if [ -n "$PRMTOP" ] && [ -f "$PRMTOP" ]; then
-    $PY_EXE scripts/amber_interop.py \
-        --h5md "$REF/dna_amber__nvt-vrescale.h5md" \
-        --prmtop "$PRMTOP"
-else
-    echo "(set PRMTOP=... to include the AMBER comparison)"
-fi
+# Each pair names a reference file and the prmtop of the SAME molecule; pairing
+# them in config/matrix.py is what keeps the comparison from being run on two
+# different systems, which would make its verdict meaningless.
+$PY_EXE -c "from config.matrix import AMBER_INTEROP_PAIRS; print('\n'.join('%s\t%s' % p for p in AMBER_INTEROP_PAIRS))" |
+while IFS=$'\t' read -r key prmtop; do
+    [ -n "$key" ] || continue
+    h5="$REF/$key.h5md"
+    top="$DATASET/$prmtop"
+    if [ -f "$h5" ] && [ -f "$top" ]; then
+        $PY_EXE scripts/amber_interop.py --h5md "$h5" --prmtop "$top"
+    else
+        echo "(skipped $key: missing $( [ -f "$h5" ] || echo "$h5" ) $( [ -f "$top" ] || echo "$top" ))"
+    fi
+done
 
 echo "==> figures"
 $PY_EXE scripts/make_figures.py

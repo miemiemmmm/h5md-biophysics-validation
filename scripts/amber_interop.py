@@ -38,11 +38,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from matrix import RESULTS_ROOT
+from config.matrix import RESULTS_DIR
 
-#: Results live in ``results/`` by default. RESULTS_DIR redirects every script
-#: at once, so an existing set of results can be analysed from anywhere.
-RESULTS_DIR = os.environ.get("RESULTS_DIR", RESULTS_ROOT)
 
 
 def _r(name: str) -> str:

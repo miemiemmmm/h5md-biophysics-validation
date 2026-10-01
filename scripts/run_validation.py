@@ -21,11 +21,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from matrix import RESULTS_ROOT
+from config.matrix import RESULTS_DIR
 
-#: Results live in ``results/`` by default. RESULTS_DIR redirects every script
-#: at once, so an existing set of results can be analysed from anywhere.
-RESULTS_DIR = os.environ.get("RESULTS_DIR", RESULTS_ROOT)
 
 
 def _r(name: str) -> str:
@@ -37,10 +34,8 @@ import h5py
 
 from h5md_validator import Validator
 from h5md_validator import gmxdump, roundtrip
-from matrix import DATA_ROOT
+from config.matrix import DATA_ROOT, GMX
 
-#: Overridden by the GMX_BIN environment variable; falls back to PATH.
-GMX = os.environ.get("GMX_BIN", "gmx")
 DUMPS = Path(DATA_ROOT) / "dumps"
 
 #: Root groups that carry metadata rather than trajectory frames.  Used for the

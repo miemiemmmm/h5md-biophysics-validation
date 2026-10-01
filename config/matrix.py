@@ -44,6 +44,39 @@ DATA_ROOT = os.path.join(VALIDATION_SYSTEMS, "_data")
 #: deleted. RESULTS_DIR overrides it for a one-off run somewhere else.
 RESULTS_ROOT = os.path.join(VALIDATION_SYSTEMS, "_results")
 
+#: Where this run actually writes. Every stage imports this one name, so a run
+#: redirected with RESULTS_DIR cannot end up half in one tree and half in another.
+RESULTS_DIR = os.environ.get("RESULTS_DIR", RESULTS_ROOT)
+
+#: The GROMACS binary that grompps the systems and dumps the .tpr for the
+#: round-trip. GMX_BIN points at a build that is not on PATH.
+GMX = os.environ.get("GMX_BIN", "gmx")
+
+#: Bases for the negative tests (Validation 4), chosen for different shapes so
+#: that as many corruptions as possible apply: a protein with a non-contiguous
+#: selection, a nucleic acid, a membrane protein, an ion/solvent box and a
+#: protein-DNA complex. A base missing from the corpus is skipped, not an error.
+NEGATIVE_TEST_BASES = (
+    "bena_12k__selection-noncontiguous",
+    "dna_amber__nvt-vrescale",
+    "memprotmd_5bkf__nvt-vrescale",
+    "solvent_ions__nvt-vrescale",
+    "protein_dna__nvt-vrescale",
+)
+
+#: Pairs for the cross-engine comparison (Validation 6): (reference file key,
+#: prmtop relative to VALIDATION_SYSTEMS). Both sides MUST describe the same
+#: molecule -- a mismatched pair compares two different systems and its verdict
+#: means nothing. The hexABC deposits ship the AMBER topology their H5MD file
+#: was converted from, so pairing a system with its own source is the strongest
+#: available form of the test. Declaring the pair here is what makes that
+#: invariant checkable instead of a matter of passing the right flags.
+AMBER_INTEROP_PAIRS = (
+    ("hexabc_a0017b_dna__nvt-vrescale",
+     "hexabc/hexabc_a0017b_dna/A017B_topology.prmtop"),
+)
+
+
 @dataclass
 class System:
     """A chemical system, defined by whatever is needed to grompp it."""

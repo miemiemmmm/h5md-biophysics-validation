@@ -21,7 +21,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
-from matrix import System, DATA_ROOT, VALIDATION_SYSTEMS, PROTOCOLS
+from config.matrix import System, DATA_ROOT, VALIDATION_SYSTEMS, PROTOCOLS
 
 _ALL_PROTOCOL_IDS = [p.id for p in PROTOCOLS]
 
