@@ -184,7 +184,9 @@ Each corruption injects exactly one defect into a copy of a valid file and
 declares the finding code the validator is required to raise.
 
 ```bash
-$PY_EXE scripts/validation4_negative_tests.py <a valid .h5md> [more .h5md ...]
+$PY_EXE  scripts/validation4_negative_tests.py FILE.h5md    # explicitly define a H5MD file
+$PY_EXE  scripts/validation4_negative_tests.py --quick      # go through five reference files in the config/matrix.py
+$PY_EXE  scripts/validation4_negative_tests.py --all        # go through all reference files, takes a while
 ```
 
 `run_all.sh` passes the bases declared in `config/matrix.py`, chosen for

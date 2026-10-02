@@ -294,9 +294,16 @@ def _m_units_missing(f):
 
 
 def _m_units_wrong_length(f):
+    # Only a table with more than one compound field can be shortened to one
+    # entry. ``constraint`` has a single field and is the first table several
+    # force fields emit, so taking the first table unconditionally rewrote
+    # ['nm'] over ['nm']: the corruption reported success, the file stayed
+    # valid, and the validator was marked as having missed a defect that was
+    # never introduced.
     for pgrp, tname in _ff_parameters(f):
         ds = pgrp["parameters"]
-        if "units" in ds.attrs:
+        n_fields = len(ds.dtype.names) if ds.dtype.names else 1
+        if "units" in ds.attrs and n_fields > 1:
             ds.attrs["units"] = np.array([b"nm"], dtype="S8")
             return True
     return False
@@ -581,6 +588,7 @@ CORRUPTIONS = [
     Corruption("C-MOD-MISSING", "module", "remove the biophysics module declaration",
                "MOD-MISSING", _m_module_missing),
 
+    # Topology related corruptions
     Corruption("C-TOPO-TOTAL-PARTICLES", "topology invariant",
                "inflate total_particle_count by one",
                "TOPO-INVARIANT-PARTICLES", _m_total_particle_count),
@@ -627,6 +635,7 @@ CORRUPTIONS = [
                "rename the charge field of particle_data",
                "STRUCT-COMPOUND-FIELDS", _m_particle_data_field_renamed),
 
+    # Force-field related corruptions
     Corruption("C-FF-PARAM-ID-DANGLING", "referential integrity",
                "reference a force-field parameter index that does not exist",
                "REF-PARAMETER-ID", _m_parameter_id_dangling),
@@ -669,6 +678,7 @@ CORRUPTIONS = [
                "set an exclusion span stride to zero",
                "REF-EXCL-STRIDE", _m_exclusion_stride),
 
+    # Connectivity related corruptions
     Corruption("C-CONN-INDEX", "referential integrity",
                "set a bond particle index beyond the system size",
                "CONN-PARTICLE-ID", _m_bond_out_of_range),
@@ -679,6 +689,7 @@ CORRUPTIONS = [
                "store bonds as Integer[N][3]",
                "STRUCT-SHAPE", _m_bond_shape),
 
+    # Time-dependent dataset related corruptions
     Corruption("C-TIME-LENGTH", "time alignment",
                "truncate the step dataset of a time-dependent observable",
                "TIME-LENGTH-MISMATCH", _m_step_value_mismatch),
@@ -689,6 +700,7 @@ CORRUPTIONS = [
                "remove the unit attribute of a time dataset",
                "UNIT-MISSING", _m_time_unit_missing),
 
+    # Observable related corruptions
     Corruption("C-OBS-SHAPE", "structure",
                "store the pressure tensor as 3x2",
                "STRUCT-SHAPE", _m_observable_shape),
@@ -699,6 +711,7 @@ CORRUPTIONS = [
                "add an observable that the specification does not define",
                "STRUCT-UNDOCUMENTED", _m_observable_unknown),
 
+    # MD Parameter related corruptions
     Corruption("C-PARAM-ENUM", "enumeration",
                "set simulation_type to a value outside the defined set",
                "ENUM-UNDEFINED-VALUE", _m_enum_invalid),
@@ -721,6 +734,7 @@ CORRUPTIONS = [
                "remove run_control/numsteps",
                "STRUCT-MISSING-DATASET", _m_numsteps_missing),
 
+    # Selection related corruptions
     Corruption("C-SEL-INDEX", "referential integrity",
                "set a selection index beyond the system size",
                "REF-SEL-INDEX", _m_selection_index),
@@ -731,6 +745,7 @@ CORRUPTIONS = [
                "add a selection group that defines nothing",
                "SEL-EMPTY", _m_selection_empty),
 
+    # Trajectory related corruptions
     Corruption("C-TRAJ-MISMATCH", "cross-group consistency",
                "drop a particle from the trajectory but not from the topology",
                "TOPO-TRAJECTORY-MISMATCH", _m_trajectory_mismatch),
