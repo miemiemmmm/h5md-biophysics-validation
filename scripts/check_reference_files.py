@@ -16,8 +16,10 @@ Validation 1 draws on the ``roundtrip`` sections of the same artifact.
 Used by:
     Validation 2: round-trip test
     Validation 3: internal consistency
-    Validation 5: storage overhead (the per-file breakdown; the write-time
-                  measurement is scripts/validation5_write_overhead.py)
+    Validation 5: storage overhead -- the per-file byte breakdown. Write time
+                  is not measured here: neither process wall time nor GROMACS's
+                  'Write traj.' counter separates the one-off metadata write
+                  from per-frame output, so it needs a timer in the writer.
 """
 
 from __future__ import annotations
@@ -34,12 +36,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from config.matrix import RESULTS_DIR
 
-
-
 def _r(name: str) -> str:
     return str(pathlib.Path(RESULTS_DIR) / name)
-
-
 
 import h5py
 
@@ -126,7 +124,14 @@ def main():
         if not args.skip_roundtrip and Path(entry["tpr"]).exists():
             try:
                 dump = gmxdump.from_tpr(entry["tpr"], gmx=GMX, cache_dir=DUMPS)
-                rt = roundtrip.roundtrip(dump, h5, entry["tpr"])
+                # The .edr is the source side of the observables comparison. It
+                # is absent from a corpus built before it was kept, in which
+                # case observables are simply not compared.
+                edr = None
+                edr_path = entry.get("edr")
+                if edr_path and Path(edr_path).exists():
+                    edr = gmxdump.from_edr(edr_path, gmx=GMX, cache_dir=DUMPS)
+                rt = roundtrip.roundtrip(dump, h5, entry["tpr"], edr=edr)
                 record["roundtrip"] = rt.to_dict()
             except Exception as exc:
                 record["roundtrip_error"] = f"{type(exc).__name__}: {exc}"

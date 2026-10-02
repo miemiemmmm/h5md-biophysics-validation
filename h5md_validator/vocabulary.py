@@ -187,5 +187,51 @@ PARAMETER_FIELDS = {
 }
 
 # GROMACS functypes whose entries are chemical bonds, for ``connectivity/bonds``.
-# NOTE: SETTLE describes a rigid water and expands to its two O-H bonds.
-BOND_LIKE = {"BONDS", "G96BONDS", "HARMONIC", "MORSE", "CONSTR", "CONSTRNC"}
+#
+# Taken from GROMACS itself: these are exactly the functypes declared with the
+# IF_CHEMBOND flag in src/gromacs/topology/ifunc.cpp, which is that engine's own
+# statement of what constitutes a chemical connection. Deriving the set from the
+# flag rather than from the ones a test system happens to use keeps a topology
+# using an unusual bond type from silently losing its connectivity.
+#
+# Excluded deliberately, despite the names:
+#   HARMONIC      a generic harmonic potential between two atoms (def_bonded);
+#                 GROMACS does not flag it as a chemical bond
+#   CONSTRNC      "Constr. No Co." -- a constraint that explicitly does NOT
+#                 represent a connection (def_shk, no IF_CHEMBOND)
+#   TABBONDSNC    the no-connection variant of TABBONDS
+#   RESTRAINTPOT  a restraint, not a bond
+#
+# NOTE: SETTLE carries IF_CHEMBOND too, but its entry is a rigid water of three
+# atoms that expands to two O-H bonds, so roundtrip.py handles it separately.
+BOND_LIKE = {
+    "BONDS", "G96BONDS", "MORSE", "CUBICBONDS",
+    "CONNBONDS",            # a connection carrying no interaction
+    "FENEBONDS", "TABBONDS",
+    "POLARIZATION", "ANHARM_POL",   # shell particle bonded to its parent atom
+    "CONSTR",               # a bond converted to a constraint keeps its chemistry
+}
+
+
+# GROMACS .edr energy term -> observables element (S6).
+# Only terms the schema names are mapped; the rest of an .edr (per-interaction
+# energy decomposition, Constr. rmsd, lambda bookkeeping) has no schema slot and
+# is deliberately not compared.
+OBSERVABLE = {
+    "Potential": "potential_energy",
+    "Kinetic En.": "kinetic_energy",
+    "Total Energy": "total_energy",
+    "Conserved En.": "conserved_energy",
+    "Temperature": "temperature",
+    "Pressure": "pressure",
+    "Volume": "volume",
+    "Density": "density",
+    "Enthalpy": "enthalpy",
+}
+
+#: Tensor observables, assembled from the nine per-component .edr terms.
+OBSERVABLE_TENSOR = {
+    "virial_tensor": "Vir-{}{}",
+    "pressure_tensor": "Pres-{}{}",
+}
+TENSOR_AXES = ("X", "Y", "Z")

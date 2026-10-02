@@ -63,8 +63,6 @@ for name in $($PY_EXE -c "from config.matrix import NEGATIVE_TEST_BASES; print('
 done
 $PY_EXE scripts/validation4_negative_tests.py $BASES
 
-echo "==> write overhead"
-$PY_EXE scripts/validation5_write_overhead.py --repeats 5 || echo "(skipped)"
 
 echo "==> cross-engine interoperability"
 # Each pair names a reference file and the prmtop of the SAME molecule; pairing
@@ -83,7 +81,7 @@ while IFS=$'\t' read -r key prmtop; do
 done
 
 echo "==> figures"
-$PY_EXE scripts/make_figures.py
+$PY_EXE scripts/validation5_cost_figure.py
 
 echo "==> report"
 $PY_EXE scripts/report.py

@@ -359,3 +359,95 @@ def from_tpr(tpr, gmx="gmx", cache_dir=None) -> TprDump:
         cache.write_text(text)
         return parse(text)
     return parse(run_dump(tpr, gmx=gmx))
+
+
+# ==========================================================================
+# energy file: the source side of the observables comparison
+# ==========================================================================
+@dataclass
+class EdrDump:
+    """Per-frame energy terms from ``gmx dump -e``.
+
+    ``terms`` maps a GROMACS energy component name to its value in each frame,
+    in frame order; ``steps`` and ``times`` carry the frame index itself, so a
+    comparison can align on the step rather than trusting position.
+    """
+    steps: list = field(default_factory=list)
+    times: list = field(default_factory=list)
+    units: dict = field(default_factory=dict)
+    terms: dict = field(default_factory=dict)
+
+    @property
+    def n_frames(self) -> int:
+        return len(self.steps)
+
+
+_EDR_COMPONENT = re.compile(r"^\s*\d+\s{2,}(?P<name>\S.*?)\s{2,}\((?P<unit>[^)]*)\)\s*$")
+_EDR_FRAME = re.compile(r"^\s*time:\s*(?P<time>\S+)\s+step:\s*(?P<step>\d+)\s*$")
+_EDR_VALUE = re.compile(r"^\s{2,}(?P<name>\S.*?)\s{2,}(?P<value>-?[\d.]+e[+-]\d+|-?[\d.]+)\s*$")
+
+
+def parse_edr(text: str) -> EdrDump:
+    """Parse the text of ``gmx dump -e``."""
+    dump = EdrDump()
+    in_components = False
+    for line in text.splitlines():
+        if line.startswith("energy components:"):
+            in_components = True
+            continue
+
+        frame = _EDR_FRAME.match(line)
+        if frame:
+            in_components = False
+            dump.steps.append(int(frame.group("step")))
+            dump.times.append(float(frame.group("time")))
+            continue
+
+        if in_components:
+            m = _EDR_COMPONENT.match(line)
+            if m:
+                dump.units[m.group("name").strip()] = m.group("unit").strip()
+            continue
+
+        if not dump.steps:
+            continue
+        # Inside a frame. The header line names three columns but only the
+        # first, the instantaneous value, is present for every term.
+        m = _EDR_VALUE.match(line)
+        if m and m.group("name").strip() != "Component":
+            name = m.group("name").strip()
+            series = dump.terms.setdefault(name, [])
+            # Pad a term that first appears after frame 0 so that every series
+            # stays indexed by frame.
+            while len(series) < len(dump.steps) - 1:
+                series.append(None)
+            # DumpFloat, not float: gmx dump -e prints 6 significant digits, so
+            # the comparison tolerance has to come from the printed text rather
+            # than from the stored float width.
+            series.append(DumpFloat(m.group("value")))
+    return dump
+
+
+def run_dump_edr(edr, gmx="gmx", timeout=1800) -> str:
+    """Run ``gmx dump -e edr`` and return its stdout."""
+    proc = subprocess.run(
+        [gmx, "-quiet", "-nobackup", "dump", "-e", str(edr)],
+        capture_output=True, text=True, timeout=timeout,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"gmx dump -e failed for {edr}:\n{proc.stderr[-2000:]}")
+    return proc.stdout
+
+
+def from_edr(edr, gmx="gmx", cache_dir=None) -> EdrDump:
+    """Dump and parse an .edr, optionally caching the dump text on disk."""
+    edr = Path(edr)
+    if cache_dir is not None:
+        cache = Path(cache_dir) / f"{edr.stem}.edr.txt"
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        if cache.exists():
+            return parse_edr(cache.read_text())
+        text = run_dump_edr(edr, gmx=gmx)
+        cache.write_text(text)
+        return parse_edr(text)
+    return parse_edr(run_dump_edr(edr, gmx=gmx))

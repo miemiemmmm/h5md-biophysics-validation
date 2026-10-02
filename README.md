@@ -14,7 +14,7 @@ Where the two disagree, the disagreement is reported as a finding rather than ab
 | 2 | Does serialising and parsing preserve it? | `validation.json` → `roundtrip` |
 | 3 | Is a file internally consistent? | `validation.json` → `conformance` |
 | 4 | Are invalid files detected? | `negative_tests.json` |
-| 5 | What does the metadata cost? | `validation.json` → `storage`, `write_overhead.json` |
+| 5 | What does the metadata cost to store? | `validation.json` → `storage` |
 | 6 | Do other engines' parameters map onto the same concepts? | `amber_interop.json` |
 
 Fidelity and coverage are kept apart throughout. A file can carry back everything
@@ -198,27 +198,31 @@ selections) is skipped and reported as such rather than counted as a pass.
 
 ---
 
-### Validation 5 — what the metadata costs
+### Validation 5 — what the metadata costs to store
 
 **Objective.** Show that carrying the metadata is cheap enough to be
-unobjectionable, in bytes and in write time. Both halves matter: a schema
-nobody adopts because it is expensive has not solved the problem.
+unobjectionable. A schema nobody adopts because it is expensive has not solved
+the problem.
 
-Storage comes from the same pass as Validations 2 and 3. Write time is a
-separate measurement, because it means running each system twice — once writing
-H5MD with metadata and once writing a trajectory only, from the same `.tpr`.
+Measured at the HDF5 layer: the stored size of every dataset, attributed to the
+metadata groups or to the trajectory. It comes from the same pass as
+Validations 2 and 3.
 
 ```bash
-$PY_EXE scripts/check_reference_files.py                       # storage
-$PY_EXE scripts/validation5_write_overhead.py --repeats 5      # time
+$PY_EXE scripts/check_reference_files.py
 ```
+
+Write *time* is not measured here. Comparing whole-process wall time between
+H5MD and trajectory-only runs is dominated by start-up, and GROMACS's own
+`Write traj.` counter brackets the file initialisation together with the
+per-frame writes, so neither separates the one-off metadata write from ordinary
+trajectory output. Isolating it needs a timer inside the writer.
 
 **Artifacts**
 
 | Path | Key contents |
 |:--|:--|
 | `_results/validation.json` → `storage` | per file: metadata bytes, trajectory bytes, bytes per particle, ratio |
-| `_results/write_overhead.json` | per system: both wall times and their difference, over `--repeats` runs |
 
 ---
 
@@ -268,7 +272,7 @@ Writes `_results/provenance_recoverability.json`.
 ### Report and figures
 
 ```bash
-$PY_EXE scripts/make_figures.py
+$PY_EXE scripts/validation5_cost_figure.py
 $PY_EXE scripts/report.py
 ```
 
@@ -277,7 +281,7 @@ $PY_EXE scripts/report.py
 | `_results/technical_validation.md` | the assembled report; every number comes from a result file |
 | `_results/specification_findings.md` | the deviation registry, rendered |
 | `_results/tables/*.tex` | LaTeX tables for the paper |
-| `_results/figures/` | `validation_framework` and `metadata_scaling`, as PDF and PNG |
+| `_results/figures/` | `validation5_cost.png`; the `validation_framework` schematic is rendered by `renderer/render_framework_figure.py` |
 
 Both are derived from the JSON beside them. Re-running the validation on
 different hardware, or with a different GROMACS build, means regenerating the
@@ -333,10 +337,9 @@ scripts/             the stages, each writing one JSON artifact
     validation1_interaction_coverage.py  bonded interactions: source against file
     validation1_parameter_surface.py  how much of a flat .mdp is actually in force
     validation4_negative_tests.py     corruption tests
-    validation5_write_overhead.py     H5MD against trajectory-only output, same .tpr
     validation6_amber_interop.py      the same molecule in GROMACS and in AMBER
     provenance_recoverability.py      where force-field provenance could come from
-    make_figures.py                   the two figures
+    validation5_cost_figure.py        storage and write-overhead figure
     report.py                         assemble reports and LaTeX tables
     run_all.sh                        chain all of the above
 $H5MD_VALIDATION_DATA/

@@ -514,6 +514,67 @@ def _target_ff_parameters(f):
 
 
 # ==========================================================================
+# observables: the .edr as the source, the file's observables group as target
+# ==========================================================================
+def extract_source_observables(edr) -> dict:
+    """Energy terms from the .edr, keyed as the schema names them.
+
+    The .edr is written by the same mdrun as the H5MD file, so this compares two
+    writers over one set of values rather than two independent readers of a
+    stored file -- weaker evidence than the .tpr round-trip, and enough to catch
+    a wrong unit, a mis-mapped term or frames out of step.
+    """
+    out: dict = {}
+    if not edr.steps:
+        return out
+    out["observables.step"] = Value("int_array", list(edr.steps))
+    for term, element in vocab.OBSERVABLE.items():
+        series = edr.terms.get(term)
+        if series and None not in series:
+            out[f"observables.{element}"] = Value("float_array", list(series))
+    for element, pattern in vocab.OBSERVABLE_TENSOR.items():
+        rows = []
+        for i in vocab.TENSOR_AXES:
+            for j in vocab.TENSOR_AXES:
+                series = edr.terms.get(pattern.format(i, j))
+                if not series or None in series:
+                    rows = None
+                    break
+                rows.append(series)
+            if rows is None:
+                break
+        if rows:
+            # Frame-major, to match the file's (n_frames, 3, 3).
+            out[f"observables.{element}"] = Value(
+                "float_array", [rows[c][f] for f in range(edr.n_frames)
+                                for c in range(9)])
+    return out
+
+
+def _target_observables(path, out):
+    """Read the observables group, flattened to match the .edr side."""
+    with h5py.File(path, "r") as f:
+        obs = f.get("observables")
+        if obs is None:
+            return
+        steps = None
+        for name in obs:
+            node = obs[name]
+            if not isinstance(node, h5py.Group) or "value" not in node:
+                continue        # per-group subgroups (observables/<group>/...)
+            if name not in vocab.OBSERVABLE.values() and \
+               name not in vocab.OBSERVABLE_TENSOR:
+                continue
+            value = np.asarray(node["value"][()])
+            out[f"observables.{name}"] = Value("float_array",
+                                               [float(x) for x in value.ravel()])
+            if steps is None and "step" in node:
+                steps = [int(s) for s in np.atleast_1d(node["step"][()])]
+        if steps is not None:
+            out["observables.step"] = Value("int_array", steps)
+
+
+# ==========================================================================
 # comparison
 # ==========================================================================
 def _category_of(key: str) -> str:
@@ -522,6 +583,8 @@ def _category_of(key: str) -> str:
         return "md_parameters"
     if head == "connectivity":
         return "connectivity"
+    if head == "observables":
+        return "observables"
     if head == "topology":
         if ".outside_predefined." in key:
             return "outside_predefined"
@@ -766,8 +829,12 @@ class RoundTripReport:
                 f"extra={len(self.extra_in_file)}{gap}")
 
 
-def roundtrip(dump: TprDump, h5md_path, tpr_path="", ignore=()) -> RoundTripReport:
+def roundtrip(dump: TprDump, h5md_path, tpr_path="", ignore=(),
+              edr=None) -> RoundTripReport:
     source = extract_source(dump)
     target = extract_target(h5md_path)
+    if edr is not None:
+        source.update(extract_source_observables(edr))
+        _target_observables(h5md_path, target)
     return RoundTripReport(str(h5md_path), str(tpr_path),
                            compare(source, target, ignore=ignore))

@@ -84,9 +84,14 @@ def build_tpr(system, protocol, work: Path, force=False) -> Path:
 
 def run_mdrun(tpr: Path, out: Path, ntomp=8, force=False) -> dict:
     """Run a short mdrun writing H5MD output; return timing and size."""
-    if out.exists() and not force:
-        return {"cached": True, "size_bytes": out.stat().st_size}
+    # The .edr is GROMACS's own record of the same observables the H5MD file
+    # carries, so it is the source side of the observables comparison. Like the
+    # resolved .mdp it has to land outside the scratch directory to survive.
+    edr = ROOT / "edr" / f"{out.stem}.edr"
+    if out.exists() and edr.exists() and not force:
+        return {"cached": True, "size_bytes": out.stat().st_size, "edr": str(edr)}
     out.parent.mkdir(parents=True, exist_ok=True)
+    edr.parent.mkdir(parents=True, exist_ok=True)
     work = out.parent / f".run_{out.stem}"
     if work.exists():
         shutil.rmtree(work)
@@ -95,18 +100,19 @@ def run_mdrun(tpr: Path, out: Path, ntomp=8, force=False) -> dict:
     try:
         run([GMX, "-quiet", "-nobackup", "mdrun", "-s", tpr, "-o", out,
          "-ntmpi", "1", "-ntomp", str(ntomp),
-             "-g", work / "md.log", "-e", work / "md.edr", "-c", work / "out.gro",
+             "-g", work / "md.log", "-e", edr, "-c", work / "out.gro",
              "-cpo", work / "state.cpt"], cwd=work)
     except Exception:
         # A writer that aborts mid-run leaves a partial, unreadable file behind.
         # Keep it out of the reference corpus; the failure is recorded instead.
         out.unlink(missing_ok=True)
+        edr.unlink(missing_ok=True)
         shutil.rmtree(work, ignore_errors=True)
         raise
     elapsed = time.perf_counter() - t0
     shutil.rmtree(work, ignore_errors=True)
     return {"cached": False, "wall_seconds": elapsed,
-            "size_bytes": out.stat().st_size}
+            "size_bytes": out.stat().st_size, "edr": str(edr)}
 
 
 def main():
