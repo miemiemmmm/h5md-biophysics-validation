@@ -73,16 +73,125 @@ NEGATIVE_TEST_BASES = (
 )
 
 #: Pairs for the cross-engine comparison (Validation 6): (reference file key,
-#: prmtop relative to VALIDATION_SYSTEMS). Both sides MUST describe the same
-#: molecule -- a mismatched pair compares two different systems and its verdict
-#: means nothing. The hexABC deposits ship the AMBER topology their H5MD file
-#: was converted from, so pairing a system with its own source is the strongest
-#: available form of the test. Declaring the pair here is what makes that
-#: invariant checkable instead of a matter of passing the right flags.
+#: AMBER topology relative to VALIDATION_SYSTEMS). Both sides MUST describe the
+#: same molecule -- a mismatched pair compares two different systems and its
+#: verdict means nothing. Every hexABC and MISATO system ships the AMBER
+#: topology its GROMACS topology was converted from (.prmtop, or the deposited
+#: production.top.gz, read as is), so each is paired with its own source.
+#: Declaring the pair here is what makes that invariant checkable instead of a
+#: matter of passing the right flags.
 AMBER_INTEROP_PAIRS = (
     (
         "hexabc_a0017b_dna__nvt-vrescale",
         "hexabc/hexabc_a0017b_dna/A017B_topology.prmtop",
+    ),
+    (
+        "hexabc_a0017p_rna__nvt-vrescale",
+        "hexabc/hexabc_a0017p_rna/A017P_topology.prmtop",
+    ),
+    (
+        "hexabc_a0017u_rna__nvt-vrescale",
+        "hexabc/hexabc_a0017u_rna/A017U_topology.prmtop",
+    ),
+    (
+        "hexabc_a00186_dna__nvt-vrescale",
+        "hexabc/hexabc_a00186_dna/A0186_topology.prmtop",
+    ),
+    (
+        "hexabc_a001av_dna_protein__nvt-vrescale",
+        "hexabc/hexabc_a001av_dna_protein/A01AV_topology.prmtop",
+    ),
+    (
+        "hexabc_a001fc_dna_protein__nvt-vrescale",
+        "hexabc/hexabc_a001fc_dna_protein/A01FC_topology.prmtop",
+    ),
+    (
+        "hexabc_a001tx_rna_protein__nvt-vrescale",
+        "hexabc/hexabc_a001tx_rna_protein/MCV1900433_topology.prmtop",
+    ),
+    (
+        "hexabc_a001u2_rna_protein__nvt-vrescale",
+        "hexabc/hexabc_a001u2_rna_protein/MCV1900438_topology.prmtop",
+    ),
+    (
+        "misato_1fl6__nvt-vrescale",
+        "misato/misato_1fl6/production.top.gz",
+    ),
+    (
+        "misato_1tfq__nvt-vrescale",
+        "misato/misato_1tfq/production.top.gz",
+    ),
+    (
+        "misato_1z3j__nvt-vrescale",
+        "misato/misato_1z3j/production.top.gz",
+    ),
+    (
+        "misato_2xde__nvt-vrescale",
+        "misato/misato_2xde/production.top.gz",
+    ),
+    (
+        "misato_2zyn__nvt-vrescale",
+        "misato/misato_2zyn/production.top.gz",
+    ),
+    (
+        "misato_3f78__nvt-vrescale",
+        "misato/misato_3f78/production.top.gz",
+    ),
+    (
+        "misato_3lq5__nvt-vrescale",
+        "misato/misato_3lq5/production.top.gz",
+    ),
+    (
+        "misato_3ptg__nvt-vrescale",
+        "misato/misato_3ptg/production.top.gz",
+    ),
+    (
+        "misato_3s2v__nvt-vrescale",
+        "misato/misato_3s2v/production.top.gz",
+    ),
+    (
+        "misato_3unz__nvt-vrescale",
+        "misato/misato_3unz/production.top.gz",
+    ),
+    (
+        "misato_4d0w__nvt-vrescale",
+        "misato/misato_4d0w/production.top.gz",
+    ),
+    (
+        "misato_4q1n__nvt-vrescale",
+        "misato/misato_4q1n/production.top.gz",
+    ),
+    (
+        "misato_4xua__nvt-vrescale",
+        "misato/misato_4xua/production.top.gz",
+    ),
+    (
+        "misato_4zw5__nvt-vrescale",
+        "misato/misato_4zw5/production.top.gz",
+    ),
+    (
+        "misato_5ivt__nvt-vrescale",
+        "misato/misato_5ivt/production.top.gz",
+    ),
+    (
+        "misato_5nhj__nvt-vrescale",
+        "misato/misato_5nhj/production.top.gz",
+    ),
+    (
+        "misato_6dyw__nvt-vrescale",
+        "misato/misato_6dyw/production.top.gz",
+    ),
+    (
+        "misato_6i77__nvt-vrescale",
+        "misato/misato_6i77/production.top.gz",
+    ),
+    (
+        "misato_6mim__nvt-vrescale",
+        "misato/misato_6mim/production.top.gz",
+    ),
+    (
+        "misato_6nwc__nvt-vrescale",
+        "misato/misato_6nwc/production.top.gz",
     ),
 )
 

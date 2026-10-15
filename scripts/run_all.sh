@@ -65,20 +65,9 @@ $PY_EXE scripts/validation4_negative_tests.py $BASES
 
 
 echo "==> cross-engine interoperability"
-# Each pair names a reference file and the prmtop of the SAME molecule; pairing
-# them in config/matrix.py is what keeps the comparison from being run on two
-# different systems, which would make its verdict meaningless.
-$PY_EXE -c "from config.matrix import AMBER_INTEROP_PAIRS; print('\n'.join('%s\t%s' % p for p in AMBER_INTEROP_PAIRS))" |
-while IFS=$'\t' read -r key prmtop; do
-    [ -n "$key" ] || continue
-    h5="$REF/$key.h5md"
-    top="$DATASET/$prmtop"
-    if [ -f "$h5" ] && [ -f "$top" ]; then
-        $PY_EXE scripts/validation6_amber_interop.py --h5md "$h5" --prmtop "$top"
-    else
-        echo "(skipped $key: missing $( [ -f "$h5" ] || echo "$h5" ) $( [ -f "$top" ] || echo "$top" ))"
-    fi
-done
+# Pairs come from AMBER_INTEROP_PAIRS in config/matrix.py, where each reference
+# file is declared with the AMBER topology of the SAME molecule.
+$PY_EXE scripts/validation6_amber_interop.py --run-all
 
 echo "==> figures"
 $PY_EXE scripts/validation5_cost_figure.py

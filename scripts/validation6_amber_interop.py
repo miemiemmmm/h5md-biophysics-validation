@@ -24,7 +24,8 @@ the comparison say different things and are reported separately:
     matters is that the same schema elements hold both without either engine
     needing an element the other does not.
 
-    python scripts/validation6_amber_interop.py --h5md <dna .h5md> --prmtop <dna.prmtop>
+    python scripts/validation6_amber_interop.py --h5md <file.h5md> --prmtop <file.prmtop>
+    python scripts/validation6_amber_interop.py -a     # every AMBER_INTEROP_PAIRS entry
 """
 
 from __future__ import annotations
@@ -37,7 +38,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from config.matrix import RESULTS_DIR
+from config.matrix import (
+    AMBER_INTEROP_PAIRS,
+    DATA_ROOT,
+    RESULTS_DIR,
+    VALIDATION_SYSTEMS,
+)
 
 
 def _r(name: str) -> str:
@@ -55,9 +61,29 @@ def amber_topology(prmtop) -> dict:
     atoms = list(top.atoms)
     residues = list(top.residues)
 
-    bonds = set()
+    # A rigid 3-site water carries a third, H-H "bond" in a prmtop (TIP3P:
+    # HW-HW, 553 kcal/mol/A^2, 1.5136 A). It is not chemistry: AMBER has no
+    # constraint list, so the H-H distance that keeps the triangle rigid under
+    # SHAKE/SETTLE is stored as a bond. GROMACS stores the same distance as the
+    # dhh parameter of [ settles ], and the schema keeps only the two O-H bonds.
+    # It is removed here, and only inside a residue of exactly one O and two H.
+    def is_water(residue):
+        species = sorted(
+            int(atoms[k].atomic_number) for k in range(residue.first, residue.last)
+        )
+        return species == [1, 1, 8]
+
+    bonds, n_water_hh = set(), 0
     for b in top.bonds:
         i, j = (int(x) for x in b.indices)
+        if (
+            atoms[i].atomic_number == 1
+            and atoms[j].atomic_number == 1
+            and atoms[i].resid == atoms[j].resid
+            and is_water(residues[atoms[i].resid])
+        ):
+            n_water_hh += 1
+            continue
         bonds.add((min(i, j), max(i, j)))
 
     return {
@@ -71,28 +97,29 @@ def amber_topology(prmtop) -> dict:
         "masses": [float(a.mass) for a in atoms],
         "bonds": sorted(bonds),
         "n_bonds": len(bonds),
+        "n_water_hh_removed": n_water_hh,
         "n_angles": len(list(top.angles)),
         "n_dihedrals": len(list(top.dihedrals)),
     }
 
 
 def h5md_topology(path) -> dict:
-    """Reduce the solute molecule types of an H5MD file to the same vocabulary."""
+    """Build the full system topology of an H5MD file in the same vocabulary.
+
+    A molecule type is stored once; ``topology/molecule_blocks`` says in which
+    order the types occur and how many copies of each. The system is rebuilt by
+    walking the blocks and repeating each type ``count`` times, so particle
+    order matches the global indices of ``connectivity/bonds`` and the prmtop.
+    """
     items = roundtrip.extract_target(path)
-    # Molecule types that are not solvent or monatomic ions are the solute.
-    mols = set()
-    for key in items:
-        parts = key.split(".")
-        if parts[0] == "topology" and len(parts) > 2:
-            mols.add(parts[1])
-    solute = []
-    for m in sorted(mols):
-        n = items.get(f"topology.{m}.particle_count")
-        if n is not None and n.value > 3:
-            solute.append(m)
+    names = [
+        n.decode() if isinstance(n, bytes) else str(n)
+        for n in items["topology.molecule_blocks.names"].value
+    ]
+    counts = [int(c) for c in items["topology.molecule_blocks.counts"].value]
 
     out = {
-        "molecule_types": solute,
+        "molecule_blocks": list(zip(names, counts)),
         "particle_count": 0,
         "component_count": 0,
         "particle_names": [],
@@ -103,30 +130,29 @@ def h5md_topology(path) -> dict:
         "masses": [],
     }
     offset = 0
-    for m in solute:
+    for m, count in zip(names, counts):
 
         def g(k, m=m):
-            return items.get(f"topology.{m}.{k}")
+            return items[f"topology.{m}.{k}"].value
 
-        out["particle_count"] += g("particle_count").value
-        out["component_count"] += g("component_count").value
-        out["particle_names"] += list(g("particle_names").value)
-        out["species"] += [int(v) for v in g("species").value]
-        out["component_ids"] += [int(v) + offset for v in g("component_ids").value]
-        out["component_names"] += list(g("component_names").value)
-        out["charges"] += [float(v) for v in g("charges").value]
-        out["masses"] += [float(v) for v in g("masses").value]
-        offset += g("component_count").value
+        for _ in range(count):
+            out["particle_count"] += int(g("particle_count"))
+            out["component_count"] += int(g("component_count"))
+            out["particle_names"] += list(g("particle_names"))
+            out["species"] += [int(v) for v in g("species")]
+            out["component_ids"] += [int(v) + offset for v in g("component_ids")]
+            out["component_names"] += list(g("component_names"))
+            out["charges"] += [float(v) for v in g("charges")]
+            out["masses"] += [float(v) for v in g("masses")]
+            offset += int(g("component_count"))
 
-    # Global bond list restricted to the solute particles.
+    # The global bond list already indexes the full system.
     conn = items.get("connectivity.bonds")
-    n = out["particle_count"]
     bonds = set()
     if conn is not None:
         for pair in conn.value:
             i, j = int(pair[0]), int(pair[1])
-            if i < n and j < n:
-                bonds.add((min(i, j), max(i, j)))
+            bonds.add((min(i, j), max(i, j)))
     out["bonds"] = sorted(bonds)
     out["n_bonds"] = len(bonds)
     return out
@@ -234,6 +260,12 @@ def compare(gmx: dict, amb: dict) -> dict:
         gmx["n_bonds"],
         amb["n_bonds"],
         gmx["n_bonds"] == amb["n_bonds"],
+        (
+            f"{amb['n_water_hh_removed']} water H-H bonds removed from the AMBER "
+            "side: a rigid-water device, not chemistry"
+            if amb.get("n_water_hh_removed")
+            else ""
+        ),
     )
 
     # Map the GROMACS bonds through the alignment and compare as a set.
@@ -380,24 +412,17 @@ def _formula(species):
     )
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--h5md", required=True)
-    ap.add_argument("--prmtop", required=True)
-    ap.add_argument("--out", default=_r("amber_interop.json"))
-    args = ap.parse_args()
-
-    gmx = h5md_topology(args.h5md)
-    amb = amber_topology(args.prmtop)
+def run_pair(h5md, prmtop) -> dict:
+    gmx = h5md_topology(h5md)
+    amb = amber_topology(prmtop)
     result = compare(gmx, amb)
-    result["h5md"] = args.h5md
-    result["prmtop"] = args.prmtop
-    result["gromacs_molecule_types"] = gmx["molecule_types"]
+    result["h5md"] = str(h5md)
+    result["prmtop"] = str(prmtop)
+    result["gromacs_molecule_blocks"] = gmx["molecule_blocks"]
+    return result
 
-    out = Path(args.out)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(result, indent=2))
 
+def print_result(result):
     width = max(len(r["item"]) for r in result["rows"])
     group = None
     for r in result["rows"]:
@@ -415,6 +440,70 @@ def main():
         f"\nchemistry items in agreement: "
         f"{result['n_chemistry_agree']}/{result['n_chemistry_items']}"
     )
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument(
+        "-a",
+        "--run-all",
+        action="store_true",
+        help="compare every pair in config.matrix.AMBER_INTEROP_PAIRS",
+    )
+    ap.add_argument("--h5md", help="one H5MD file (with --prmtop)")
+    ap.add_argument("--prmtop", help="the AMBER topology of the same molecule")
+    ap.add_argument("--out", default=_r("amber_interop.json"))
+    args = ap.parse_args()
+
+    if args.run_all:
+        if args.h5md or args.prmtop:
+            ap.error("--run-all takes its pairs from AMBER_INTEROP_PAIRS")
+        pairs = [
+            (
+                key,
+                Path(DATA_ROOT) / "reference_files" / f"{key}.h5md",
+                Path(VALIDATION_SYSTEMS) / top,
+            )
+            for key, top in AMBER_INTEROP_PAIRS
+        ]
+    elif args.h5md and args.prmtop:
+        pairs = [(Path(args.h5md).stem, Path(args.h5md), Path(args.prmtop))]
+    else:
+        ap.error("give --run-all, or both --h5md and --prmtop")
+
+    results, skipped = {}, []
+    for key, h5md, prmtop in pairs:
+        missing = [str(p) for p in (h5md, prmtop) if not p.is_file()]
+        if missing:
+            skipped.append(key)
+            print(f"  skipped {key}: missing {', '.join(missing)}")
+            continue
+        result = results[key] = run_pair(h5md, prmtop)
+        if not args.run_all:
+            print_result(result)
+            continue
+        diff = [
+            r["item"]
+            for r in result["rows"]
+            if r["group"] == "chemistry" and r["agree"] is False
+        ]
+        print(
+            f"  {key:40s} {result['n_chemistry_agree']}/"
+            f"{result['n_chemistry_items']}"
+            + (f"  DIFF: {', '.join(diff)}" if diff else "")
+        )
+
+    n_ok = sum(r["interoperable"] for r in results.values())
+    summary = {
+        "n_pairs": len(results),
+        "n_interoperable": n_ok,
+        "skipped": skipped,
+        "pairs": results,
+    }
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(summary, indent=2))
+    print(f"\n{n_ok}/{len(results)} pairs agree on every chemistry item")
     print(f"written to {out}")
     return 0
 
