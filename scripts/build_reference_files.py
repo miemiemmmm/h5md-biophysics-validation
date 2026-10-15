@@ -25,7 +25,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from config.matrix import DATA_ROOT, GMX, PROTOCOLS, PROTOCOLS_BY_ID, RESULTS_DIR
+from config.matrix import (
+    DATA_ROOT,
+    GMX,
+    PROTOCOLS,
+    PROTOCOLS_BY_ID,
+    RESULTS_DIR,
+    output_locations,
+)
 from config.systems import SYSTEMS, SYSTEMS_BY_ID, prepare_system
 
 
@@ -188,6 +195,9 @@ def main():
     )
     if not args.all and not args.system and not args.protocol:
         ap.error("pass --all, or select with --system / --protocol")
+
+    print("writing to")
+    print(output_locations())
 
     manifest_path = Path(args.manifest)
     manifest = {}

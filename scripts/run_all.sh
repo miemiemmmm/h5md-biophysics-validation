@@ -7,15 +7,11 @@
 set -eu
 
 # The extracted validation dataset. Unset means the copy beside this checkout;
-# set it to wherever you unpacked the download. Everything the run produces goes
-# into <dataset>/_data, which is several GB and safe to delete afterwards.
+# set it to wherever you unpacked the download. Where the run writes is decided
+# in config/matrix.py (DATA_DIR and RESULTS_DIR override it) and printed below.
 if [ -n "${H5MD_VALIDATION_DATA:-}" ]; then
     export H5MD_VALIDATION_DATA
-    DATASET="$H5MD_VALIDATION_DATA"
-else
-    DATASET="$(cd "$(dirname "$0")/../.." && pwd)/validation_systems"
 fi
-REF="$DATASET/_data/reference_files"
 
 # Both PY_EXE and GMX_BIN are required as environment variables.
 for var in PY_EXE GMX_BIN; do
@@ -39,6 +35,10 @@ command -v "$GMX_BIN" >/dev/null 2>&1 || {
 export GMX_BIN
 cd "$(dirname "$0")/.."
 
+REF="$($PY_EXE -c "from config.matrix import DATA_ROOT; print(DATA_ROOT)")/reference_files"
+echo "==> locations"
+$PY_EXE -c "from config.matrix import output_locations; print(output_locations())"
+
 if [ "${1:-}" = "--generate" ]; then
     echo "==> generating reference files"
     $PY_EXE -u scripts/build_reference_files.py --all --ntomp 16
@@ -51,7 +51,7 @@ echo "==> coverage analysis"
 $PY_EXE scripts/validation1_schema_coverage.py
 $PY_EXE scripts/validation1_interaction_coverage.py
 $PY_EXE scripts/provenance_recoverability.py
-$PY_EXE scripts/validation1_parameter_surface.py "$DATASET"/_data/resolved_mdp/*.mdp || echo "(skipped)"
+$PY_EXE scripts/validation1_parameter_surface.py || echo "(skipped)"
 
 echo "==> negative tests"
 # The bases are declared in config/matrix.py so that a renamed system carries

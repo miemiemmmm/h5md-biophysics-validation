@@ -18,6 +18,7 @@ configuration on many molecules.
 from __future__ import annotations
 
 import os
+import tempfile
 from dataclasses import dataclass, field
 
 #: The extracted validation dataset: the systems the harness runs on. Download
@@ -35,9 +36,20 @@ VALIDATION_SYSTEMS = os.environ.get(
     ),
 )
 
-#: Everything the harness produces on the way to a result. It lives inside the
-#: dataset directory but is not part of the dataset, which the leading
-#: underscore is there to say. Several GB per full run; safe to delete.
+#: Where a run writes. Both output trees default to the dataset directory; when
+#: that cannot be written to (a read-only copy), to ``h5md_validation/`` under
+#: the system temporary directory instead. DATA_DIR and RESULTS_DIR each
+#: override one of them. Every stage imports these names, so a redirected run
+#: cannot end up half in one tree and half in another.
+OUTPUT_ROOT = (
+    VALIDATION_SYSTEMS
+    if os.access(VALIDATION_SYSTEMS, os.W_OK)
+    else os.path.join(tempfile.gettempdir(), "h5md_validation")
+)
+
+#: Everything the harness produces on the way to a result. Not part of the
+#: dataset, which the leading underscore is there to say. Several GB per full
+#: run; safe to delete.
 #:
 #:     _data/tprs/             grompp output, the round-trip source
 #:     _data/resolved_mdp/     grompp -po: the .mdp with every default filled in
@@ -45,15 +57,26 @@ VALIDATION_SYSTEMS = os.environ.get(
 #:     _data/tpr_dumps/        cached `gmx dump -s` text, so it runs once per tpr
 #:     _data/scratch/          per-pair scratch, deleted after each pair; a
 #:                             leftover directory names a run that was interrupted
-DATA_ROOT = os.path.join(VALIDATION_SYSTEMS, "_data")
+DATA_ROOT = os.environ.get("DATA_DIR", os.path.join(OUTPUT_ROOT, "_data"))
 
 #: What a run concludes: the JSON measurements and the figures. Small, and the
-#: thing worth keeping when ``_data`` is deleted. RESULTS_DIR overrides it for a one-off run somewhere else.
-RESULTS_ROOT = os.path.join(VALIDATION_SYSTEMS, "_results")
+#: thing worth keeping when ``_data`` is deleted.
+RESULTS_DIR = os.environ.get("RESULTS_DIR", os.path.join(OUTPUT_ROOT, "_results"))
 
-#: Where this run actually writes. Every stage imports this one name, so a run
-#: redirected with RESULTS_DIR cannot end up half in one tree and half in another.
-RESULTS_DIR = os.environ.get("RESULTS_DIR", RESULTS_ROOT)
+
+def output_locations() -> str:
+    """Where this run reads systems from and writes to, for printing."""
+    lines = [
+        f"  systems : {VALIDATION_SYSTEMS}",
+        f"  data    : {DATA_ROOT}",
+        f"  results : {RESULTS_DIR}",
+    ]
+    if OUTPUT_ROOT != VALIDATION_SYSTEMS:
+        lines.append(
+            f"  (the dataset directory is not writable; outputs default to {OUTPUT_ROOT})"
+        )
+    return "\n".join(lines)
+
 
 #: The GROMACS binary that grompps the systems and dumps the .tpr for the
 #: round-trip. GMX_BIN points at a build that is not on PATH.

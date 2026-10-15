@@ -100,16 +100,21 @@ def analyse(path):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("mdp", nargs="*", help="mdout.mdp files (default: find one)")
+    ap.add_argument(
+        "mdp",
+        nargs="*",
+        help="resolved .mdp files (default: all in _data/resolved_mdp)",
+    )
     ap.add_argument("--out", default=_r("parameter_surface.json"))
     args = ap.parse_args()
 
     paths = args.mdp
     if not paths:
-        root = Path(DATA_ROOT)
-        paths = [str(p) for p in sorted(root.glob("systems/*/mdout.mdp"))][:1]
+        paths = [
+            str(p) for p in sorted((Path(DATA_ROOT) / "resolved_mdp").glob("*.mdp"))
+        ]
     if not paths:
-        print("no mdout.mdp found; pass one explicitly", file=sys.stderr)
+        print("no resolved .mdp found; pass one explicitly", file=sys.stderr)
         return 1
 
     results = [analyse(p) for p in paths]

@@ -1,8 +1,9 @@
 # Validation steps
 
 Each step of `scripts/run_all.sh`, one validation at a time. Setup and the quick
-start are in the [README](../README.md). All artifacts are produced within the
-`$H5MD_VALIDATION_DATA/_results` directory.
+start are in the [README](../README.md). Paths below are relative to the output
+root, by default `$H5MD_VALIDATION_DATA`; `DATA_DIR` and `RESULTS_DIR` move
+`_data` and `_results`.
 
 ## Build the reference files
 
@@ -49,7 +50,7 @@ file is actually in force.
 ```bash
 $PY_EXE scripts/validation1_schema_coverage.py
 $PY_EXE scripts/validation1_interaction_coverage.py
-$PY_EXE scripts/validation1_parameter_surface.py "$H5MD_VALIDATION_DATA"/_data/resolved_mdp/*.mdp
+$PY_EXE scripts/validation1_parameter_surface.py     # every .mdp in _data/resolved_mdp
 ```
 
 The first reads `validation.json`, so run Validation 2/3 first. The second reads
@@ -234,8 +235,8 @@ The figures are derived from the JSON beside them. Re-running the validation
 on different hardware, or with a different GROMACS build, means regenerating
 them rather than assuming the shipped numbers still describe that run.
 
-`RESULTS_DIR` redirects every stage at once, which is how to work on a set of
-results kept elsewhere:
+`RESULTS_DIR` (and `DATA_DIR` for `_data`) redirects every stage at once, which
+is how to work on a set of results kept elsewhere:
 
 ```bash
 RESULTS_DIR=/some/other/results $PY_EXE scripts/validation5_cost_figure.py
