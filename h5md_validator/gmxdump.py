@@ -173,7 +173,6 @@ def parse(text: str) -> TprDump:
     matrix_target = None  # name of the 3x3 block currently being read
     current_block = None  # molblock under construction
     mol = None  # MoleculeType under construction
-    ilist_label = None  # interaction list currently being read
     in_ffparams = False
 
     while i < n:
@@ -244,19 +243,19 @@ def parse(text: str) -> TprDump:
 
         # ---------------- topology ----------------------------------------
         if stripped == "ffparams:":
-            in_ffparams, mol, ilist_label = True, None, None
+            in_ffparams, mol = True, None
             continue
 
         m = _MOLTYPE.match(line)
         if m:
-            in_ffparams, ilist_label = False, None
+            in_ffparams = False
             mol = MoleculeType()
             dump.moltypes.append(mol)
             continue
 
         m = _MOLBLOCK.match(line)
         if m:
-            in_ffparams, mol, ilist_label = False, None, None
+            in_ffparams, mol = False, None
             current_block = {"moltype": None, "name": "", "nmol": 0}
             dump.molblocks.append(current_block)
             continue
@@ -342,7 +341,6 @@ def parse(text: str) -> TprDump:
 
             m = _ILIST_LABEL.match(line)
             if m and m.group("label") not in ("atoms", "excls"):
-                ilist_label = m.group("label").strip()
                 continue
 
             m = _IATOM.match(line)

@@ -71,9 +71,9 @@ OFF = {"", "no", "none", "0", "false"}
 
 def analyse(path):
     lines = [
-        l
-        for l in Path(path).read_text(errors="replace").splitlines()
-        if re.match(r"^[a-zA-Z]", l)
+        line
+        for line in Path(path).read_text(errors="replace").splitlines()
+        if re.match(r"^[a-zA-Z]", line)
     ]
     settings = {}
     for line in lines:

@@ -14,7 +14,6 @@ Used by:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 # --------------------------------------------------------------------------
 # Type vocabulary (S3)
@@ -38,9 +37,9 @@ class Attr:
 
     name: str
     dtype: str
-    shape: Optional[tuple] = None
+    shape: tuple | None = None
     required: bool = True
-    enum: Optional[frozenset] = None
+    enum: frozenset | None = None
     doc: str = ""
 
 
@@ -58,13 +57,13 @@ class Dataset:
 
     name: str
     dtype: str
-    shape: Optional[tuple] = None
+    shape: tuple | None = None
     required: bool = True
-    enum: Optional[frozenset] = None
+    enum: frozenset | None = None
     #: True when S4.2 requires a ``unit`` attribute (physical quantity).
     unit: bool = False
     #: Compound layout, for ``dtype == COMPOUND``.
-    fields: Optional[tuple] = None
+    fields: tuple | None = None
     #: True when the compound requires a ``units`` attribute (S4.2).
     units: bool = False
     attrs: tuple = ()
@@ -436,13 +435,12 @@ class InteractionType:
     name: str
     params: tuple
     bonded: bool
-    n_particles: Optional[int]
+    n_particles: int | None
     #: Alternative compound layouts the spec permits ("c6/c12 or sigma/epsilon").
-    alt_params: Optional[tuple] = None
+    alt_params: tuple | None = None
 
 
 F = FLOAT
-I = INTEGER
 
 INTERACTION_TYPES = {
     it.name: it
@@ -473,7 +471,11 @@ INTERACTION_TYPES = {
         ),
         InteractionType(
             "proper_dihedral",
-            (Field("phase", F), Field("force_constant", F), Field("multiplicity", I)),
+            (
+                Field("phase", F),
+                Field("force_constant", F),
+                Field("multiplicity", INTEGER),
+            ),
             True,
             4,
         ),
@@ -485,7 +487,11 @@ INTERACTION_TYPES = {
         ),
         InteractionType(
             "periodic_improper_dihedral",
-            (Field("phase", F), Field("force_constant", F), Field("multiplicity", I)),
+            (
+                Field("phase", F),
+                Field("force_constant", F),
+                Field("multiplicity", INTEGER),
+            ),
             True,
             4,
         ),

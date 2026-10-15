@@ -251,7 +251,7 @@ def _m_particle_data_field_renamed(f):
 
 
 def _m_parameter_id_dangling(f):
-    grp, name = _first_interaction(f)
+    grp, _ = _first_interaction(f)
     if grp is None:
         return False
     data = grp["parameter_id"][()]
@@ -261,7 +261,7 @@ def _m_parameter_id_dangling(f):
 
 
 def _m_parameter_id_negative(f):
-    grp, name = _first_interaction(f)
+    grp, _ = _first_interaction(f)
     if grp is None:
         return False
     data = grp["parameter_id"][()]
@@ -282,7 +282,7 @@ def _m_parameter_table_missing(f):
 
 
 def _m_ff_field_renamed(f):
-    for pgrp, tname in _ff_parameters(f):
+    for pgrp, _ in _ff_parameters(f):
         data = pgrp["parameters"][()]
         names = list(data.dtype.names)
         names[0] = "renamed_parameter"
@@ -294,7 +294,7 @@ def _m_ff_field_renamed(f):
 
 
 def _m_units_missing(f):
-    for pgrp, tname in _ff_parameters(f):
+    for pgrp, _ in _ff_parameters(f):
         if "units" in pgrp["parameters"].attrs:
             del pgrp["parameters"].attrs["units"]
             return True
@@ -308,7 +308,7 @@ def _m_units_wrong_length(f):
     # ['nm'] over ['nm']: the corruption reported success, the file stayed
     # valid, and the validator was marked as having missed a defect that was
     # never introduced.
-    for pgrp, tname in _ff_parameters(f):
+    for pgrp, _ in _ff_parameters(f):
         ds = pgrp["parameters"]
         n_fields = len(ds.dtype.names) if ds.dtype.names else 1
         if "units" in ds.attrs and n_fields > 1:
@@ -318,7 +318,7 @@ def _m_units_wrong_length(f):
 
 
 def _m_unit_malformed(f):
-    for pgrp, tname in _ff_parameters(f):
+    for pgrp, _ in _ff_parameters(f):
         ds = pgrp["parameters"]
         if "units" in ds.attrs:
             vals = list(np.atleast_1d(ds.attrs["units"]))
@@ -329,7 +329,7 @@ def _m_unit_malformed(f):
 
 
 def _m_particle_ids_out_of_range(f):
-    grp, name = _first_interaction(f)
+    grp, _ = _first_interaction(f)
     if grp is None:
         return False
     data = grp["particle_ids"][()]
@@ -339,7 +339,7 @@ def _m_particle_ids_out_of_range(f):
 
 
 def _m_interaction_arity(f):
-    grp, name = _first_interaction(f)
+    grp, _ = _first_interaction(f)
     if grp is None:
         return False
     data = grp["particle_ids"][()]
@@ -350,7 +350,7 @@ def _m_interaction_arity(f):
 
 
 def _m_interaction_length_mismatch(f):
-    grp, name = _first_interaction(f)
+    grp, _ = _first_interaction(f)
     if grp is None or grp["parameter_id"].shape[0] < 2:
         return False
     data = grp["parameter_id"][()]

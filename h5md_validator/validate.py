@@ -1356,18 +1356,21 @@ class Validator:
                 expected=n_entries,
                 actual=ids.shape[0],
             )
-        if itype.n_particles is not None and ids.ndim == 2:
-            if ids.shape[1] != itype.n_particles:
-                rep.add(
-                    "STRUCT-INTERACTION-ARITY",
-                    Severity.ERROR,
-                    f"{path}/particle_ids",
-                    f"{tname!r} relates {itype.n_particles} particles but "
-                    f"particle_ids has {ids.shape[1]} columns "
-                    "(arity assumed; see DEV-SPEC-GAP-ARITY)",
-                    expected=itype.n_particles,
-                    actual=ids.shape[1],
-                )
+        if (
+            itype.n_particles is not None
+            and ids.ndim == 2
+            and ids.shape[1] != itype.n_particles
+        ):
+            rep.add(
+                "STRUCT-INTERACTION-ARITY",
+                Severity.ERROR,
+                f"{path}/particle_ids",
+                f"{tname!r} relates {itype.n_particles} particles but "
+                f"particle_ids has {ids.shape[1]} columns "
+                "(arity assumed; see DEV-SPEC-GAP-ARITY)",
+                expected=itype.n_particles,
+                actual=ids.shape[1],
+            )
 
         # parameter_id must address an existing force-field parameter entry.
         n_params = ff_params.get(tname)

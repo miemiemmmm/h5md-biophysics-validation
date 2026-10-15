@@ -104,7 +104,10 @@ def h5md_topology(path) -> dict:
     }
     offset = 0
     for m in solute:
-        g = lambda k: items.get(f"topology.{m}.{k}")
+
+        def g(k, m=m):
+            return items.get(f"topology.{m}.{k}")
+
         out["particle_count"] += g("particle_count").value
         out["component_count"] += g("component_count").value
         out["particle_names"] += list(g("particle_names").value)

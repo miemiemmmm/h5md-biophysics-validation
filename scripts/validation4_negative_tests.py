@@ -23,6 +23,7 @@ miss sends the reader to debug the wrong thing.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import json
 import pathlib
@@ -199,10 +200,8 @@ def main():
             if not args.keep:
                 path.unlink(missing_ok=True)
         if not args.keep:
-            try:
+            with contextlib.suppress(OSError):
                 out_dir.rmdir()
-            except OSError:
-                pass
 
     # 'inert' is excluded from `tested`: the file was never corrupted, so the
     # validator was never asked anything and a detection rate over those rows

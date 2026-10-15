@@ -112,7 +112,7 @@ COARSE = "membrane (coarse-grained)"
 #: Legend order, which is not draw order. Drawing goes hue-coded families first
 #: and shape-coded ones after, so the two membrane entries would otherwise be
 #: separated by the solvation extremes. Related families read together here.
-LEGEND_ORDER = ORDER + [CAPSID_FAMILY, COARSE, ALL_SOLUTE, SOLVENT_ONLY]
+LEGEND_ORDER = [*ORDER, CAPSID_FAMILY, COARSE, ALL_SOLUTE, SOLVENT_ONLY]
 
 
 def family(system: str) -> str:
@@ -258,7 +258,7 @@ def timing_panel(ax, timing, exemplars=EXEMPLARS):
     composition no system has, and it concealed the range it was drawn from:
     within the solvated proteins the connectivity share runs from 2.8% to 44%.
     """
-    systems, natoms, series, n_runs = timing
+    systems, natoms, series, _ = timing
     index = {name: i for i, name in enumerate(systems)}
 
     drawn = [(name, label) for name, label in exemplars if name in index]
@@ -474,7 +474,7 @@ def cost_figure(path_stem: Path, rows, timing=None):
     atomistic = [
         p["bytes_per_unique_atom"]
         for p in points
-        if p["family"] in ORDER + [ALL_SOLUTE]
+        if p["family"] in [*ORDER, ALL_SOLUTE]
     ]
     if atomistic:
         median = st.median(atomistic)
@@ -558,10 +558,12 @@ def cost_figure(path_stem: Path, rows, timing=None):
     ordered = [(by_label[name], name) for name in LEGEND_ORDER if name in by_label]
     # Anything not named in LEGEND_ORDER still appears, rather than vanishing
     # silently if a family is added and the list is not updated.
-    ordered += [(h, l) for l, h in by_label.items() if l not in LEGEND_ORDER]
+    ordered += [
+        (h, label) for label, h in by_label.items() if label not in LEGEND_ORDER
+    ]
     axes[0].legend(
         [h for h, _ in ordered],
-        [l for _, l in ordered],
+        [label for _, label in ordered],
         loc="upper left",
         fontsize=10,
         labelcolor=INK2,
@@ -624,7 +626,7 @@ def main():
 
     rows = []
     n_unique = {}
-    for key, v in ok.items():
+    for v in ok.values():
         st = v.get("storage") or {}
         if st.get("n_particles") and st.get("metadata_bytes"):
             # N_ua depends only on the system, so read it from one of its files.
@@ -691,7 +693,7 @@ def print_families(rows):
         )
 
     print(f"\n  {len(per_system)} systems in {len(grouped)} families\n")
-    for fam in ORDER + [COARSE, SOLVENT_ONLY, ALL_SOLUTE]:
+    for fam in [*ORDER, COARSE, SOLVENT_ONLY, ALL_SOLUTE]:
         members = sorted(grouped.get(fam, []), key=lambda m: m[1])
         if not members:
             continue

@@ -237,7 +237,7 @@ def main():
             "extra_in_file": 0,
         }
     )
-    for key, rec in ok.items():
+    for rec in ok.values():
         for comp in rec.get("roundtrip", {}).get("comparisons", []):
             # collapse the per-molecule-type prefix so items aggregate
             name = comp["key"]
@@ -265,11 +265,11 @@ def main():
 
     # ---- 3. dimension coverage ------------------------------------------
     dims = defaultdict(list)
-    for key, rec in ok.items():
+    for rec in ok.values():
         for d in rec.get("dimensions", []):
             dims[d].append(rec["system"])
     exercises = defaultdict(list)
-    for key, rec in ok.items():
+    for rec in ok.values():
         for e in rec.get("exercises", []):
             exercises[e].append(rec["protocol"])
 

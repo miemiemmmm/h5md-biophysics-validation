@@ -24,7 +24,7 @@ Used by:
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 import h5py
 import numpy as np
@@ -42,7 +42,7 @@ _FLOAT32_EPS = 4 * float(np.finfo(np.float32).eps)
 class Value:
     kind: str  # categorical | integer | float | int_array | float_array | str_array | nested_int
     value: Any
-    unit: Optional[str] = None
+    unit: str | None = None
 
 
 @dataclass
