@@ -67,6 +67,7 @@ Finding codes are listed in [docs/check-codes.md](docs/check-codes.md).
 
 - [Validation steps](docs/validations.md) — building the reference files and each of the six validations: objective, command, artifacts
 - [Check codes](docs/check-codes.md) — the finding-code families the validator raises
+- [Corruptions](docs/corruptions.md) — the defects the negative tests inject, and the finding each must trigger
 
 ## Licence
 

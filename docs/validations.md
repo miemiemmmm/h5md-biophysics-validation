@@ -139,6 +139,9 @@ different shapes so that as many corruptions as possible apply.
 **Artifacts.** `_results/negative_tests.json` — `by_category`, the per-file
 outcomes, and the detection counts.
 
+The full list of corruptions, with the finding each must trigger, is in
+[corruptions.md](corruptions.md).
+
 A corruption that cannot apply to a particular base (no barostat group, no
 selections) is skipped and reported as such rather than counted as a pass.
 
