@@ -7,7 +7,7 @@ Three questions, kept separate because they have different answers:
 1. ELEMENT COVERAGE.  Of the elements the specification defines, which ones does
    the corpus of reference files actually contain?  An element that is specified
    but never written by any run is not evidence that the schema works -- it is an
-   untested branch, and the report names it as such.
+   untested branch, and coverage.json names it as such.
 
 2. ITEM FIDELITY.  Of the metadata items present in the GROMACS source, which are
    represented in the file, and are they correct?  This is the plan's coverage

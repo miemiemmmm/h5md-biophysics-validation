@@ -72,5 +72,3 @@ $PY_EXE scripts/validation6_amber_interop.py --run-all
 echo "==> figures"
 $PY_EXE scripts/validation5_cost_figure.py
 
-echo "==> report"
-$PY_EXE scripts/report.py

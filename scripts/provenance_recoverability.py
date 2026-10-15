@@ -126,8 +126,7 @@ def main():
     # ---- 2. can the topology reveal it? ------------------------------------
     topo = {}
     for sid, system in SYSTEMS_BY_ID.items():
-        # Read the shipped topology directly: the harness work cache is
-        # transient, and validation_systems/ is where the systems actually live.
+        # Read the shipped topology, where the systems actually live.
         top = Path(system.location) / system.topology
         if top.is_file():
             topo[sid] = from_topology(top)

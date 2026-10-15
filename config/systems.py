@@ -13,40 +13,33 @@ needed, with every ``#include`` resolving inside the directory itself.
 
 How each group was produced in the first place -- fetching a PDB entry and
 solvating it, converting a .prmtop, unpacking a deposit -- is recorded in
-``validation_systems/scripts/``, which the validation never invokes.
+``validation_systems/provenance/``, which the validation never invokes.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from config.matrix import DATA_ROOT, PROTOCOLS, VALIDATION_SYSTEMS, System
+from config.matrix import PROTOCOLS, VALIDATION_SYSTEMS, System
 
 _ALL_PROTOCOL_IDS = [p.id for p in PROTOCOLS]
-
-#: where the harness keeps its per-system work cache
-ROOT = Path(DATA_ROOT)
 
 #: protocols that assume a Protein group; skipped for nucleic-acid-only systems
 _NO_PROTEIN_GROUP = {"tcoupl-multigroup", "selection-noncontiguous"}
 
 
-def _sys(id, description, dimensions, source="topology", protocols=None, **kw):
+def _sys(id, description, dimensions, protocols=None, **kw):
     #: Every shipped system uses these names unless the depositor's differ.
     kw.setdefault("topology", "topol.top")
     kw.setdefault("structure", "conf.gro")
-    s = System(
-        id=id, description=description, dimensions=dimensions, source=source, **kw
-    )
+    s = System(id=id, description=description, dimensions=dimensions, **kw)
     s.protocols = protocols  # None means "all protocols"
     return s
 
 
-#: Every system ships ready to run under ``validation_systems/``. Preparation --
-#: fetching a PDB entry, converting a .prmtop, unpacking a deposit, relaxing a
-#: freshly assembled box -- happened once and lives in
-#: ``validation_systems/scripts/``. Nothing here builds a system; the harness
-#: copies a finished directory into its work cache and runs grompp on it.
+#: Every system ships ready to run under ``validation_systems/``; how each was
+#: prepared is recorded in ``validation_systems/provenance/``. Nothing here
+#: builds or copies a system: grompp runs on the shipped directory.
 VS = VALIDATION_SYSTEMS
 
 SYSTEMS = [
@@ -298,7 +291,7 @@ SYSTEMS = [
         "villin headpiece in water, the smallest system in the set",
         ("protein", "solvent", "small system"),
         location=f"{VS}/jcp_benchmark/bench_villin",
-        force_field="charmm27",
+        force_field="amber99sb",
         water_model="tip3p",
     ),
     _sys(
@@ -306,7 +299,7 @@ SYSTEMS = [
         "RNase in a cubic box of water with ions",
         ("protein", "solvent", "ions"),
         location=f"{VS}/jcp_benchmark/bench_rnase",
-        force_field="amber99sb-ildn",
+        force_field="amber99sb",
         water_model="tip3p",
     ),
     _sys(
@@ -314,23 +307,30 @@ SYSTEMS = [
         "alcohol dehydrogenase in a rhombic dodecahedral box, a non-cubic cell",
         ("protein", "solvent", "ions", "triclinic box"),
         location=f"{VS}/jcp_benchmark/bench_adh",
-        force_field="charmm27",
+        force_field="amber99sb-ildn",
         water_model="tip3p",
         protocols=["nvt-vrescale", "npt-prahman", "nve", "constraints-allbonds"],
     ),
     _sys(
         "bench_ion_channel",
         "membrane ion channel in a DOPC bilayer, AMBER99SB-ILDN with Berger lipid parameters",
-        ("protein", "membrane: DOPC", "ions", "solvent", "force field: AMBER lipids"),
+        (
+            "protein",
+            "membrane: DOPC",
+            "ions",
+            "solvent",
+            "force field: AMBER lipids",
+            "triclinic box",
+        ),
         location=f"{VS}/jcp_benchmark/bench_ion_channel",
         force_field="amber99sb-ildn-lipid",
-        water_model="spc",
+        water_model="tip3p",
         protocols=["nvt-vrescale", "npt-semiisotropic", "nve"],
     ),
     _sys(
         "bench_aquaporin",
-        "aquaporin in a membrane, CHARMM36 with virtual sites and a 5 fs step",
-        ("protein", "membrane", "solvent", "ions", "virtual sites"),
+        "aquaporin in a POPC membrane with ammonia as a solute, CHARMM36, hexagonal cell",
+        ("protein", "membrane: POPC", "solvent", "ions", "triclinic box"),
         location=f"{VS}/jcp_benchmark/bench_aquaporin",
         index="index.ndx",
         use_index=True,
@@ -1006,20 +1006,13 @@ def prepare_system(system: System) -> dict:
     needed, with every ``#include`` resolving inside the system's own
     directory. grompp is given explicit paths, so the depositor's filenames
     are used as they are -- ``coarsegrain.top`` stays ``coarsegrain.top``.
-
-    Earlier this copied each system into a work cache and renamed those files.
-    That was left over from when preparation happened here and needed a
-    writable scratch directory; once preparation moved to
-    ``validation_systems/scripts/`` the copy bought nothing but a duplicate of
-    the whole corpus, and a ``.prepared`` marker that could serve a stale copy
-    after the shipped one changed.
     """
     src = Path(system.location)
     if not src.is_dir():
         raise FileNotFoundError(
             f"{system.id}: {src} is missing. Systems are served from the "
             "directory named by $H5MD_VALIDATION_DATA; see "
-            "validation_systems/scripts/ for how each group was prepared."
+            "validation_systems/provenance/ for how each group was prepared."
         )
 
     out = {

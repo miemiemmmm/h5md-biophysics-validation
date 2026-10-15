@@ -47,9 +47,8 @@ VALIDATION_SYSTEMS = os.environ.get(
 #:                             leftover directory names a run that was interrupted
 DATA_ROOT = os.path.join(VALIDATION_SYSTEMS, "_data")
 
-#: What a run concludes: the JSON measurements, the rendered report, the LaTeX
-#: tables and the figures. Small, and the thing worth keeping when ``_data`` is
-#: deleted. RESULTS_DIR overrides it for a one-off run somewhere else.
+#: What a run concludes: the JSON measurements and the figures. Small, and the
+#: thing worth keeping when ``_data`` is deleted. RESULTS_DIR overrides it for a one-off run somewhere else.
 RESULTS_ROOT = os.path.join(VALIDATION_SYSTEMS, "_results")
 
 #: Where this run actually writes. Every stage imports this one name, so a run
@@ -204,27 +203,18 @@ class System:
     description: str
     #: dimensions of Validation 1's coverage table that this system exercises
     dimensions: tuple
-    #: how to obtain it: 'dataset' (simulation_dataset session), 'topology'
-    #: (a directory holding topol.top + structure), or 'built' (constructed here)
-    source: str
-    #: session id, or directory, depending on source
+    #: the system's directory in the validation dataset
     location: str = ""
     structure: str = ""
     topology: str = ""
     index: str = ""
     force_field: str = ""
     water_model: str = ""
-    n_atoms: int = 0
     #: .mdp settings this system requires regardless of protocol (coupling
     #: groups, mostly), applied on top of the protocol's settings
     mdp: dict = field(default_factory=dict)
     #: index groups this system needs passed to grompp
     use_index: bool = False
-    #: for source='subset': the parent system id and the molecule types to keep
-    parent: str = ""
-    keep: tuple = ()
-    #: True when the starting structure must be relaxed before dynamics
-    minimise: bool = False
     #: False for a vacuum system: no periodic boundary, infinite cut-offs
     periodic: bool = True
     #: protocol ids this system is run under; None means every protocol
