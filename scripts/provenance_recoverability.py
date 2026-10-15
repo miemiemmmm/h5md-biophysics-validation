@@ -25,10 +25,9 @@ from __future__ import annotations
 import argparse
 import itertools
 import json
-import os
+import pathlib
 import re
 import sys
-import pathlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -37,10 +36,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from config.matrix import RESULTS_DIR
 
 
-
 def _r(name: str) -> str:
     return str(pathlib.Path(RESULTS_DIR) / name)
-
 
 
 import h5py
@@ -65,8 +62,10 @@ def parameter_signature(h5_path, kind="bond"):
             ds = f.get(f"force_field/{layer}/{kind}/parameters")
             if ds is not None:
                 data = ds[()]
-                return {tuple(round(float(data[i][n]), 6) for n in data.dtype.names)
-                        for i in range(data.shape[0])}
+                return {
+                    tuple(round(float(data[i][n]), 6) for n in data.dtype.names)
+                    for i in range(data.shape[0])
+                }
     return set()
 
 
@@ -76,9 +75,11 @@ def from_topology(top_path):
     joined = " ".join(_INCLUDE.findall(text))
     ff = _FF_PATH.search(joined)
     water = _WATER.search(joined)
-    return {"force_field": ff.group(1) if ff else None,
-            "water_model": water.group(1) if water else None,
-            "ion_parameters": bool(_IONS.search(joined))}
+    return {
+        "force_field": ff.group(1) if ff else None,
+        "water_model": water.group(1) if water else None,
+        "ion_parameters": bool(_IONS.search(joined)),
+    }
 
 
 def main():
@@ -106,14 +107,21 @@ def main():
     for a, b in itertools.combinations(sorted(signatures), 2):
         sa, sb = signatures[a], signatures[b]
         overlap = len(sa & sb) / min(len(sa), len(sb))
-        pairs.append({"a": a, "b": b, "same_force_field": declared[a] == declared[b],
-                      "overlap": overlap})
+        pairs.append(
+            {
+                "a": a,
+                "b": b,
+                "same_force_field": declared[a] == declared[b],
+                "overlap": overlap,
+            }
+        )
     same = [p["overlap"] for p in pairs if p["same_force_field"]]
     diff = [p["overlap"] for p in pairs if not p["same_force_field"]]
     worst_same = min(same) if same else None
     best_diff = max(diff) if diff else None
-    separable = (worst_same is not None and best_diff is not None
-                 and worst_same > best_diff)
+    separable = (
+        worst_same is not None and best_diff is not None and worst_same > best_diff
+    )
 
     # ---- 2. can the topology reveal it? ------------------------------------
     topo = {}
@@ -147,14 +155,19 @@ def main():
 
     print("1. inferring the force field from the parameters in the file")
     print(f"   {len(pairs)} system pairs compared on their bonded parameter sets")
-    print(f"   lowest overlap between two systems sharing a force field : "
-          f"{worst_same:.1%}")
-    print(f"   highest overlap between two systems that do not          : "
-          f"{best_diff:.1%}")
+    print(
+        f"   lowest overlap between two systems sharing a force field : "
+        f"{worst_same:.1%}"
+    )
+    print(
+        f"   highest overlap between two systems that do not          : {best_diff:.1%}"
+    )
     print(f"   separable by this signature: {'yes' if separable else 'NO'}")
     if not separable:
-        print("   overlap tracks what is in the box, not which force field "
-              "parametrised it, so provenance cannot be inferred from content")
+        print(
+            "   overlap tracks what is in the box, not which force field "
+            "parametrised it, so provenance cannot be inferred from content"
+        )
     print()
     print("2. reading it from the topology grompp already parses")
     print(f"   force field named in an #include path : {n_ff}/{len(topo)} systems")

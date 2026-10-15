@@ -32,6 +32,7 @@ class Corruption:
     #: Finding code the validator must raise for this file.
     expect: str
     apply: Callable
+
     def __call__(self, f) -> bool:
         return self.apply(f)
 
@@ -129,13 +130,17 @@ def _m_module_missing(f):
 
 def _m_total_particle_count(f):
     t = f["topology"]
-    t.attrs["total_particle_count"] = int(np.atleast_1d(t.attrs["total_particle_count"])[0]) + 1
+    t.attrs["total_particle_count"] = (
+        int(np.atleast_1d(t.attrs["total_particle_count"])[0]) + 1
+    )
     return True
 
 
 def _m_total_component_count(f):
     t = f["topology"]
-    t.attrs["total_component_count"] = int(np.atleast_1d(t.attrs["total_component_count"])[0]) + 1
+    t.attrs["total_component_count"] = (
+        int(np.atleast_1d(t.attrs["total_component_count"])[0]) + 1
+    )
     return True
 
 
@@ -150,8 +155,11 @@ def _m_block_count(f):
 def _m_block_dangling(f):
     blocks = f["topology/molecule_blocks"]
     data = blocks[()]
-    data["name"][0] = b"NO_SUCH_MOLECULE_TYPE" if data.dtype["name"].kind == "S" \
+    data["name"][0] = (
+        b"NO_SUCH_MOLECULE_TYPE"
+        if data.dtype["name"].kind == "S"
         else "NO_SUCH_MOLECULE_TYPE"
+    )
     _replace(f["topology"], "molecule_blocks", data)
     return True
 
@@ -247,7 +255,7 @@ def _m_parameter_id_dangling(f):
     if grp is None:
         return False
     data = grp["parameter_id"][()]
-    data[0] = 10 ** 6
+    data[0] = 10**6
     _replace(grp, "parameter_id", data)
     return True
 
@@ -325,7 +333,7 @@ def _m_particle_ids_out_of_range(f):
     if grp is None:
         return False
     data = grp["particle_ids"][()]
-    data[0, 0] = 10 ** 6
+    data[0, 0] = 10**6
     _replace(grp, "particle_ids", data)
     return True
 
@@ -367,7 +375,7 @@ def _m_exclusion_index(f):
     if mol is None or "exclusions" not in mol:
         return False
     idx = mol["exclusions/indices"][()]
-    idx[0] = 10 ** 6
+    idx[0] = 10**6
     _replace(mol["exclusions"], "indices", idx)
     return True
 
@@ -386,7 +394,7 @@ def _m_bond_out_of_range(f):
     if "connectivity/bonds" not in f:
         return False
     data = f["connectivity/bonds"][()]
-    data[0, 0] = 10 ** 9
+    data[0, 0] = 10**9
     _replace(f["connectivity"], "bonds", data)
     return True
 
@@ -532,7 +540,7 @@ def _m_selection_index(f):
         grp = sel[name]
         if "indices" in grp and grp["indices"].size:
             data = grp["indices"][()]
-            data[0] = 10 ** 9
+            data[0] = 10**9
             _replace(grp, "indices", data)
             return True
     return False
@@ -546,7 +554,7 @@ def _m_selection_range(f):
         grp = sel[name]
         if "ranges" in grp and grp["ranges"].size:
             data = grp["ranges"][()]
-            data[0, 1] = 10 ** 9
+            data[0, 1] = 10**9
             _replace(grp, "ranges", data)
             return True
     return False
@@ -581,174 +589,371 @@ def _m_trajectory_mismatch(f):
 # catalogue
 # --------------------------------------------------------------------------
 CORRUPTIONS = [
-    Corruption("C-MOD-VERSION-UNSUPPORTED", "module", "declare module version 9.9",
-               "MOD-VERSION-UNSUPPORTED", _m_module_version_unsupported),
-    Corruption("C-MOD-VERSION-MISSING", "module", "remove the module version attribute",
-               "MOD-VERSION-MISSING", _m_module_version_missing),
-    Corruption("C-MOD-MISSING", "module", "remove the biophysics module declaration",
-               "MOD-MISSING", _m_module_missing),
-
+    Corruption(
+        "C-MOD-VERSION-UNSUPPORTED",
+        "module",
+        "declare module version 9.9",
+        "MOD-VERSION-UNSUPPORTED",
+        _m_module_version_unsupported,
+    ),
+    Corruption(
+        "C-MOD-VERSION-MISSING",
+        "module",
+        "remove the module version attribute",
+        "MOD-VERSION-MISSING",
+        _m_module_version_missing,
+    ),
+    Corruption(
+        "C-MOD-MISSING",
+        "module",
+        "remove the biophysics module declaration",
+        "MOD-MISSING",
+        _m_module_missing,
+    ),
     # Topology related corruptions
-    Corruption("C-TOPO-TOTAL-PARTICLES", "topology invariant",
-               "inflate total_particle_count by one",
-               "TOPO-INVARIANT-PARTICLES", _m_total_particle_count),
-    Corruption("C-TOPO-TOTAL-COMPONENTS", "topology invariant",
-               "inflate total_component_count by one",
-               "TOPO-INVARIANT-COMPONENTS", _m_total_component_count),
-    Corruption("C-TOPO-BLOCK-COUNT", "topology invariant",
-               "inflate the molecule count of the first block",
-               "TOPO-INVARIANT-PARTICLES", _m_block_count),
-    Corruption("C-TOPO-BLOCK-DANGLING", "referential integrity",
-               "point a molecule block at a molecule type that does not exist",
-               "REF-BLOCK-DANGLING", _m_block_dangling),
-    Corruption("C-TOPO-BLOCKS-MISSING", "required element",
-               "remove the molecule_blocks dataset",
-               "STRUCT-MISSING-DATASET", _m_blocks_missing),
-    Corruption("C-TOPO-PARTICLE-DATA-MISSING", "required element",
-               "remove particle_data from a molecule type",
-               "STRUCT-MISSING-DATASET", _m_particle_data_missing),
-    Corruption("C-TOPO-PARTICLE-DATA-SHORT", "topology invariant",
-               "drop the last row of particle_data",
-               "TOPO-PARTICLE-DATA-LENGTH", _m_particle_data_truncated),
-    Corruption("C-TOPO-PARTICLE-COUNT-ATTR", "topology invariant",
-               "inflate particle_count of a molecule type",
-               "TOPO-PARTICLE-DATA-LENGTH", _m_particle_count_attr),
-    Corruption("C-TOPO-SEQUENCE-SHORT", "topology invariant",
-               "drop the last row of sequence",
-               "TOPO-SEQUENCE-LENGTH", _m_sequence_truncated),
-    Corruption("C-TOPO-COMPONENT-ID", "referential integrity",
-               "set a component_id beyond component_count",
-               "REF-COMPONENT-ID", _m_component_id_out_of_range),
-    Corruption("C-TOPO-NAME-INDEX", "referential integrity",
-               "set a particle name index beyond particle_name_table",
-               "REF-PARTICLE-NAME-INDEX", _m_name_index_out_of_range),
-    Corruption("C-TOPO-COMPONENT-NAME-INDEX", "referential integrity",
-               "set a component name index beyond component_name_table",
-               "REF-COMPONENT-NAME-INDEX", _m_component_name_out_of_range),
-    Corruption("C-TOPO-NEGATIVE-MASS", "physical validity",
-               "give a particle a negative mass",
-               "TOPO-NEGATIVE-MASS", _m_negative_mass),
-    Corruption("C-TOPO-NAME-TABLE-MISSING", "required element",
-               "remove particle_name_table",
-               "STRUCT-MISSING-DATASET", _m_name_table_missing),
-    Corruption("C-TOPO-FIELD-RENAMED", "structure",
-               "rename the charge field of particle_data",
-               "STRUCT-COMPOUND-FIELDS", _m_particle_data_field_renamed),
-
+    Corruption(
+        "C-TOPO-TOTAL-PARTICLES",
+        "topology invariant",
+        "inflate total_particle_count by one",
+        "TOPO-INVARIANT-PARTICLES",
+        _m_total_particle_count,
+    ),
+    Corruption(
+        "C-TOPO-TOTAL-COMPONENTS",
+        "topology invariant",
+        "inflate total_component_count by one",
+        "TOPO-INVARIANT-COMPONENTS",
+        _m_total_component_count,
+    ),
+    Corruption(
+        "C-TOPO-BLOCK-COUNT",
+        "topology invariant",
+        "inflate the molecule count of the first block",
+        "TOPO-INVARIANT-PARTICLES",
+        _m_block_count,
+    ),
+    Corruption(
+        "C-TOPO-BLOCK-DANGLING",
+        "referential integrity",
+        "point a molecule block at a molecule type that does not exist",
+        "REF-BLOCK-DANGLING",
+        _m_block_dangling,
+    ),
+    Corruption(
+        "C-TOPO-BLOCKS-MISSING",
+        "required element",
+        "remove the molecule_blocks dataset",
+        "STRUCT-MISSING-DATASET",
+        _m_blocks_missing,
+    ),
+    Corruption(
+        "C-TOPO-PARTICLE-DATA-MISSING",
+        "required element",
+        "remove particle_data from a molecule type",
+        "STRUCT-MISSING-DATASET",
+        _m_particle_data_missing,
+    ),
+    Corruption(
+        "C-TOPO-PARTICLE-DATA-SHORT",
+        "topology invariant",
+        "drop the last row of particle_data",
+        "TOPO-PARTICLE-DATA-LENGTH",
+        _m_particle_data_truncated,
+    ),
+    Corruption(
+        "C-TOPO-PARTICLE-COUNT-ATTR",
+        "topology invariant",
+        "inflate particle_count of a molecule type",
+        "TOPO-PARTICLE-DATA-LENGTH",
+        _m_particle_count_attr,
+    ),
+    Corruption(
+        "C-TOPO-SEQUENCE-SHORT",
+        "topology invariant",
+        "drop the last row of sequence",
+        "TOPO-SEQUENCE-LENGTH",
+        _m_sequence_truncated,
+    ),
+    Corruption(
+        "C-TOPO-COMPONENT-ID",
+        "referential integrity",
+        "set a component_id beyond component_count",
+        "REF-COMPONENT-ID",
+        _m_component_id_out_of_range,
+    ),
+    Corruption(
+        "C-TOPO-NAME-INDEX",
+        "referential integrity",
+        "set a particle name index beyond particle_name_table",
+        "REF-PARTICLE-NAME-INDEX",
+        _m_name_index_out_of_range,
+    ),
+    Corruption(
+        "C-TOPO-COMPONENT-NAME-INDEX",
+        "referential integrity",
+        "set a component name index beyond component_name_table",
+        "REF-COMPONENT-NAME-INDEX",
+        _m_component_name_out_of_range,
+    ),
+    Corruption(
+        "C-TOPO-NEGATIVE-MASS",
+        "physical validity",
+        "give a particle a negative mass",
+        "TOPO-NEGATIVE-MASS",
+        _m_negative_mass,
+    ),
+    Corruption(
+        "C-TOPO-NAME-TABLE-MISSING",
+        "required element",
+        "remove particle_name_table",
+        "STRUCT-MISSING-DATASET",
+        _m_name_table_missing,
+    ),
+    Corruption(
+        "C-TOPO-FIELD-RENAMED",
+        "structure",
+        "rename the charge field of particle_data",
+        "STRUCT-COMPOUND-FIELDS",
+        _m_particle_data_field_renamed,
+    ),
     # Force-field related corruptions
-    Corruption("C-FF-PARAM-ID-DANGLING", "referential integrity",
-               "reference a force-field parameter index that does not exist",
-               "REF-PARAMETER-ID", _m_parameter_id_dangling),
-    Corruption("C-FF-PARAM-ID-NEGATIVE", "referential integrity",
-               "reference a negative force-field parameter index",
-               "REF-PARAMETER-ID", _m_parameter_id_negative),
-    Corruption("C-FF-PARAM-TABLE-MISSING", "referential integrity",
-               "remove a parameters dataset that an interaction list references",
-               "REF-PARAMETER-TABLE-MISSING", _m_parameter_table_missing),
-    Corruption("C-FF-FIELD-RENAMED", "structure",
-               "rename a force-field compound parameter field",
-               "STRUCT-COMPOUND-FIELDS", _m_ff_field_renamed),
-    Corruption("C-FF-UNITS-MISSING", "units",
-               "remove the units attribute of a compound parameters dataset",
-               "UNITS-MISSING", _m_units_missing),
-    Corruption("C-FF-UNITS-LENGTH", "units",
-               "shorten the units attribute to one entry",
-               "UNITS-LENGTH", _m_units_wrong_length),
-    Corruption("C-FF-UNIT-MALFORMED", "units",
-               "write a unit as 'nm^3' instead of 'nm+3'",
-               "UNIT-SYNTAX", _m_unit_malformed),
-
-    Corruption("C-INT-PARTICLE-ID", "referential integrity",
-               "set an interaction particle_id beyond particle_count",
-               "REF-PARTICLE-ID", _m_particle_ids_out_of_range),
-    Corruption("C-INT-ARITY", "structure",
-               "drop a column from particle_ids",
-               "STRUCT-INTERACTION-ARITY", _m_interaction_arity),
-    Corruption("C-INT-LENGTH", "structure",
-               "make parameter_id and particle_ids differ in length",
-               "STRUCT-INTERACTION-LENGTH", _m_interaction_length_mismatch),
-
-    Corruption("C-EXCL-COVERAGE", "referential integrity",
-               "open a gap between consecutive exclusion spans",
-               "REF-EXCL-COVERAGE", _m_exclusion_coverage),
-    Corruption("C-EXCL-INDEX", "referential integrity",
-               "set an exclusion index beyond particle_count",
-               "REF-EXCL-INDEX", _m_exclusion_index),
-    Corruption("C-EXCL-STRIDE", "structure",
-               "set an exclusion span stride to zero",
-               "REF-EXCL-STRIDE", _m_exclusion_stride),
-
+    Corruption(
+        "C-FF-PARAM-ID-DANGLING",
+        "referential integrity",
+        "reference a force-field parameter index that does not exist",
+        "REF-PARAMETER-ID",
+        _m_parameter_id_dangling,
+    ),
+    Corruption(
+        "C-FF-PARAM-ID-NEGATIVE",
+        "referential integrity",
+        "reference a negative force-field parameter index",
+        "REF-PARAMETER-ID",
+        _m_parameter_id_negative,
+    ),
+    Corruption(
+        "C-FF-PARAM-TABLE-MISSING",
+        "referential integrity",
+        "remove a parameters dataset that an interaction list references",
+        "REF-PARAMETER-TABLE-MISSING",
+        _m_parameter_table_missing,
+    ),
+    Corruption(
+        "C-FF-FIELD-RENAMED",
+        "structure",
+        "rename a force-field compound parameter field",
+        "STRUCT-COMPOUND-FIELDS",
+        _m_ff_field_renamed,
+    ),
+    Corruption(
+        "C-FF-UNITS-MISSING",
+        "units",
+        "remove the units attribute of a compound parameters dataset",
+        "UNITS-MISSING",
+        _m_units_missing,
+    ),
+    Corruption(
+        "C-FF-UNITS-LENGTH",
+        "units",
+        "shorten the units attribute to one entry",
+        "UNITS-LENGTH",
+        _m_units_wrong_length,
+    ),
+    Corruption(
+        "C-FF-UNIT-MALFORMED",
+        "units",
+        "write a unit as 'nm^3' instead of 'nm+3'",
+        "UNIT-SYNTAX",
+        _m_unit_malformed,
+    ),
+    Corruption(
+        "C-INT-PARTICLE-ID",
+        "referential integrity",
+        "set an interaction particle_id beyond particle_count",
+        "REF-PARTICLE-ID",
+        _m_particle_ids_out_of_range,
+    ),
+    Corruption(
+        "C-INT-ARITY",
+        "structure",
+        "drop a column from particle_ids",
+        "STRUCT-INTERACTION-ARITY",
+        _m_interaction_arity,
+    ),
+    Corruption(
+        "C-INT-LENGTH",
+        "structure",
+        "make parameter_id and particle_ids differ in length",
+        "STRUCT-INTERACTION-LENGTH",
+        _m_interaction_length_mismatch,
+    ),
+    Corruption(
+        "C-EXCL-COVERAGE",
+        "referential integrity",
+        "open a gap between consecutive exclusion spans",
+        "REF-EXCL-COVERAGE",
+        _m_exclusion_coverage,
+    ),
+    Corruption(
+        "C-EXCL-INDEX",
+        "referential integrity",
+        "set an exclusion index beyond particle_count",
+        "REF-EXCL-INDEX",
+        _m_exclusion_index,
+    ),
+    Corruption(
+        "C-EXCL-STRIDE",
+        "structure",
+        "set an exclusion span stride to zero",
+        "REF-EXCL-STRIDE",
+        _m_exclusion_stride,
+    ),
     # Connectivity related corruptions
-    Corruption("C-CONN-INDEX", "referential integrity",
-               "set a bond particle index beyond the system size",
-               "CONN-PARTICLE-ID", _m_bond_out_of_range),
-    Corruption("C-CONN-SELF", "physical validity",
-               "bond a particle to itself",
-               "CONN-SELF-BOND", _m_bond_self),
-    Corruption("C-CONN-SHAPE", "structure",
-               "store bonds as Integer[N][3]",
-               "STRUCT-SHAPE", _m_bond_shape),
-
+    Corruption(
+        "C-CONN-INDEX",
+        "referential integrity",
+        "set a bond particle index beyond the system size",
+        "CONN-PARTICLE-ID",
+        _m_bond_out_of_range,
+    ),
+    Corruption(
+        "C-CONN-SELF",
+        "physical validity",
+        "bond a particle to itself",
+        "CONN-SELF-BOND",
+        _m_bond_self,
+    ),
+    Corruption(
+        "C-CONN-SHAPE",
+        "structure",
+        "store bonds as Integer[N][3]",
+        "STRUCT-SHAPE",
+        _m_bond_shape,
+    ),
     # Time-dependent dataset related corruptions
-    Corruption("C-TIME-LENGTH", "time alignment",
-               "truncate the step dataset of a time-dependent observable",
-               "TIME-LENGTH-MISMATCH", _m_step_value_mismatch),
-    Corruption("C-TIME-MONOTONIC", "time alignment",
-               "swap two time values so the series is not monotonic",
-               "TIME-NOT-MONOTONIC", _m_time_not_monotonic),
-    Corruption("C-TIME-UNIT-MISSING", "units",
-               "remove the unit attribute of a time dataset",
-               "UNIT-MISSING", _m_time_unit_missing),
-
+    Corruption(
+        "C-TIME-LENGTH",
+        "time alignment",
+        "truncate the step dataset of a time-dependent observable",
+        "TIME-LENGTH-MISMATCH",
+        _m_step_value_mismatch,
+    ),
+    Corruption(
+        "C-TIME-MONOTONIC",
+        "time alignment",
+        "swap two time values so the series is not monotonic",
+        "TIME-NOT-MONOTONIC",
+        _m_time_not_monotonic,
+    ),
+    Corruption(
+        "C-TIME-UNIT-MISSING",
+        "units",
+        "remove the unit attribute of a time dataset",
+        "UNIT-MISSING",
+        _m_time_unit_missing,
+    ),
     # Observable related corruptions
-    Corruption("C-OBS-SHAPE", "structure",
-               "store the pressure tensor as 3x2",
-               "STRUCT-SHAPE", _m_observable_shape),
-    Corruption("C-OBS-UNIT-MISSING", "units",
-               "remove the unit attribute of an observable value",
-               "UNIT-MISSING", _m_observable_unit_missing),
-    Corruption("C-OBS-UNKNOWN", "structure",
-               "add an observable that the specification does not define",
-               "STRUCT-UNDOCUMENTED", _m_observable_unknown),
-
+    Corruption(
+        "C-OBS-SHAPE",
+        "structure",
+        "store the pressure tensor as 3x2",
+        "STRUCT-SHAPE",
+        _m_observable_shape,
+    ),
+    Corruption(
+        "C-OBS-UNIT-MISSING",
+        "units",
+        "remove the unit attribute of an observable value",
+        "UNIT-MISSING",
+        _m_observable_unit_missing,
+    ),
+    Corruption(
+        "C-OBS-UNKNOWN",
+        "structure",
+        "add an observable that the specification does not define",
+        "STRUCT-UNDOCUMENTED",
+        _m_observable_unknown,
+    ),
     # MD Parameter related corruptions
-    Corruption("C-PARAM-ENUM", "enumeration",
-               "set simulation_type to a value outside the defined set",
-               "ENUM-UNDEFINED-VALUE", _m_enum_invalid),
-    Corruption("C-PARAM-CONDITIONAL", "conditional structure",
-               "name a thermostat whose parameter subgroup is absent",
-               "COND-SUBGROUP-MISSING", _m_conditional_subgroup),
-    Corruption("C-PARAM-PER-GROUP", "structure",
-               "give reference_temperature one more entry than there are groups",
-               "STRUCT-PER-GROUP-LENGTH", _m_per_group_length),
-    Corruption("C-PARAM-PERIODICITY-SHAPE", "structure",
-               "store periodicity as a 2-vector",
-               "STRUCT-SHAPE", _m_periodicity_shape),
-    Corruption("C-PARAM-DTYPE", "structure",
-               "store the timestep as an Integer",
-               "STRUCT-DTYPE", _m_timestep_dtype),
-    Corruption("C-PARAM-UNIT-MISSING", "units",
-               "remove the unit attribute of the timestep",
-               "UNIT-MISSING", _m_timestep_unit_missing),
-    Corruption("C-PARAM-REQUIRED-MISSING", "required element",
-               "remove run_control/numsteps",
-               "STRUCT-MISSING-DATASET", _m_numsteps_missing),
-
+    Corruption(
+        "C-PARAM-ENUM",
+        "enumeration",
+        "set simulation_type to a value outside the defined set",
+        "ENUM-UNDEFINED-VALUE",
+        _m_enum_invalid,
+    ),
+    Corruption(
+        "C-PARAM-CONDITIONAL",
+        "conditional structure",
+        "name a thermostat whose parameter subgroup is absent",
+        "COND-SUBGROUP-MISSING",
+        _m_conditional_subgroup,
+    ),
+    Corruption(
+        "C-PARAM-PER-GROUP",
+        "structure",
+        "give reference_temperature one more entry than there are groups",
+        "STRUCT-PER-GROUP-LENGTH",
+        _m_per_group_length,
+    ),
+    Corruption(
+        "C-PARAM-PERIODICITY-SHAPE",
+        "structure",
+        "store periodicity as a 2-vector",
+        "STRUCT-SHAPE",
+        _m_periodicity_shape,
+    ),
+    Corruption(
+        "C-PARAM-DTYPE",
+        "structure",
+        "store the timestep as an Integer",
+        "STRUCT-DTYPE",
+        _m_timestep_dtype,
+    ),
+    Corruption(
+        "C-PARAM-UNIT-MISSING",
+        "units",
+        "remove the unit attribute of the timestep",
+        "UNIT-MISSING",
+        _m_timestep_unit_missing,
+    ),
+    Corruption(
+        "C-PARAM-REQUIRED-MISSING",
+        "required element",
+        "remove run_control/numsteps",
+        "STRUCT-MISSING-DATASET",
+        _m_numsteps_missing,
+    ),
     # Selection related corruptions
-    Corruption("C-SEL-INDEX", "referential integrity",
-               "set a selection index beyond the system size",
-               "REF-SEL-INDEX", _m_selection_index),
-    Corruption("C-SEL-RANGE", "referential integrity",
-               "set a selection range end beyond the system size",
-               "REF-SEL-RANGE", _m_selection_range),
-    Corruption("C-SEL-EMPTY", "structure",
-               "add a selection group that defines nothing",
-               "SEL-EMPTY", _m_selection_empty),
-
+    Corruption(
+        "C-SEL-INDEX",
+        "referential integrity",
+        "set a selection index beyond the system size",
+        "REF-SEL-INDEX",
+        _m_selection_index,
+    ),
+    Corruption(
+        "C-SEL-RANGE",
+        "referential integrity",
+        "set a selection range end beyond the system size",
+        "REF-SEL-RANGE",
+        _m_selection_range,
+    ),
+    Corruption(
+        "C-SEL-EMPTY",
+        "structure",
+        "add a selection group that defines nothing",
+        "SEL-EMPTY",
+        _m_selection_empty,
+    ),
     # Trajectory related corruptions
-    Corruption("C-TRAJ-MISMATCH", "cross-group consistency",
-               "drop a particle from the trajectory but not from the topology",
-               "TOPO-TRAJECTORY-MISMATCH", _m_trajectory_mismatch),
+    Corruption(
+        "C-TRAJ-MISMATCH",
+        "cross-group consistency",
+        "drop a particle from the trajectory but not from the topology",
+        "TOPO-TRAJECTORY-MISMATCH",
+        _m_trajectory_mismatch,
+    ),
 ]
 
 CORRUPTIONS_BY_CODE = {c.code: c for c in CORRUPTIONS}
@@ -763,7 +968,7 @@ def generate(base_file, out_dir, corruptions=None):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     produced = []
-    for corruption in (corruptions or CORRUPTIONS):
+    for corruption in corruptions or CORRUPTIONS:
         target = out_dir / f"{base_file.stem}__{corruption.code}.h5md"
         shutil.copyfile(base_file, target)
         try:

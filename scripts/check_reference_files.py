@@ -26,9 +26,8 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
-import sys
 import pathlib
+import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -36,21 +35,28 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from config.matrix import RESULTS_DIR
 
+
 def _r(name: str) -> str:
     return str(pathlib.Path(RESULTS_DIR) / name)
 
+
 import h5py
 
-from h5md_validator import Validator
-from h5md_validator import gmxdump, roundtrip
 from config.matrix import DATA_ROOT, GMX
+from h5md_validator import Validator, gmxdump, roundtrip
 
 DUMPS = Path(DATA_ROOT) / "tpr_dumps"
 
 #: Root groups that carry metadata rather than trajectory frames.  Used for the
 #: storage-overhead measurement of Validation 5.
-METADATA_GROUPS = ("topology", "force_field", "connectivity", "parameters",
-                   "selections", "observables")
+METADATA_GROUPS = (
+    "topology",
+    "force_field",
+    "connectivity",
+    "parameters",
+    "selections",
+    "observables",
+)
 TRAJECTORY_GROUPS = ("particles",)
 
 
@@ -84,7 +90,9 @@ def storage_breakdown(path):
         "file_bytes": Path(path).stat().st_size,
         "n_particles": n_particles,
         "n_frames": n_frames,
-        "metadata_bytes_per_particle": (metadata / n_particles) if n_particles else None,
+        "metadata_bytes_per_particle": (metadata / n_particles)
+        if n_particles
+        else None,
         "metadata_over_trajectory": (metadata / trajectory) if trajectory else None,
     }
 
@@ -102,21 +110,31 @@ def main():
 
     for key, entry in sorted(manifest.items()):
         if "error" in entry:
-            results[key] = {"status": "not_generated", "error": entry["error"],
-                            "system": entry["system"], "protocol": entry["protocol"]}
+            results[key] = {
+                "status": "not_generated",
+                "error": entry["error"],
+                "system": entry["system"],
+                "protocol": entry["protocol"],
+            }
             print(f"  --  {key}: not generated")
             continue
         h5 = Path(entry["h5md"])
         if not h5.exists():
-            results[key] = {"status": "missing_file", "system": entry["system"],
-                            "protocol": entry["protocol"]}
+            results[key] = {
+                "status": "missing_file",
+                "system": entry["system"],
+                "protocol": entry["protocol"],
+            }
             continue
 
-        record = {"status": "ok", "system": entry["system"],
-                  "protocol": entry["protocol"],
-                  "dimensions": entry.get("dimensions", []),
-                  "exercises": entry.get("exercises", []),
-                  "wall_seconds": entry.get("wall_seconds")}
+        record = {
+            "status": "ok",
+            "system": entry["system"],
+            "protocol": entry["protocol"],
+            "dimensions": entry.get("dimensions", []),
+            "exercises": entry.get("exercises", []),
+            "wall_seconds": entry.get("wall_seconds"),
+        }
 
         report = validator.validate(h5)
         record["conformance"] = report.to_dict()
@@ -144,11 +162,13 @@ def main():
         results[key] = record
         v = record["conformance"]
         r = record.get("roundtrip", {})
-        print(f"  {'PASS' if v['conformant'] else 'FAIL'}  {key:44s} "
-              f"err={v['counts']['ERROR']:<3d} dev={v['counts']['DEVIATION']:<3d} "
-              f"rt: match={r.get('n_match', '-')} mismatch={r.get('n_mismatch', '-')} "
-              f"missing={r.get('n_missing_in_file', '-')} "
-              f"dropped={r.get('n_dropped_terms', '-')}")
+        print(
+            f"  {'PASS' if v['conformant'] else 'FAIL'}  {key:44s} "
+            f"err={v['counts']['ERROR']:<3d} dev={v['counts']['DEVIATION']:<3d} "
+            f"rt: match={r.get('n_match', '-')} mismatch={r.get('n_mismatch', '-')} "
+            f"missing={r.get('n_missing_in_file', '-')} "
+            f"dropped={r.get('n_dropped_terms', '-')}"
+        )
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)

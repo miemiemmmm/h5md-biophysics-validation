@@ -13,7 +13,7 @@ Used by:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 # --------------------------------------------------------------------------
@@ -88,7 +88,9 @@ class Group:
 # ==========================================================================
 # S7.1  Run control
 # ==========================================================================
-SIMULATION_TYPES = frozenset({"molecular_dynamics", "stochastic_dynamics", "energy_minimization"})
+SIMULATION_TYPES = frozenset(
+    {"molecular_dynamics", "stochastic_dynamics", "energy_minimization"}
+)
 MD_INTEGRATORS = frozenset({"leap_frog", "velocity_verlet", "euler"})
 SD_INTEGRATORS = frozenset({"leap_frog", "langevin", "brownian"})
 EM_ALGORITHMS = frozenset({"steepest_descent", "conjugate_gradient", "l_bfgs"})
@@ -162,7 +164,9 @@ OUTPUT_CONTROL = Group(
 # ==========================================================================
 # S7.3  Temperature coupling
 # ==========================================================================
-THERMOSTATS = frozenset({"stochastic_velocity_rescaling", "andersen", "nose_hoover", "berendsen"})
+THERMOSTATS = frozenset(
+    {"stochastic_velocity_rescaling", "andersen", "nose_hoover", "berendsen"}
+)
 
 TEMPERATURE_COUPLING = Group(
     "temperature_coupling",
@@ -277,7 +281,9 @@ COULOMB_INTERACTIONS = Group(
 # S7.6  Van der Waals interactions
 # ==========================================================================
 VDW_TYPES = frozenset({"pme", "cutoff"})
-VDW_MODIFIERS = frozenset({"none", "potential_shift", "potential_switch", "force_switch"})
+VDW_MODIFIERS = frozenset(
+    {"none", "potential_shift", "potential_switch", "force_switch"}
+)
 DISPERSION_CORRECTIONS = frozenset({"energy", "pressure", "energy_and_pressure"})
 
 VDW_INTERACTIONS = Group(
@@ -286,7 +292,9 @@ VDW_INTERACTIONS = Group(
     datasets=(
         Dataset("type", STRING, enum=VDW_TYPES),
         Dataset("cutoff_distance", FLOAT, unit=True),
-        Dataset("dispersion_correction", STRING, required=False, enum=DISPERSION_CORRECTIONS),
+        Dataset(
+            "dispersion_correction", STRING, required=False, enum=DISPERSION_CORRECTIONS
+        ),
     ),
     groups=(
         Group(
@@ -363,7 +371,10 @@ CONDITIONAL_SELECTORS = {
     "parameters/constraints": ("algorithm", CONSTRAINT_ALGORITHMS),
     # S7.5/S7.6: only ``cutoff`` and ``reaction_field`` own a subgroup; the
     # remaining long-range treatments (pme, fmm, ...) do not instantiate one.
-    "parameters/coulomb_interactions": ("type", frozenset({"cutoff", "reaction_field"})),
+    "parameters/coulomb_interactions": (
+        "type",
+        frozenset({"cutoff", "reaction_field"}),
+    ),
     "parameters/vdw_interactions": ("type", frozenset({"cutoff"})),
 }
 
@@ -410,6 +421,7 @@ OBSERVABLES = {
     "volume": (),
 }
 
+
 # ==========================================================================
 # S8  Force field terms
 # ==========================================================================
@@ -435,14 +447,24 @@ I = INTEGER
 INTERACTION_TYPES = {
     it.name: it
     for it in (
-        InteractionType("bond", (Field("equilibrium_distance", F), Field("force_constant", F)), True, 2),
+        InteractionType(
+            "bond",
+            (Field("equilibrium_distance", F), Field("force_constant", F)),
+            True,
+            2,
+        ),
         InteractionType(
             "fourth_power_bond",
             (Field("equilibrium_squared_distance", F), Field("force_constant", F)),
             True,
             2,
         ),
-        InteractionType("angle", (Field("equilibrium_angle", F), Field("force_constant", F)), True, 3),
+        InteractionType(
+            "angle",
+            (Field("equilibrium_angle", F), Field("force_constant", F)),
+            True,
+            3,
+        ),
         InteractionType(
             "cosine_harmonic_angle",
             (Field("equilibrium_cosine", F), Field("force_constant", F)),
@@ -486,12 +508,18 @@ INTERACTION_TYPES = {
         ),
         InteractionType(
             "morse_bond",
-            (Field("equilibrium_distance", F), Field("well_depth", F), Field("steepness", F)),
+            (
+                Field("equilibrium_distance", F),
+                Field("well_depth", F),
+                Field("steepness", F),
+            ),
             True,
             2,
         ),
         InteractionType("constraint", (Field("distance", F),), True, 2),
-        InteractionType("settle", (Field("distance_OH", F), Field("distance_HH", F)), True, 3),
+        InteractionType(
+            "settle", (Field("distance_OH", F), Field("distance_HH", F)), True, 3
+        ),
         InteractionType(
             "lennard_jones_14",
             (Field("c6", F), Field("c12", F)),

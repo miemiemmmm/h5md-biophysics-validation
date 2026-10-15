@@ -10,8 +10,8 @@ validator over each, and checks that the expected finding code was raised.
     python scripts/validation4_negative_tests.py BASE.h5md [BASE2.h5md ...]
 
 ``--quick`` is for routine runs: a handful of bases chosen for differing
-composition, enough that most corruptions apply somewhere. 
-``--all`` sweeps the whole corpus as a corruption's applicability depends on what 
+composition, enough that most corruptions apply somewhere.
+``--all`` sweeps the whole corpus as a corruption's applicability depends on what
 elements a file happens to contain. A full sweep shows which kinds are never exercised.
 
 Each corrupted file is checked for having actually changed. A mutator that
@@ -25,19 +25,21 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import pathlib
 import sys
+from pathlib import Path
 
 import h5py
 import numpy as np
-import pathlib
-from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from config.matrix import RESULTS_DIR, DATA_ROOT, NEGATIVE_TEST_BASES
+from config.matrix import DATA_ROOT, NEGATIVE_TEST_BASES, RESULTS_DIR
+
 
 def _r(name: str) -> str:
     return str(pathlib.Path(RESULTS_DIR) / name)
+
 
 from h5md_validator import Validator
 from h5md_validator.corrupt import CORRUPTIONS, generate
@@ -50,16 +52,21 @@ def resolve_bases(args) -> list:
         return [Path(b) for b in args.base]
     if args.all:
         manifest = json.loads(Path(args.manifest).read_text())
-        return sorted(Path(e["h5md"]) for e in manifest.values()
-                      if "error" not in e and Path(e["h5md"]).exists())
+        return sorted(
+            Path(e["h5md"])
+            for e in manifest.values()
+            if "error" not in e and Path(e["h5md"]).exists()
+        )
     ref = Path(DATA_ROOT) / "reference_files"
-    return [ref / f"{name}.h5md" for name in NEGATIVE_TEST_BASES
-            if (ref / f"{name}.h5md").is_file()]
+    return [
+        ref / f"{name}.h5md"
+        for name in NEGATIVE_TEST_BASES
+        if (ref / f"{name}.h5md").is_file()
+    ]
 
 
 def _norm(value):
-    value = (np.asarray(value).tolist()
-             if not isinstance(value, (bytes, str)) else value)
+    value = np.asarray(value).tolist() if not isinstance(value, (bytes, str)) else value
     if isinstance(value, bytes):
         return value.decode("utf-8", "replace")
     if isinstance(value, list):
@@ -75,6 +82,7 @@ def snapshot(path) -> dict:
     """
     out = {}
     with h5py.File(path, "r") as f:
+
         def visit(name, obj):
             out[f"{name}#is"] = "group" if isinstance(obj, h5py.Group) else "dataset"
             for key in obj.attrs:
@@ -101,6 +109,7 @@ def snapshot(path) -> dict:
                     out[f"{name}#data"] = hashlib.sha256(payload).hexdigest()
                 except Exception:
                     pass
+
         f.visititems(visit)
         for key in f.attrs:
             out[f"/@{key}"] = _norm(f.attrs[key])
@@ -110,15 +119,22 @@ def snapshot(path) -> dict:
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("base", nargs="*", help="valid H5MD file(s) to corrupt")
-    ap.add_argument("--all", action="store_true",
-                    help="every reference file in the manifest")
-    ap.add_argument("--quick", action="store_true",
-                    help="the bases declared in config/matrix.py (the default)")
+    ap.add_argument(
+        "--all", action="store_true", help="every reference file in the manifest"
+    )
+    ap.add_argument(
+        "--quick",
+        action="store_true",
+        help="the bases declared in config/matrix.py (the default)",
+    )
     ap.add_argument("--manifest", default=_r("reference_files.json"))
     ap.add_argument("--out-dir", default=_r("negative"))
     ap.add_argument("--json", default=_r("negative_tests.json"))
-    ap.add_argument("--keep", action="store_true",
-                    help="keep the corrupted files instead of deleting them")
+    ap.add_argument(
+        "--keep",
+        action="store_true",
+        help="keep the corrupted files instead of deleting them",
+    )
     args = ap.parse_args()
 
     validator = Validator()
@@ -137,36 +153,47 @@ def main():
         print(f"\n=== {base.name} ===")
         for corruption, path, skip_reason in generate(base, out_dir):
             if path is None:
-                rows.append({
-                    "base": base.name, "corruption": corruption.code,
-                    "category": corruption.category, "expected": corruption.expect,
-                    "status": "skipped", "reason": skip_reason,
-                })
+                rows.append(
+                    {
+                        "base": base.name,
+                        "corruption": corruption.code,
+                        "category": corruption.category,
+                        "expected": corruption.expect,
+                        "status": "skipped",
+                        "reason": skip_reason,
+                    }
+                )
                 continue
             # A mutator that reports success but leaves the file semantically
             # unchanged is a broken test, not a missed detection.
             if snapshot(path) == pristine:
-                rows.append({
-                    "base": base.name, "corruption": corruption.code,
-                    "category": corruption.category, "expected": corruption.expect,
-                    "status": "inert",
-                    "reason": "the mutator changed nothing in this file",
-                })
+                rows.append(
+                    {
+                        "base": base.name,
+                        "corruption": corruption.code,
+                        "category": corruption.category,
+                        "expected": corruption.expect,
+                        "status": "inert",
+                        "reason": "the mutator changed nothing in this file",
+                    }
+                )
                 print(f"  [INRT] {corruption.code:32s} changed nothing")
                 continue
             report = validator.validate(path)
             codes = {f.code for f in report.findings}
             detected = corruption.expect in codes
-            rows.append({
-                "base": base.name,
-                "corruption": corruption.code,
-                "category": corruption.category,
-                "description": corruption.description,
-                "expected": corruption.expect,
-                "status": "detected" if detected else "missed",
-                "raised": sorted(codes - {f.code for f in report.deviations}),
-                "n_errors": len(report.errors),
-            })
+            rows.append(
+                {
+                    "base": base.name,
+                    "corruption": corruption.code,
+                    "category": corruption.category,
+                    "description": corruption.description,
+                    "expected": corruption.expect,
+                    "status": "detected" if detected else "missed",
+                    "raised": sorted(codes - {f.code for f in report.deviations}),
+                    "n_errors": len(report.errors),
+                }
+            )
             mark = "ok " if detected else "MISS"
             print(f"  [{mark}] {corruption.code:32s} expect {corruption.expect}")
             if not args.keep:
@@ -188,8 +215,11 @@ def main():
 
     # A kind that is skipped or inert on every base was never exercised at all.
     exercised = {r["corruption"] for r in detected}
-    never = sorted(set(CORRUPTIONS) - exercised) if isinstance(CORRUPTIONS, dict) \
+    never = (
+        sorted(set(CORRUPTIONS) - exercised)
+        if isinstance(CORRUPTIONS, dict)
         else sorted({c.code for c in CORRUPTIONS} - exercised)
+    )
 
     by_category = {}
     for r in tested:
@@ -208,8 +238,15 @@ def main():
         "kinds_never_exercised": never,
         "detection_rate": (len(detected) / len(tested)) if tested else 0.0,
         "by_category": by_category,
-        "missed": [{"base": r["base"], "corruption": r["corruption"],
-                    "expected": r["expected"], "raised": r["raised"]} for r in missed],
+        "missed": [
+            {
+                "base": r["base"],
+                "corruption": r["corruption"],
+                "expected": r["expected"],
+                "raised": r["raised"],
+            }
+            for r in missed
+        ],
         "inert": [{"base": r["base"], "corruption": r["corruption"]} for r in inert],
         "rows": rows,
     }
@@ -232,14 +269,16 @@ def main():
         for code in never:
             print(f"  {code}")
     if inert:
-        print(f"\nINERT -- the mutator changed nothing, so the test is broken:")
+        print("\nINERT -- the mutator changed nothing, so the test is broken:")
         for r in inert:
             print(f"  {r['base']} / {r['corruption']}")
     if missed:
         print("\nMISSED:")
         for r in missed:
-            print(f"  {r['base']} / {r['corruption']}: expected {r['expected']}, "
-                  f"raised {r['raised']}")
+            print(
+                f"  {r['base']} / {r['corruption']}: expected {r['expected']}, "
+                f"raised {r['raised']}"
+            )
     print(f"\nwritten to {out}")
     return 1 if missed else 0
 

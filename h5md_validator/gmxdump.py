@@ -17,14 +17,17 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-
 # --------------------------------------------------------------------------
 # line patterns
 # --------------------------------------------------------------------------
-_KV = re.compile(r"^(?P<indent>\s*)(?P<key>[\w\-\.]+(?:\s*\(3x3\))?)\s*=\s*(?P<value>.*?)\s*$")
+_KV = re.compile(
+    r"^(?P<indent>\s*)(?P<key>[\w\-\.]+(?:\s*\(3x3\))?)\s*=\s*(?P<value>.*?)\s*$"
+)
 _MATRIX_ROW = re.compile(r"^\s*(?P<name>[\w\-]+)\[\s*\d+\]=\{(?P<values>[^}]*)\}")
 _LIST_LINE = re.compile(r"^\s*(?P<key>[\w\-]+):\s+(?P<values>[-\d\.eE+\s]+)$")
-_GRP = re.compile(r"^grp\[(?P<kind>[^\]]+)\]\s*nr=(?P<nr>\d+),\s*name=\[(?P<names>[^\]]*)\]")
+_GRP = re.compile(
+    r"^grp\[(?P<kind>[^\]]+)\]\s*nr=(?P<nr>\d+),\s*name=\[(?P<names>[^\]]*)\]"
+)
 
 _MOLBLOCK = re.compile(r"^\s*molblock\s*\((?P<index>\d+)\):")
 _MOLTYPE_REF = re.compile(r'^\s*moltype\s*=\s*(?P<index>\d+)\s*"(?P<name>.*)"')
@@ -32,12 +35,20 @@ _NMOLECULES = re.compile(r"^\s*#molecules\s*=\s*(?P<n>\d+)")
 _MOLTYPE = re.compile(r"^\s*moltype\s*\((?P<index>\d+)\):")
 _NAME = re.compile(r'^\s*name="(?P<name>.*)"')
 
-_FUNCTYPE = re.compile(r"^\s*functype\[(?P<index>\d+)\]=(?P<kind>[A-Z_0-9]+),?\s*(?P<rest>.*)$")
+_FUNCTYPE = re.compile(
+    r"^\s*functype\[(?P<index>\d+)\]=(?P<kind>[A-Z_0-9]+),?\s*(?P<rest>.*)$"
+)
 _ATOM_PROP = re.compile(r"^\s*atom\[\s*(?P<index>\d+)\]=\{(?P<body>.*)\}")
 _ATOM_NAME = re.compile(r'^\s*atom\[\s*(?P<index>\d+)\]=\{name="(?P<name>.*)"\}')
-_RESIDUE = re.compile(r'^\s*residue\[\s*(?P<index>\d+)\]=\{name="(?P<name>.*?)",\s*nr=(?P<nr>-?\d+)')
-_EXCL_START = re.compile(r"^\s*excls\[(?P<index>\d+)\]\[num=(?P<num>\d+)\]=\{(?P<body>.*)$")
-_IATOM = re.compile(r"^\s*(?P<entry>\d+)\s+type=(?P<type>\d+)\s+\((?P<kind>[A-Z_0-9]+)\)\s*(?P<atoms>[\d\s]*)$")
+_RESIDUE = re.compile(
+    r'^\s*residue\[\s*(?P<index>\d+)\]=\{name="(?P<name>.*?)",\s*nr=(?P<nr>-?\d+)'
+)
+_EXCL_START = re.compile(
+    r"^\s*excls\[(?P<index>\d+)\]\[num=(?P<num>\d+)\]=\{(?P<body>.*)$"
+)
+_IATOM = re.compile(
+    r"^\s*(?P<entry>\d+)\s+type=(?P<type>\d+)\s+\((?P<kind>[A-Z_0-9]+)\)\s*(?P<atoms>[\d\s]*)$"
+)
 _ILIST_LABEL = re.compile(r"^\s{6}(?P<label>[\w\-\. ]+):\s*$")
 _NR = re.compile(r"^\s*nr:\s*(?P<n>\d+)\s*$")
 
@@ -52,7 +63,7 @@ class DumpFloat(float):
     -- so it has to be carried along with the value rather than assumed.
     """
 
-    __slots__ = ("text", "sig_digits")
+    __slots__ = ("sig_digits", "text")
 
     def __new__(cls, text):
         # Accepts the printed text, or a plain number when reconstructed by
@@ -143,7 +154,9 @@ def run_dump(tpr, gmx="gmx", timeout=1800) -> str:
     """Run ``gmx dump -s tpr`` and return its stdout."""
     proc = subprocess.run(
         [gmx, "-quiet", "-nobackup", "dump", "-s", str(tpr)],
-        capture_output=True, text=True, timeout=timeout,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
     )
     if proc.returncode != 0:
         raise RuntimeError(f"gmx dump failed for {tpr}:\n{proc.stderr[-2000:]}")
@@ -156,11 +169,11 @@ def parse(text: str) -> TprDump:
     lines = text.splitlines()
     i, n = 0, len(lines)
 
-    section = None            # inputrec | header | topology | None
-    matrix_target = None      # name of the 3x3 block currently being read
-    current_block = None      # molblock under construction
-    mol = None                # MoleculeType under construction
-    ilist_label = None        # interaction list currently being read
+    section = None  # inputrec | header | topology | None
+    matrix_target = None  # name of the 3x3 block currently being read
+    current_block = None  # molblock under construction
+    mol = None  # MoleculeType under construction
+    ilist_label = None  # interaction list currently being read
     in_ffparams = False
 
     while i < n:
@@ -193,10 +206,16 @@ def parse(text: str) -> TprDump:
         if section == "inputrec":
             m = _MATRIX_ROW.match(line)
             if m and matrix_target:
-                row = [DumpFloat(v.strip()) for v in m.group("values").split(",") if v.strip()]
+                row = [
+                    DumpFloat(v.strip())
+                    for v in m.group("values").split(",")
+                    if v.strip()
+                ]
                 dump.inputrec.setdefault(matrix_target, []).append(row)
                 continue
-            if stripped.endswith("(3x3):") or re.match(r"^[\w\-]+ \(\dx3\):$", stripped):
+            if stripped.endswith("(3x3):") or re.match(
+                r"^[\w\-]+ \(\dx3\):$", stripped
+            ):
                 matrix_target = stripped.split(" (")[0]
                 dump.inputrec.setdefault(matrix_target, [])
                 continue
@@ -337,7 +356,7 @@ def parse(text: str) -> TprDump:
     dump.system_name = ""
     for idx, line in enumerate(lines):
         if line.startswith("topology:"):
-            for probe in lines[idx + 1: idx + 6]:
+            for probe in lines[idx + 1 : idx + 6]:
                 m = _NAME.match(probe)
                 if m:
                     dump.system_name = m.group("name")
@@ -372,6 +391,7 @@ class EdrDump:
     in frame order; ``steps`` and ``times`` carry the frame index itself, so a
     comparison can align on the step rather than trusting position.
     """
+
     steps: list = field(default_factory=list)
     times: list = field(default_factory=list)
     units: dict = field(default_factory=dict)
@@ -382,9 +402,13 @@ class EdrDump:
         return len(self.steps)
 
 
-_EDR_COMPONENT = re.compile(r"^\s*\d+\s{2,}(?P<name>\S.*?)\s{2,}\((?P<unit>[^)]*)\)\s*$")
+_EDR_COMPONENT = re.compile(
+    r"^\s*\d+\s{2,}(?P<name>\S.*?)\s{2,}\((?P<unit>[^)]*)\)\s*$"
+)
 _EDR_FRAME = re.compile(r"^\s*time:\s*(?P<time>\S+)\s+step:\s*(?P<step>\d+)\s*$")
-_EDR_VALUE = re.compile(r"^\s{2,}(?P<name>\S.*?)\s{2,}(?P<value>-?[\d.]+e[+-]\d+|-?[\d.]+)\s*$")
+_EDR_VALUE = re.compile(
+    r"^\s{2,}(?P<name>\S.*?)\s{2,}(?P<value>-?[\d.]+e[+-]\d+|-?[\d.]+)\s*$"
+)
 
 
 def parse_edr(text: str) -> EdrDump:
@@ -432,7 +456,9 @@ def run_dump_edr(edr, gmx="gmx", timeout=1800) -> str:
     """Run ``gmx dump -e edr`` and return its stdout."""
     proc = subprocess.run(
         [gmx, "-quiet", "-nobackup", "dump", "-e", str(edr)],
-        capture_output=True, text=True, timeout=timeout,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
     )
     if proc.returncode != 0:
         raise RuntimeError(f"gmx dump -e failed for {edr}:\n{proc.stderr[-2000:]}")

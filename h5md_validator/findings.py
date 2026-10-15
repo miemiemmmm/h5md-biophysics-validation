@@ -13,7 +13,7 @@ Used by:
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, asdict, field
+from dataclasses import asdict, dataclass, field
 from enum import Enum
 
 
@@ -89,9 +89,7 @@ class Report:
         return {
             "file": self.file,
             "conformant": self.conformant,
-            "counts": {
-                s.value: len(self.by_severity(s)) for s in Severity
-            },
+            "counts": {s.value: len(self.by_severity(s)) for s in Severity},
             "findings": [f.to_dict() for f in self.findings],
         }
 

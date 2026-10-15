@@ -26,10 +26,9 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
+import pathlib
 import sys
 from collections import Counter, defaultdict
-import pathlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -38,16 +37,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from config.matrix import RESULTS_DIR
 
 
-
 def _r(name: str) -> str:
     return str(pathlib.Path(RESULTS_DIR) / name)
 
 
-
 import h5py
 
-from h5md_validator import gmxdump, vocabulary as vocab
 from config.matrix import DATA_ROOT
+from h5md_validator import gmxdump
+from h5md_validator import vocabulary as vocab
 
 DUMPS = Path(DATA_ROOT) / "tpr_dumps"
 
@@ -58,7 +56,7 @@ def source_counts(dump) -> dict:
     for block in dump.molblocks:
         mol = dump.moltypes[block["moltype"]]
         for functype, entries in mol.ilists.items():
-            if functype == "LJ_SR":        # nonbonded, no per-molecule list
+            if functype == "LJ_SR":  # nonbonded, no per-molecule list
                 continue
             counts[functype] += len(entries) * block["nmol"]
     return dict(counts)
@@ -105,16 +103,27 @@ def analyse(key, entry) -> dict:
     for functype, n_src in sorted(src.items()):
         element = vocab.INTERACTION.get(functype)
         if element is None:
-            rows.append({"functype": functype, "element": None,
-                         "source_entries": n_src, "file_entries": 0,
-                         "outcome": "not predefined"})
+            rows.append(
+                {
+                    "functype": functype,
+                    "element": None,
+                    "source_entries": n_src,
+                    "file_entries": 0,
+                    "outcome": "not predefined",
+                }
+            )
         else:
             # Several functypes can map onto one element; attribute the file's
             # count to the mapped element and compare on the element total.
-            rows.append({"functype": functype, "element": element,
-                         "source_entries": n_src,
-                         "file_entries": dst.get(element, 0),
-                         "outcome": None})
+            rows.append(
+                {
+                    "functype": functype,
+                    "element": element,
+                    "source_entries": n_src,
+                    "file_entries": dst.get(element, 0),
+                    "outcome": None,
+                }
+            )
 
     # resolve outcomes for mapped types, accounting for many-to-one mappings
     by_element = defaultdict(list)
@@ -138,10 +147,14 @@ def analyse(key, entry) -> dict:
             group[0]["detail"] = {"source_total": total_src, "file_total": in_file}
 
     total = sum(src.values())
-    lost = sum(r["source_entries"] for r in rows
-               if r["outcome"] in ("not predefined", "dropped"))
+    lost = sum(
+        r["source_entries"]
+        for r in rows
+        if r["outcome"] in ("not predefined", "dropped")
+    )
     return {
-        "system": entry["system"], "protocol": entry["protocol"],
+        "system": entry["system"],
+        "protocol": entry["protocol"],
         "total_source_entries": total,
         "entries_not_in_file": lost,
         "fraction_lost": (lost / total) if total else 0.0,
@@ -171,14 +184,18 @@ def main():
     PREFERRED = ("nvt-vrescale", "npt-prahman", "nve")
     by_system = {}
     for name in {res["system"] for res in per_file.values()}:
-        candidates = {res["protocol"]: res for res in per_file.values()
-                      if res["system"] == name}
-        chosen = next((candidates[p] for p in PREFERRED if p in candidates),
-                      next(iter(sorted(candidates.items())))[1])
+        candidates = {
+            res["protocol"]: res for res in per_file.values() if res["system"] == name
+        }
+        chosen = next(
+            (candidates[p] for p in PREFERRED if p in candidates),
+            next(iter(sorted(candidates.items())))[1],
+        )
         by_system[name] = chosen
 
-    unsupported = defaultdict(lambda: {"systems": set(), "entries": 0,
-                                       "outcome": "", "element": None})
+    unsupported = defaultdict(
+        lambda: {"systems": set(), "entries": 0, "outcome": "", "element": None}
+    )
     for res in by_system.values():
         for r in res["rows"]:
             if r["outcome"] in ("not predefined", "dropped", "partial"):
@@ -189,31 +206,47 @@ def main():
                 u["element"] = r["element"]
 
     summary = {
-        "per_system": {k: {kk: vv for kk, vv in v.items() if kk != "rows"}
-                       for k, v in by_system.items()},
-        "unsupported": {k: {**v, "systems": sorted(v["systems"])}
-                        for k, v in unsupported.items()},
+        "per_system": {
+            k: {kk: vv for kk, vv in v.items() if kk != "rows"}
+            for k, v in by_system.items()
+        },
+        "unsupported": {
+            k: {**v, "systems": sorted(v["systems"])} for k, v in unsupported.items()
+        },
         "per_file": per_file,
     }
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(summary, indent=2, default=str))
 
-    print(f"{'system':28s} {'entries':>9s} {'not in file':>12s} {'fraction':>9s}  types")
+    print(
+        f"{'system':28s} {'entries':>9s} {'not in file':>12s} {'fraction':>9s}  types"
+    )
     for name, res in sorted(by_system.items()):
-        types = sorted({r["functype"] for r in res["rows"]
-                        if r["outcome"] in ("not predefined", "dropped", "partial")})
-        print(f"  {name:26s} {res['total_source_entries']:9,d} "
-              f"{res['entries_not_in_file']:12,d} "
-              f"{100 * res['fraction_lost']:8.2f}%  {', '.join(types) or '-'}")
+        types = sorted(
+            {
+                r["functype"]
+                for r in res["rows"]
+                if r["outcome"] in ("not predefined", "dropped", "partial")
+            }
+        )
+        print(
+            f"  {name:26s} {res['total_source_entries']:9,d} "
+            f"{res['entries_not_in_file']:12,d} "
+            f"{100 * res['fraction_lost']:8.2f}%  {', '.join(types) or '-'}"
+        )
 
     print("\ninteraction types that do not reach the file:")
     for functype, u in sorted(unsupported.items()):
-        reason = ("outside Table SI; written nowhere and flagged nowhere"
-                  if u["outcome"] == "not predefined"
-                  else f"maps to '{u['element']}' but no entries are written")
-        print(f"  {functype:14s} {u['entries']:8,d} entries in "
-              f"{len(u['systems'])} system(s): {reason}")
+        reason = (
+            "outside Table SI; written nowhere and flagged nowhere"
+            if u["outcome"] == "not predefined"
+            else f"maps to '{u['element']}' but no entries are written"
+        )
+        print(
+            f"  {functype:14s} {u['entries']:8,d} entries in "
+            f"{len(u['systems'])} system(s): {reason}"
+        )
     print(f"\nwritten to {out}")
     return 0
 

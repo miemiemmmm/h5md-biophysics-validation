@@ -23,10 +23,9 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
+import pathlib
 import sys
 from collections import defaultdict
-import pathlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -35,10 +34,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from config.matrix import RESULTS_DIR
 
 
-
 def _r(name: str) -> str:
     return str(pathlib.Path(RESULTS_DIR) / name)
-
 
 
 import h5py
@@ -79,13 +76,19 @@ def specified_elements():
     out["topology/@total_particle_count"] = "required"
     out["topology/@total_component_count"] = "required"
 
-    for name in ("topology/molecule_blocks", "topology/<molecule>/particle_data",
-                 "topology/<molecule>/sequence", "topology/<molecule>/exclusions",
-                 "topology/<molecule>/particle_name_table",
-                 "topology/<molecule>/component_name_table",
-                 "connectivity/bonds", "selections/<group>/ranges",
-                 "selections/<group>/indices", "selections/<group>/selection",
-                 "selections/<group>/software"):
+    for name in (
+        "topology/molecule_blocks",
+        "topology/<molecule>/particle_data",
+        "topology/<molecule>/sequence",
+        "topology/<molecule>/exclusions",
+        "topology/<molecule>/particle_name_table",
+        "topology/<molecule>/component_name_table",
+        "connectivity/bonds",
+        "selections/<group>/ranges",
+        "selections/<group>/indices",
+        "selections/<group>/selection",
+        "selections/<group>/software",
+    ):
         out[name] = "optional"
     return out
 
@@ -112,10 +115,14 @@ def observed_values(h5_path):
         values[path] = repr(value)[:120]
 
     with h5py.File(h5_path, "r") as f:
+
         def visit(name, obj):
             parts = name.split("/")
-            if parts[0] == "topology" and len(parts) > 1 \
-                    and parts[1] != "molecule_blocks":
+            if (
+                parts[0] == "topology"
+                and len(parts) > 1
+                and parts[1] != "molecule_blocks"
+            ):
                 parts[1] = "<molecule>"
             elif parts[0] == "selections" and len(parts) > 1:
                 parts[1] = "<group>"
@@ -124,9 +131,13 @@ def observed_values(h5_path):
             canonical = "/".join(parts)
             for attr, value in obj.attrs.items():
                 record(f"{canonical}/@{attr}", value)
-            if isinstance(obj, h5py.Dataset) and obj.shape == () \
-                    and obj.dtype.names is None:
+            if (
+                isinstance(obj, h5py.Dataset)
+                and obj.shape == ()
+                and obj.dtype.names is None
+            ):
                 record(canonical, obj[()])
+
         f.visititems(visit)
         for attr, value in f.attrs.items():
             record(f"@{attr}", value)
@@ -137,23 +148,32 @@ def observed_elements(h5_path):
     """Element paths actually present in one file, in the same vocabulary."""
     seen = set()
     with h5py.File(h5_path, "r") as f:
+
         def visit(name, obj):
             for attr in obj.attrs:
                 parts = name.split("/")
-                if parts[0] == "topology" and len(parts) > 1 \
-                        and parts[1] != "molecule_blocks":
+                if (
+                    parts[0] == "topology"
+                    and len(parts) > 1
+                    and parts[1] != "molecule_blocks"
+                ):
                     parts[1] = "<molecule>"
                 elif parts[0] == "selections" and len(parts) > 1:
                     parts[1] = "<group>"
                 seen.add("/".join(parts) + f"/@{attr}")
             parts = name.split("/")
-            if parts[0] == "topology" and len(parts) > 1 and parts[1] != "molecule_blocks":
+            if (
+                parts[0] == "topology"
+                and len(parts) > 1
+                and parts[1] != "molecule_blocks"
+            ):
                 parts[1] = "<molecule>"
             elif parts[0] == "selections" and len(parts) > 1:
                 parts[1] = "<group>"
             elif parts[0] == "particles":
                 return
             seen.add("/".join(parts))
+
         f.visititems(visit)
         for root in f:
             seen.add(root)
@@ -192,8 +212,12 @@ def main():
         present = path in observed
         n_files = sum(1 for e in per_file_elements.values() if path in e)
         seen_values = distinct_values.get(path)
-        row = {"element": path, "obligation": obligation,
-               "observed": present, "n_files": n_files}
+        row = {
+            "element": path,
+            "obligation": obligation,
+            "observed": present,
+            "n_files": n_files,
+        }
         if present and seen_values is not None:
             row["n_distinct_values"] = len(seen_values)
             if len(seen_values) == 1 and n_files > 1:
@@ -203,9 +227,16 @@ def main():
     constant = [r for r in element_rows if r.get("constant_value") is not None]
 
     # ---- 2. item fidelity ----------------------------------------------
-    items = defaultdict(lambda: {"category": "", "files": 0, "match": 0,
-                                 "mismatch": 0, "missing_in_file": 0,
-                                 "extra_in_file": 0})
+    items = defaultdict(
+        lambda: {
+            "category": "",
+            "files": 0,
+            "match": 0,
+            "mismatch": 0,
+            "missing_in_file": 0,
+            "extra_in_file": 0,
+        }
+    )
     for key, rec in ok.items():
         for comp in rec.get("roundtrip", {}).get("comparisons", []):
             # collapse the per-molecule-type prefix so items aggregate
@@ -217,9 +248,11 @@ def main():
             e = items[name]
             e["category"] = comp["category"]
             if comp["status"] in ("match", "match_unordered"):
-                e["files"] += 1; e["match"] += 1
+                e["files"] += 1
+                e["match"] += 1
             elif comp["status"] == "mismatch":
-                e["files"] += 1; e["mismatch"] += 1
+                e["files"] += 1
+                e["mismatch"] += 1
             elif comp["status"] == "missing_in_file":
                 e["missing_in_file"] += 1
             elif comp["status"] == "missing_in_source":
@@ -240,8 +273,11 @@ def main():
         for e in rec.get("exercises", []):
             exercises[e].append(rec["protocol"])
 
-    not_generated = {k: v.get("error", "") for k, v in results.items()
-                     if v.get("status") == "not_generated"}
+    not_generated = {
+        k: v.get("error", "")
+        for k, v in results.items()
+        if v.get("status") == "not_generated"
+    }
 
     summary = {
         "n_reference_files": len(ok),
@@ -251,8 +287,14 @@ def main():
             "n_never_observed": len(never),
             "never_observed": [r["element"] for r in never],
             "n_constant": len(constant),
-            "constant": [{"element": r["element"], "value": r["constant_value"],
-                          "n_files": r["n_files"]} for r in constant],
+            "constant": [
+                {
+                    "element": r["element"],
+                    "value": r["constant_value"],
+                    "n_files": r["n_files"],
+                }
+                for r in constant
+            ],
             "rows": element_rows,
         },
         "item_fidelity": {
@@ -289,9 +331,11 @@ def main():
         for e in ec["never_observed"]:
             print(f"  {e}")
     if ec["constant"]:
-        print(f"\npresent but carrying one value in every file "
-              f"({ec['n_constant']} element(s)) -- exercised in form, not in "
-              "substance:")
+        print(
+            f"\npresent but carrying one value in every file "
+            f"({ec['n_constant']} element(s)) -- exercised in form, not in "
+            "substance:"
+        )
         for r in ec["constant"]:
             print(f"  {r['element']:52s} = {r['value']}")
     if itf["unsupported"]:

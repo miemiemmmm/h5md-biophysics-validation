@@ -24,10 +24,11 @@ Used by:
 
 from __future__ import annotations
 
-import numpy as np
 import h5py
+import numpy as np
 
-from . import spec, units as unitmod
+from . import spec
+from . import units as unitmod
 from .deviations import DEVIATIONS
 from .findings import Report, Severity
 
@@ -91,9 +92,13 @@ class Validator:
         except OSError as exc:
             # A file the HDF5 library cannot open is a validation verdict, not a
             # crash: a writer that aborts mid-write can leave exactly this.
-            report.add("FILE-UNREADABLE", Severity.ERROR, "",
-                       f"file cannot be opened as HDF5: {exc}",
-                       error=str(exc))
+            report.add(
+                "FILE-UNREADABLE",
+                Severity.ERROR,
+                "",
+                f"file cannot be opened as HDF5: {exc}",
+                error=str(exc),
+            )
             return report
         with handle as f:
             self._check_module(f, report)
@@ -112,10 +117,13 @@ class Validator:
         if constraints is None:
             return
         if "mode" not in constraints and self.report_deviations:
-            rep.add("DEV-CONSTRAINTS-MODE-UNWRITTEN", Severity.DEVIATION,
-                    "parameters/constraints",
-                    DEVIATIONS["DEV-CONSTRAINTS-MODE-UNWRITTEN"].title,
-                    deviation="DEV-CONSTRAINTS-MODE-UNWRITTEN")
+            rep.add(
+                "DEV-CONSTRAINTS-MODE-UNWRITTEN",
+                Severity.DEVIATION,
+                "parameters/constraints",
+                DEVIATIONS["DEV-CONSTRAINTS-MODE-UNWRITTEN"].title,
+                deviation="DEV-CONSTRAINTS-MODE-UNWRITTEN",
+            )
         if "algorithm" not in constraints:
             return
         # An algorithm is declared; check that something is actually constrained.
@@ -137,11 +145,14 @@ class Validator:
                     n_constraints += node["parameter_id"].shape[0]
         if n_constraints == 0 and self.report_deviations:
             algorithm = _read(constraints["algorithm"])
-            rep.add("DEV-CONSTRAINTS-ALGORITHM-UNCONDITIONAL", Severity.DEVIATION,
-                    "parameters/constraints/algorithm",
-                    DEVIATIONS["DEV-CONSTRAINTS-ALGORITHM-UNCONDITIONAL"].title,
-                    deviation="DEV-CONSTRAINTS-ALGORITHM-UNCONDITIONAL",
-                    algorithm=algorithm)
+            rep.add(
+                "DEV-CONSTRAINTS-ALGORITHM-UNCONDITIONAL",
+                Severity.DEVIATION,
+                "parameters/constraints/algorithm",
+                DEVIATIONS["DEV-CONSTRAINTS-ALGORITHM-UNCONDITIONAL"].title,
+                deviation="DEV-CONSTRAINTS-ALGORITHM-UNCONDITIONAL",
+                algorithm=algorithm,
+            )
 
     # ------------------------------------------------------------- S4.1 root
     def _check_module(self, f, rep):
@@ -149,29 +160,38 @@ class Validator:
         mod = f.get(modpath)
         if mod is None:
             rep.add(
-                "MOD-MISSING", Severity.ERROR, modpath,
+                "MOD-MISSING",
+                Severity.ERROR,
+                modpath,
                 "file does not declare the biophysics module",
             )
             return
         if "version" not in mod.attrs:
             rep.add(
-                "MOD-VERSION-MISSING", Severity.ERROR, modpath,
+                "MOD-VERSION-MISSING",
+                Severity.ERROR,
+                modpath,
                 "biophysics module has no version attribute",
             )
             return
         version = tuple(int(v) for v in np.atleast_1d(mod.attrs["version"]))
         if len(version) != 2:
             rep.add(
-                "MOD-VERSION-SHAPE", Severity.ERROR, modpath,
+                "MOD-VERSION-SHAPE",
+                Severity.ERROR,
+                modpath,
                 f"version must be Integer[2], got {len(version)} element(s)",
                 actual=list(version),
             )
         elif version != spec.MODULE_VERSION:
             rep.add(
-                "MOD-VERSION-UNSUPPORTED", Severity.ERROR, modpath,
+                "MOD-VERSION-UNSUPPORTED",
+                Severity.ERROR,
+                modpath,
                 f"unsupported module version {version[0]}.{version[1]}, "
                 f"validator implements {spec.MODULE_VERSION[0]}.{spec.MODULE_VERSION[1]}",
-                actual=list(version), expected=list(spec.MODULE_VERSION),
+                actual=list(version),
+                expected=list(spec.MODULE_VERSION),
             )
 
     # ------------------------------------------------------------ S4.2 units
@@ -179,41 +199,72 @@ class Validator:
         if "unit" not in ds.attrs:
             if required:
                 rep.add(
-                    "UNIT-MISSING", Severity.ERROR, path,
+                    "UNIT-MISSING",
+                    Severity.ERROR,
+                    path,
                     "dataset holds a physical quantity but has no unit attribute",
                 )
             return
         unit = _decode(ds.attrs["unit"])
         if not isinstance(unit, str):
-            rep.add("UNIT-TYPE", Severity.ERROR, path,
-                    "unit attribute must be a String", actual=str(type(unit)))
+            rep.add(
+                "UNIT-TYPE",
+                Severity.ERROR,
+                path,
+                "unit attribute must be a String",
+                actual=str(type(unit)),
+            )
             return
         if not unitmod.is_valid(unit):
-            rep.add("UNIT-SYNTAX", Severity.ERROR, path,
-                    f"unit {unit!r} is not valid H5MD unit notation", unit=unit)
+            rep.add(
+                "UNIT-SYNTAX",
+                Severity.ERROR,
+                path,
+                f"unit {unit!r} is not valid H5MD unit notation",
+                unit=unit,
+            )
         elif self.strict_units:
             unknown = unitmod.unknown_symbols(unit)
             if unknown:
-                rep.add("UNIT-SYMBOL-UNKNOWN", Severity.WARNING, path,
-                        f"unit {unit!r} uses unrecognised symbol(s) {unknown}",
-                        unit=unit, symbols=unknown)
+                rep.add(
+                    "UNIT-SYMBOL-UNKNOWN",
+                    Severity.WARNING,
+                    path,
+                    f"unit {unit!r} uses unrecognised symbol(s) {unknown}",
+                    unit=unit,
+                    symbols=unknown,
+                )
 
     def _check_units_attr(self, ds, path, rep, n_fields: int):
         """S4.2: a compound dataset carries a ``units`` list, one per field."""
         if "units" not in ds.attrs:
-            rep.add("UNITS-MISSING", Severity.ERROR, path,
-                    "compound dataset has no units attribute")
+            rep.add(
+                "UNITS-MISSING",
+                Severity.ERROR,
+                path,
+                "compound dataset has no units attribute",
+            )
             return
         vals = _decode(ds.attrs["units"])
         vals = [vals] if isinstance(vals, str) else list(vals)
         if len(vals) != n_fields:
-            rep.add("UNITS-LENGTH", Severity.ERROR, path,
-                    f"units has {len(vals)} entries for {n_fields} compound fields",
-                    expected=n_fields, actual=len(vals))
+            rep.add(
+                "UNITS-LENGTH",
+                Severity.ERROR,
+                path,
+                f"units has {len(vals)} entries for {n_fields} compound fields",
+                expected=n_fields,
+                actual=len(vals),
+            )
         for u in vals:
             if u and not unitmod.is_valid(u):
-                rep.add("UNIT-SYNTAX", Severity.ERROR, path,
-                        f"unit {u!r} is not valid H5MD unit notation", unit=u)
+                rep.add(
+                    "UNIT-SYNTAX",
+                    Severity.ERROR,
+                    path,
+                    f"unit {u!r} is not valid H5MD unit notation",
+                    unit=u,
+                )
 
     # ------------------------------------------------- generic tree conformance
     def _check_group(self, parent, node: spec.Group, path: str, rep):
@@ -221,18 +272,30 @@ class Validator:
         obj = parent.get(node.name)
         if obj is None:
             if node.required:
-                rep.add("STRUCT-MISSING-GROUP", Severity.ERROR, path,
-                        f"required group {node.name!r} is absent")
+                rep.add(
+                    "STRUCT-MISSING-GROUP",
+                    Severity.ERROR,
+                    path,
+                    f"required group {node.name!r} is absent",
+                )
             return
         if not isinstance(obj, h5py.Group):
-            rep.add("STRUCT-NOT-GROUP", Severity.ERROR, path,
-                    f"{node.name!r} is specified as a group but is a dataset")
+            rep.add(
+                "STRUCT-NOT-GROUP",
+                Severity.ERROR,
+                path,
+                f"{node.name!r} is specified as a group but is a dataset",
+            )
             return
 
         for attr in node.attrs:
             if attr.name not in obj.attrs and attr.required:
-                rep.add("STRUCT-MISSING-ATTR", Severity.ERROR, path,
-                        f"required attribute {attr.name!r} is absent")
+                rep.add(
+                    "STRUCT-MISSING-ATTR",
+                    Severity.ERROR,
+                    path,
+                    f"required attribute {attr.name!r} is absent",
+                )
 
         for dsnode in node.datasets:
             self._check_dataset(obj, dsnode, f"{path}/{dsnode.name}", rep)
@@ -248,40 +311,61 @@ class Validator:
 
     def _report_undocumented(self, path, rep, parent_name):
         """An element present in the file that the specification does not define."""
-        rep.add("STRUCT-UNDOCUMENTED", Severity.WARNING, path,
-                f"element is not defined by the specification for {parent_name!r}")
+        rep.add(
+            "STRUCT-UNDOCUMENTED",
+            Severity.WARNING,
+            path,
+            f"element is not defined by the specification for {parent_name!r}",
+        )
 
     def _check_dataset(self, parent, node: spec.Dataset, path: str, rep):
         obj = parent.get(node.name)
         if obj is None:
             if node.required:
-                rep.add("STRUCT-MISSING-DATASET", Severity.ERROR, path,
-                        f"required dataset {node.name!r} is absent")
+                rep.add(
+                    "STRUCT-MISSING-DATASET",
+                    Severity.ERROR,
+                    path,
+                    f"required dataset {node.name!r} is absent",
+                )
             return
         if isinstance(obj, h5py.Group):
             # Permitted when the element is stored time-dependently.
             if _is_time_dependent(obj):
                 self._check_time_alignment(obj, path, rep)
                 return
-            rep.add("STRUCT-NOT-DATASET", Severity.ERROR, path,
-                    f"{node.name!r} is specified as a dataset but is a group")
+            rep.add(
+                "STRUCT-NOT-DATASET",
+                Severity.ERROR,
+                path,
+                f"{node.name!r} is specified as a dataset but is a group",
+            )
             return
 
         actual = _dtype_class(obj.dtype)
         expected = spec.INTEGER if node.dtype == spec.BOOLEAN else node.dtype
         if actual != expected:
-            rep.add("STRUCT-DTYPE", Severity.ERROR, path,
-                    f"expected {node.dtype}, found {actual}",
-                    expected=node.dtype, actual=actual)
+            rep.add(
+                "STRUCT-DTYPE",
+                Severity.ERROR,
+                path,
+                f"expected {node.dtype}, found {actual}",
+                expected=node.dtype,
+                actual=actual,
+            )
         else:
             self._check_shape(obj, node, path, rep)
             if node.dtype == spec.BOOLEAN:
                 bad = sorted({int(v) for v in np.atleast_1d(obj[()]).ravel()} - {0, 1})
                 if bad:
                     # S3.3 admits any non-zero as true, so this is informational.
-                    rep.add("ENUM-BOOLEAN-NONCANONICAL", Severity.INFO, path,
-                            f"Boolean stored with non-canonical value(s) {bad}",
-                            values=bad)
+                    rep.add(
+                        "ENUM-BOOLEAN-NONCANONICAL",
+                        Severity.INFO,
+                        path,
+                        f"Boolean stored with non-canonical value(s) {bad}",
+                        values=bad,
+                    )
             if node.enum is not None:
                 self._check_enum(obj, node, path, rep)
 
@@ -292,24 +376,44 @@ class Validator:
         got = tuple(obj.shape)
         if want is None:
             if got != ():
-                rep.add("STRUCT-SHAPE", Severity.ERROR, path,
-                        f"expected a scalar, found shape {list(got)}",
-                        expected="scalar", actual=list(got))
+                rep.add(
+                    "STRUCT-SHAPE",
+                    Severity.ERROR,
+                    path,
+                    f"expected a scalar, found shape {list(got)}",
+                    expected="scalar",
+                    actual=list(got),
+                )
         elif want == ("scalar_or_tensor",):
             if got not in ((), (3, 3)):
-                rep.add("STRUCT-SHAPE", Severity.ERROR, path,
-                        f"expected a scalar or a 3x3 tensor, found shape {list(got)}",
-                        expected="scalar or [3,3]", actual=list(got))
+                rep.add(
+                    "STRUCT-SHAPE",
+                    Severity.ERROR,
+                    path,
+                    f"expected a scalar or a 3x3 tensor, found shape {list(got)}",
+                    expected="scalar or [3,3]",
+                    actual=list(got),
+                )
         elif all(isinstance(d, int) for d in want):
             if got != want:
-                rep.add("STRUCT-SHAPE", Severity.ERROR, path,
-                        f"expected shape {list(want)}, found {list(got)}",
-                        expected=list(want), actual=list(got))
+                rep.add(
+                    "STRUCT-SHAPE",
+                    Severity.ERROR,
+                    path,
+                    f"expected shape {list(want)}, found {list(got)}",
+                    expected=list(want),
+                    actual=list(got),
+                )
         else:
             if len(got) != len(want):
-                rep.add("STRUCT-SHAPE", Severity.ERROR, path,
-                        f"expected a {len(want)}-D dataset, found {len(got)}-D",
-                        expected=len(want), actual=len(got))
+                rep.add(
+                    "STRUCT-SHAPE",
+                    Severity.ERROR,
+                    path,
+                    f"expected a {len(want)}-D dataset, found {len(got)}-D",
+                    expected=len(want),
+                    actual=len(got),
+                )
 
     def _check_enum(self, obj, node: spec.Dataset, path, rep):
         value = _read(obj)
@@ -320,10 +424,15 @@ class Validator:
             if v not in node.enum:
                 # S7 permits algorithms outside the predefined set, provided a
                 # doi/url points at a definition.  That is a WARNING, not an error.
-                rep.add("ENUM-UNDEFINED-VALUE", Severity.WARNING, path,
-                        f"value {v!r} is outside the predefined set "
-                        f"{sorted(node.enum)}; a doi or url attribute is recommended",
-                        value=v, predefined=sorted(node.enum))
+                rep.add(
+                    "ENUM-UNDEFINED-VALUE",
+                    Severity.WARNING,
+                    path,
+                    f"value {v!r} is outside the predefined set "
+                    f"{sorted(node.enum)}; a doi or url attribute is recommended",
+                    value=v,
+                    predefined=sorted(node.enum),
+                )
 
     # ------------------------------------------------- S3.2 time-dependent data
     def _check_time_alignment(self, grp, path, rep):
@@ -334,23 +443,39 @@ class Validator:
                 shape = grp[key].shape
                 lengths[key] = shape[0] if shape else None
         if "step" not in lengths:
-            rep.add("TIME-STEP-MISSING", Severity.ERROR, path,
-                    "time-dependent element has no step dataset")
+            rep.add(
+                "TIME-STEP-MISSING",
+                Severity.ERROR,
+                path,
+                "time-dependent element has no step dataset",
+            )
         if "value" not in lengths:
-            rep.add("TIME-VALUE-MISSING", Severity.ERROR, path,
-                    "time-dependent element has no value dataset")
+            rep.add(
+                "TIME-VALUE-MISSING",
+                Severity.ERROR,
+                path,
+                "time-dependent element has no value dataset",
+            )
         present = {k: v for k, v in lengths.items() if v is not None}
         if len(set(present.values())) > 1:
-            rep.add("TIME-LENGTH-MISMATCH", Severity.ERROR, path,
-                    "first dimension of step/time/value datasets disagree: "
-                    + ", ".join(f"{k}={v}" for k, v in sorted(present.items())),
-                    lengths=present)
+            rep.add(
+                "TIME-LENGTH-MISMATCH",
+                Severity.ERROR,
+                path,
+                "first dimension of step/time/value datasets disagree: "
+                + ", ".join(f"{k}={v}" for k, v in sorted(present.items())),
+                lengths=present,
+            )
         for key in ("step", "time"):
             if key in grp and isinstance(grp[key], h5py.Dataset):
                 data = np.asarray(grp[key][()]).ravel()
                 if data.size > 1 and np.any(np.diff(data) < 0):
-                    rep.add("TIME-NOT-MONOTONIC", Severity.ERROR, f"{path}/{key}",
-                            f"{key} values are not monotonically increasing")
+                    rep.add(
+                        "TIME-NOT-MONOTONIC",
+                        Severity.ERROR,
+                        f"{path}/{key}",
+                        f"{key} values are not monotonically increasing",
+                    )
         if "time" in grp and isinstance(grp["time"], h5py.Dataset):
             self._check_unit_attr(grp["time"], f"{path}/time", rep, required=True)
 
@@ -370,15 +495,26 @@ class Validator:
             if not isinstance(value, str):
                 continue
             if value in owning and value not in grp:
-                rep.add("COND-SUBGROUP-MISSING", Severity.ERROR, gpath,
-                        f"{selector} is {value!r} but no {value!r} subgroup is present",
-                        selector=selector, value=value)
+                rep.add(
+                    "COND-SUBGROUP-MISSING",
+                    Severity.ERROR,
+                    gpath,
+                    f"{selector} is {value!r} but no {value!r} subgroup is present",
+                    selector=selector,
+                    value=value,
+                )
             # A subgroup for an algorithm that was not selected is contradictory.
             for name in owning:
                 if name != value and name in grp and isinstance(grp[name], h5py.Group):
-                    rep.add("COND-SUBGROUP-ORPHAN", Severity.ERROR, f"{gpath}/{name}",
-                            f"subgroup {name!r} is present but {selector} is {value!r}",
-                            selector=selector, value=value, orphan=name)
+                    rep.add(
+                        "COND-SUBGROUP-ORPHAN",
+                        Severity.ERROR,
+                        f"{gpath}/{name}",
+                        f"subgroup {name!r} is present but {selector} is {value!r}",
+                        selector=selector,
+                        value=value,
+                        orphan=name,
+                    )
 
         # S7.3: per-group arrays must match the length of 'groups'.
         for gpath, names in spec.PER_GROUP_DATASETS.items():
@@ -392,9 +528,14 @@ class Validator:
                     continue
                 got = ds.shape[0] if ds.shape else 1
                 if got != n:
-                    rep.add("STRUCT-PER-GROUP-LENGTH", Severity.ERROR, f"{gpath}/{rel}",
-                            f"has {got} value(s) for {n} coupling group(s)",
-                            expected=n, actual=got)
+                    rep.add(
+                        "STRUCT-PER-GROUP-LENGTH",
+                        Severity.ERROR,
+                        f"{gpath}/{rel}",
+                        f"has {got} value(s) for {n} coupling group(s)",
+                        expected=n,
+                        actual=got,
+                    )
 
         # S7: an algorithm outside the predefined set should carry a doi or url.
         for gpath, (selector, predefined) in spec.SELECTOR_ENUMS.items():
@@ -406,10 +547,16 @@ class Validator:
                 sub = grp.get(value)
                 holder = sub if sub is not None else grp.get(selector)
                 if holder is not None and not ({"doi", "url"} & set(holder.attrs)):
-                    rep.add("REF-PROVENANCE-MISSING", Severity.WARNING,
-                            f"{gpath}/{value}" if sub is not None else f"{gpath}/{selector}",
-                            f"{value!r} is not a predefined value; a doi or url "
-                            "attribute is recommended", value=value)
+                    rep.add(
+                        "REF-PROVENANCE-MISSING",
+                        Severity.WARNING,
+                        f"{gpath}/{value}"
+                        if sub is not None
+                        else f"{gpath}/{selector}",
+                        f"{value!r} is not a predefined value; a doi or url "
+                        "attribute is recommended",
+                        value=value,
+                    )
 
     # --------------------------------------------------------- S6 observables
     def _check_observables(self, f, rep):
@@ -422,39 +569,58 @@ class Validator:
             if _is_time_dependent(node):
                 self._check_time_alignment(node, path, rep)
                 self._check_observable_shape(name, node["value"], path, rep)
-                self._check_unit_attr(node["value"], f"{path}/value", rep, required=True)
+                self._check_unit_attr(
+                    node["value"], f"{path}/value", rep, required=True
+                )
             elif isinstance(node, h5py.Dataset):
                 self._check_observable_shape(name, node, path, rep)
                 self._check_unit_attr(node, path, rep, required=True)
             elif isinstance(node, h5py.Group):
                 # Per-selection-group nesting: observables/<group>/<observable>.
                 if self.report_deviations:
-                    rep.add("DEV-OBS-GROUP-NESTING", Severity.DEVIATION, path,
-                            DEVIATIONS["DEV-OBS-GROUP-NESTING"].title,
-                            deviation="DEV-OBS-GROUP-NESTING")
+                    rep.add(
+                        "DEV-OBS-GROUP-NESTING",
+                        Severity.DEVIATION,
+                        path,
+                        DEVIATIONS["DEV-OBS-GROUP-NESTING"].title,
+                        deviation="DEV-OBS-GROUP-NESTING",
+                    )
                 for sub in node:
                     subnode = node[sub]
                     subpath = f"{path}/{sub}"
                     if _is_time_dependent(subnode):
                         self._check_time_alignment(subnode, subpath, rep)
-                        self._check_observable_shape(sub, subnode["value"], subpath, rep)
-                        self._check_unit_attr(subnode["value"], f"{subpath}/value",
-                                              rep, required=True)
+                        self._check_observable_shape(
+                            sub, subnode["value"], subpath, rep
+                        )
+                        self._check_unit_attr(
+                            subnode["value"], f"{subpath}/value", rep, required=True
+                        )
 
     def _check_observable_shape(self, name, ds, path, rep):
         want = spec.OBSERVABLES.get(name)
         if want is None:
-            rep.add("STRUCT-UNDOCUMENTED", Severity.WARNING, path,
-                    f"{name!r} is not one of the predefined observables of S6",
-                    name=name)
+            rep.add(
+                "STRUCT-UNDOCUMENTED",
+                Severity.WARNING,
+                path,
+                f"{name!r} is not one of the predefined observables of S6",
+                name=name,
+            )
             return
         got = tuple(ds.shape)
         # Drop the leading frame axis for time-dependent storage.
         record = got[1:] if len(got) > len(want) else got
         if tuple(record) != tuple(want):
-            rep.add("STRUCT-SHAPE", Severity.ERROR, path,
-                    f"observable {name!r} expects record shape {list(want)}, "
-                    f"found {list(record)}", expected=list(want), actual=list(record))
+            rep.add(
+                "STRUCT-SHAPE",
+                Severity.ERROR,
+                path,
+                f"observable {name!r} expects record shape {list(want)}, "
+                f"found {list(record)}",
+                expected=list(want),
+                actual=list(record),
+            )
 
     # --------------------------------------------------------- S8 force field
     def _check_force_field(self, f, rep):
@@ -465,9 +631,14 @@ class Validator:
         # DEV-FF-BONDED-LAYER: the spec puts <type> directly under force_field.
         layered = {k for k in ff if k in ("bonded", "nonbonded")}
         if layered and self.report_deviations:
-            rep.add("DEV-FF-BONDED-LAYER", Severity.DEVIATION, "force_field",
-                    DEVIATIONS["DEV-FF-BONDED-LAYER"].title,
-                    deviation="DEV-FF-BONDED-LAYER", subgroups=sorted(layered))
+            rep.add(
+                "DEV-FF-BONDED-LAYER",
+                Severity.DEVIATION,
+                "force_field",
+                DEVIATIONS["DEV-FF-BONDED-LAYER"].title,
+                deviation="DEV-FF-BONDED-LAYER",
+                subgroups=sorted(layered),
+            )
 
         for container, base in self._force_field_containers(ff):
             for tname in container:
@@ -481,33 +652,55 @@ class Validator:
                     # See deviations.DEV-FF-NO-EXTENSION-CONVENTION -- S8 does
                     # not yet state this, so the check is advisory.
                     if not ({"doi", "url"} & set(tgrp.attrs)):
-                        rep.add("REF-PROVENANCE-MISSING", Severity.WARNING, path,
-                                f"{tname!r} is outside the predefined set of "
-                                "Table SI; an extension is permitted, but a doi or "
-                                "url attribute naming the functional form is "
-                                "recommended", name=tname)
+                        rep.add(
+                            "REF-PROVENANCE-MISSING",
+                            Severity.WARNING,
+                            path,
+                            f"{tname!r} is outside the predefined set of "
+                            "Table SI; an extension is permitted, but a doi or "
+                            "url attribute naming the functional form is "
+                            "recommended",
+                            name=tname,
+                        )
                     else:
-                        rep.add("STRUCT-EXTENSION", Severity.INFO, path,
-                                f"{tname!r} is an extension outside Table SI, with "
-                                "a reference attached", name=tname)
+                        rep.add(
+                            "STRUCT-EXTENSION",
+                            Severity.INFO,
+                            path,
+                            f"{tname!r} is an extension outside Table SI, with "
+                            "a reference attached",
+                            name=tname,
+                        )
                     continue
                 if itype.bonded and base.endswith("nonbonded"):
-                    rep.add("STRUCT-FF-CLASSIFICATION", Severity.ERROR, path,
-                            f"{tname!r} is a bonded interaction type but is stored "
-                            "under nonbonded")
+                    rep.add(
+                        "STRUCT-FF-CLASSIFICATION",
+                        Severity.ERROR,
+                        path,
+                        f"{tname!r} is a bonded interaction type but is stored "
+                        "under nonbonded",
+                    )
                 if not itype.bonded and base.endswith("/bonded"):
-                    rep.add("STRUCT-FF-CLASSIFICATION", Severity.ERROR, path,
-                            f"{tname!r} is a nonbonded interaction type but is stored "
-                            "under bonded")
+                    rep.add(
+                        "STRUCT-FF-CLASSIFICATION",
+                        Severity.ERROR,
+                        path,
+                        f"{tname!r} is a nonbonded interaction type but is stored "
+                        "under bonded",
+                    )
                 for pname in ("parameters", "parameters_B"):
                     if pname not in tgrp:
                         if pname == "parameters":
-                            rep.add("STRUCT-MISSING-DATASET", Severity.ERROR,
-                                    f"{path}/parameters",
-                                    "interaction type has no parameters dataset")
+                            rep.add(
+                                "STRUCT-MISSING-DATASET",
+                                Severity.ERROR,
+                                f"{path}/parameters",
+                                "interaction type has no parameters dataset",
+                            )
                         continue
-                    self._check_parameter_compound(tgrp[pname], f"{path}/{pname}",
-                                                   itype, rep)
+                    self._check_parameter_compound(
+                        tgrp[pname], f"{path}/{pname}", itype, rep
+                    )
 
     def _force_field_containers(self, ff):
         """Yield (group, path) pairs that hold interaction-type subgroups."""
@@ -521,27 +714,42 @@ class Validator:
 
     def _check_parameter_compound(self, ds, path, itype, rep):
         if ds.dtype.names is None:
-            rep.add("STRUCT-DTYPE", Severity.ERROR, path,
-                    "parameters must be a compound dataset",
-                    expected=spec.COMPOUND, actual=_dtype_class(ds.dtype))
+            rep.add(
+                "STRUCT-DTYPE",
+                Severity.ERROR,
+                path,
+                "parameters must be a compound dataset",
+                expected=spec.COMPOUND,
+                actual=_dtype_class(ds.dtype),
+            )
             return
         got = tuple(ds.dtype.names)
         accepted = [tuple(fl.name for fl in itype.params)]
         if itype.alt_params:
             accepted.append(tuple(fl.name for fl in itype.alt_params))
         if got not in accepted:
-            rep.add("STRUCT-COMPOUND-FIELDS", Severity.ERROR, path,
-                    f"compound fields {list(got)} do not match any layout "
-                    f"specified for {itype.name!r}: {[list(a) for a in accepted]}",
-                    expected=[list(a) for a in accepted], actual=list(got))
+            rep.add(
+                "STRUCT-COMPOUND-FIELDS",
+                Severity.ERROR,
+                path,
+                f"compound fields {list(got)} do not match any layout "
+                f"specified for {itype.name!r}: {[list(a) for a in accepted]}",
+                expected=[list(a) for a in accepted],
+                actual=list(got),
+            )
         else:
             layout = itype.params if got == accepted[0] else itype.alt_params
             for fl in layout:
                 actual = _dtype_class(ds.dtype[fl.name])
                 if actual != fl.dtype:
-                    rep.add("STRUCT-COMPOUND-DTYPE", Severity.ERROR, f"{path}.{fl.name}",
-                            f"field {fl.name!r} expected {fl.dtype}, found {actual}",
-                            expected=fl.dtype, actual=actual)
+                    rep.add(
+                        "STRUCT-COMPOUND-DTYPE",
+                        Severity.ERROR,
+                        f"{path}.{fl.name}",
+                        f"field {fl.name!r} expected {fl.dtype}, found {actual}",
+                        expected=fl.dtype,
+                        actual=actual,
+                    )
         self._check_units_attr(ds, path, rep, len(got))
 
     # ------------------------------------------------------------ S10 topology
@@ -551,19 +759,31 @@ class Validator:
         if topo is None:
             return None
 
-        info = {"molecule_types": {}, "total_particle_count": None,
-                "total_component_count": None, "n_particles": None}
+        info = {
+            "molecule_types": {},
+            "total_particle_count": None,
+            "total_component_count": None,
+            "n_particles": None,
+        }
 
         for attr in ("total_particle_count", "total_component_count"):
             if attr not in topo.attrs:
-                rep.add("STRUCT-MISSING-ATTR", Severity.ERROR, "topology",
-                        f"required attribute {attr!r} is absent")
+                rep.add(
+                    "STRUCT-MISSING-ATTR",
+                    Severity.ERROR,
+                    "topology",
+                    f"required attribute {attr!r} is absent",
+                )
             else:
                 info[attr] = int(np.atleast_1d(topo.attrs[attr])[0])
         if "system_name" in topo.attrs and self.report_deviations:
-            rep.add("DEV-TOPO-SYSTEM-NAME", Severity.DEVIATION, "topology",
-                    DEVIATIONS["DEV-TOPO-SYSTEM-NAME"].title,
-                    deviation="DEV-TOPO-SYSTEM-NAME")
+            rep.add(
+                "DEV-TOPO-SYSTEM-NAME",
+                Severity.DEVIATION,
+                "topology",
+                DEVIATIONS["DEV-TOPO-SYSTEM-NAME"].title,
+                deviation="DEV-TOPO-SYSTEM-NAME",
+            )
 
         ff_params = self._collect_parameter_counts(f)
 
@@ -575,24 +795,38 @@ class Validator:
             if not isinstance(mol, h5py.Group):
                 continue
             info["molecule_types"][name] = self._check_molecule_type(
-                mol, f"topology/{name}", rep, ff_params)
+                mol, f"topology/{name}", rep, ff_params
+            )
 
         # --- molecule_blocks and the S10 count invariants ---------------------
         blocks = topo.get("molecule_blocks")
         if blocks is None:
-            rep.add("STRUCT-MISSING-DATASET", Severity.ERROR, "topology/molecule_blocks",
-                    "required dataset molecule_blocks is absent")
+            rep.add(
+                "STRUCT-MISSING-DATASET",
+                Severity.ERROR,
+                "topology/molecule_blocks",
+                "required dataset molecule_blocks is absent",
+            )
             return info
         if blocks.dtype.names is None:
-            rep.add("STRUCT-DTYPE", Severity.ERROR, "topology/molecule_blocks",
-                    "molecule_blocks must be a compound dataset")
+            rep.add(
+                "STRUCT-DTYPE",
+                Severity.ERROR,
+                "topology/molecule_blocks",
+                "molecule_blocks must be a compound dataset",
+            )
             return info
         expected_fields = tuple(fl.name for fl in spec.MOLECULE_BLOCK_FIELDS)
         if tuple(blocks.dtype.names) != expected_fields:
-            rep.add("STRUCT-COMPOUND-FIELDS", Severity.ERROR, "topology/molecule_blocks",
-                    f"compound fields {list(blocks.dtype.names)} do not match "
-                    f"{list(expected_fields)}",
-                    expected=list(expected_fields), actual=list(blocks.dtype.names))
+            rep.add(
+                "STRUCT-COMPOUND-FIELDS",
+                Severity.ERROR,
+                "topology/molecule_blocks",
+                f"compound fields {list(blocks.dtype.names)} do not match "
+                f"{list(expected_fields)}",
+                expected=list(expected_fields),
+                actual=list(blocks.dtype.names),
+            )
             return info
 
         data = blocks[()]
@@ -601,33 +835,58 @@ class Validator:
             bname = _decode(row["name"])
             count = int(row["count"])
             if count < 0:
-                rep.add("TOPO-BLOCK-COUNT-NEGATIVE", Severity.ERROR,
-                        f"topology/molecule_blocks[{i}]",
-                        f"molecule block {bname!r} has negative count {count}",
-                        index=i, name=bname, count=count)
+                rep.add(
+                    "TOPO-BLOCK-COUNT-NEGATIVE",
+                    Severity.ERROR,
+                    f"topology/molecule_blocks[{i}]",
+                    f"molecule block {bname!r} has negative count {count}",
+                    index=i,
+                    name=bname,
+                    count=count,
+                )
             mol = info["molecule_types"].get(bname)
             if mol is None:
-                rep.add("REF-BLOCK-DANGLING", Severity.ERROR,
-                        f"topology/molecule_blocks[{i}]",
-                        f"molecule block references molecule type {bname!r}, "
-                        "which has no group under topology/",
-                        index=i, name=bname)
+                rep.add(
+                    "REF-BLOCK-DANGLING",
+                    Severity.ERROR,
+                    f"topology/molecule_blocks[{i}]",
+                    f"molecule block references molecule type {bname!r}, "
+                    "which has no group under topology/",
+                    index=i,
+                    name=bname,
+                )
                 continue
             total_p += count * mol["particle_count"]
             total_c += count * mol["component_count"]
 
         info["n_particles"] = total_p
         # sum_i n_i N_i == total_particle_count
-        if info["total_particle_count"] is not None and total_p != info["total_particle_count"]:
-            rep.add("TOPO-INVARIANT-PARTICLES", Severity.ERROR, "topology",
-                    f"sum over molecule blocks of count x particle_count is {total_p}, "
-                    f"but total_particle_count is {info['total_particle_count']}",
-                    computed=total_p, declared=info["total_particle_count"])
-        if info["total_component_count"] is not None and total_c != info["total_component_count"]:
-            rep.add("TOPO-INVARIANT-COMPONENTS", Severity.ERROR, "topology",
-                    f"sum over molecule blocks of count x component_count is {total_c}, "
-                    f"but total_component_count is {info['total_component_count']}",
-                    computed=total_c, declared=info["total_component_count"])
+        if (
+            info["total_particle_count"] is not None
+            and total_p != info["total_particle_count"]
+        ):
+            rep.add(
+                "TOPO-INVARIANT-PARTICLES",
+                Severity.ERROR,
+                "topology",
+                f"sum over molecule blocks of count x particle_count is {total_p}, "
+                f"but total_particle_count is {info['total_particle_count']}",
+                computed=total_p,
+                declared=info["total_particle_count"],
+            )
+        if (
+            info["total_component_count"] is not None
+            and total_c != info["total_component_count"]
+        ):
+            rep.add(
+                "TOPO-INVARIANT-COMPONENTS",
+                Severity.ERROR,
+                "topology",
+                f"sum over molecule blocks of count x component_count is {total_c}, "
+                f"but total_component_count is {info['total_component_count']}",
+                computed=total_c,
+                declared=info["total_component_count"],
+            )
 
         # The trajectory must describe the same number of particles.
         self._check_particle_count_vs_trajectory(f, info, rep)
@@ -646,11 +905,15 @@ class Validator:
                 continue
             n = value.shape[-2]
             if n != info["n_particles"]:
-                rep.add("TOPO-TRAJECTORY-MISMATCH", Severity.ERROR,
-                        f"particles/{sysname}/position",
-                        f"trajectory stores {n} particles but the topology describes "
-                        f"{info['n_particles']}",
-                        trajectory=n, topology=info["n_particles"])
+                rep.add(
+                    "TOPO-TRAJECTORY-MISMATCH",
+                    Severity.ERROR,
+                    f"particles/{sysname}/position",
+                    f"trajectory stores {n} particles but the topology describes "
+                    f"{info['n_particles']}",
+                    trajectory=n,
+                    topology=info["n_particles"],
+                )
 
     def _collect_parameter_counts(self, f):
         """Map interaction type name -> number of force-field parameter entries."""
@@ -680,8 +943,12 @@ class Validator:
 
         for attr in ("particle_count", "component_count"):
             if attr not in mol.attrs:
-                rep.add("STRUCT-MISSING-ATTR", Severity.ERROR, path,
-                        f"required attribute {attr!r} is absent")
+                rep.add(
+                    "STRUCT-MISSING-ATTR",
+                    Severity.ERROR,
+                    path,
+                    f"required attribute {attr!r} is absent",
+                )
             else:
                 summary[attr] = int(np.atleast_1d(mol.attrs[attr])[0])
 
@@ -692,28 +959,48 @@ class Validator:
         cnames = mol.get("component_name_table")
         n_pnames = pnames.shape[0] if isinstance(pnames, h5py.Dataset) else 0
         n_cnames = cnames.shape[0] if isinstance(cnames, h5py.Dataset) else 0
-        for nm, ds in (("particle_name_table", pnames), ("component_name_table", cnames)):
+        for nm, ds in (
+            ("particle_name_table", pnames),
+            ("component_name_table", cnames),
+        ):
             if ds is None:
-                rep.add("STRUCT-MISSING-DATASET", Severity.ERROR, f"{path}/{nm}",
-                        f"required dataset {nm!r} is absent")
+                rep.add(
+                    "STRUCT-MISSING-DATASET",
+                    Severity.ERROR,
+                    f"{path}/{nm}",
+                    f"required dataset {nm!r} is absent",
+                )
             elif _dtype_class(ds.dtype) != spec.STRING:
-                rep.add("STRUCT-DTYPE", Severity.ERROR, f"{path}/{nm}",
-                        f"expected String, found {_dtype_class(ds.dtype)}")
+                rep.add(
+                    "STRUCT-DTYPE",
+                    Severity.ERROR,
+                    f"{path}/{nm}",
+                    f"expected String, found {_dtype_class(ds.dtype)}",
+                )
 
         # --- particle_data ---------------------------------------------------
         pdata = mol.get("particle_data")
         if pdata is None:
-            rep.add("STRUCT-MISSING-DATASET", Severity.ERROR, f"{path}/particle_data",
-                    "required dataset particle_data is absent")
+            rep.add(
+                "STRUCT-MISSING-DATASET",
+                Severity.ERROR,
+                f"{path}/particle_data",
+                "required dataset particle_data is absent",
+            )
         else:
-            self._check_particle_data(pdata, f"{path}/particle_data", rep,
-                                      n_particles, n_components, n_pnames)
+            self._check_particle_data(
+                pdata, f"{path}/particle_data", rep, n_particles, n_components, n_pnames
+            )
 
         # --- sequence --------------------------------------------------------
         seq = mol.get("sequence")
         if seq is None:
-            rep.add("STRUCT-MISSING-DATASET", Severity.ERROR, f"{path}/sequence",
-                    "required dataset sequence is absent")
+            rep.add(
+                "STRUCT-MISSING-DATASET",
+                Severity.ERROR,
+                f"{path}/sequence",
+                "required dataset sequence is absent",
+            )
         else:
             self._check_sequence(seq, f"{path}/sequence", rep, n_components, n_cnames)
 
@@ -722,14 +1009,24 @@ class Validator:
         if inter is None and self.report_deviations:
             # S10 marks the group mandatory; monatomic species legitimately have
             # no bonded interactions and the writer omits it.
-            rep.add("DEV-TOPO-INTERACTIONS-REQUIRED", Severity.DEVIATION, path,
-                    DEVIATIONS["DEV-TOPO-INTERACTIONS-REQUIRED"].title,
-                    deviation="DEV-TOPO-INTERACTIONS-REQUIRED",
-                    particle_count=n_particles)
+            rep.add(
+                "DEV-TOPO-INTERACTIONS-REQUIRED",
+                Severity.DEVIATION,
+                path,
+                DEVIATIONS["DEV-TOPO-INTERACTIONS-REQUIRED"].title,
+                deviation="DEV-TOPO-INTERACTIONS-REQUIRED",
+                particle_count=n_particles,
+            )
         if isinstance(inter, h5py.Group):
             for tname in inter:
-                self._check_interaction(inter[tname], f"{path}/interactions/{tname}",
-                                        tname, rep, n_particles, ff_params)
+                self._check_interaction(
+                    inter[tname],
+                    f"{path}/interactions/{tname}",
+                    tname,
+                    rep,
+                    n_particles,
+                    ff_params,
+                )
 
         # --- exclusions ------------------------------------------------------
         exc = mol.get("exclusions")
@@ -750,30 +1047,54 @@ class Validator:
         if idx is None or rng is None:
             for nm, ds in (("indices", idx), ("ranges", rng)):
                 if ds is None:
-                    rep.add("STRUCT-MISSING-DATASET", Severity.ERROR, f"{path}/{nm}",
-                            f"required dataset {nm!r} is absent")
+                    rep.add(
+                        "STRUCT-MISSING-DATASET",
+                        Severity.ERROR,
+                        f"{path}/{nm}",
+                        f"required dataset {nm!r} is absent",
+                    )
             return
         if self.report_deviations:
-            rep.add("DEV-EXCL-UNDOCUMENTED", Severity.DEVIATION, path,
-                    DEVIATIONS["DEV-EXCL-UNDOCUMENTED"].title,
-                    deviation="DEV-EXCL-UNDOCUMENTED")
+            rep.add(
+                "DEV-EXCL-UNDOCUMENTED",
+                Severity.DEVIATION,
+                path,
+                DEVIATIONS["DEV-EXCL-UNDOCUMENTED"].title,
+                deviation="DEV-EXCL-UNDOCUMENTED",
+            )
 
         indices = np.asarray(idx[()], dtype=np.int64).ravel()
         # Exclusions name particles of this molecule type.
-        self._check_index_range(indices, n_particles, f"{path}/indices", rep,
-                                "REF-EXCL-INDEX", "excluded particle index")
+        self._check_index_range(
+            indices,
+            n_particles,
+            f"{path}/indices",
+            rep,
+            "REF-EXCL-INDEX",
+            "excluded particle index",
+        )
 
         ranges = np.asarray(rng[()], dtype=np.int64)
         if ranges.ndim != 2 or ranges.shape[1] != 3:
-            rep.add("STRUCT-SHAPE", Severity.ERROR, f"{path}/ranges",
-                    f"ranges must be Integer[N][3], found shape {list(ranges.shape)}",
-                    expected="[N,3]", actual=list(ranges.shape))
+            rep.add(
+                "STRUCT-SHAPE",
+                Severity.ERROR,
+                f"{path}/ranges",
+                f"ranges must be Integer[N][3], found shape {list(ranges.shape)}",
+                expected="[N,3]",
+                actual=list(ranges.shape),
+            )
             return
         if ranges.shape[0] != n_particles:
-            rep.add("TOPO-EXCLUSION-ROWS", Severity.ERROR, f"{path}/ranges",
-                    f"ranges has {ranges.shape[0]} rows for {n_particles} particle(s); "
-                    "one row per particle is expected",
-                    expected=n_particles, actual=int(ranges.shape[0]))
+            rep.add(
+                "TOPO-EXCLUSION-ROWS",
+                Severity.ERROR,
+                f"{path}/ranges",
+                f"ranges has {ranges.shape[0]} rows for {n_particles} particle(s); "
+                "one row per particle is expected",
+                expected=n_particles,
+                actual=int(ranges.shape[0]),
+            )
             return
 
         first, last, stride = ranges[:, 0], ranges[:, 1], ranges[:, 2]
@@ -781,46 +1102,80 @@ class Validator:
         # 1-based, right-closed offsets into ``indices``.
         bad = np.flatnonzero((first < 1) | (last > n_idx) | (first > last + 1))
         if bad.size:
-            rep.add("REF-EXCL-RANGE", Severity.ERROR, f"{path}/ranges",
-                    f"{bad.size} row(s) span outside the 1-based inclusive bounds "
-                    f"[1, {n_idx}] of the indices dataset",
-                    count=int(bad.size), bound=int(n_idx),
-                    first_rows=bad[:10].tolist())
+            rep.add(
+                "REF-EXCL-RANGE",
+                Severity.ERROR,
+                f"{path}/ranges",
+                f"{bad.size} row(s) span outside the 1-based inclusive bounds "
+                f"[1, {n_idx}] of the indices dataset",
+                count=int(bad.size),
+                bound=int(n_idx),
+                first_rows=bad[:10].tolist(),
+            )
         bad = np.flatnonzero(stride != 1)
         if bad.size:
-            rep.add("REF-EXCL-STRIDE", Severity.ERROR, f"{path}/ranges",
-                    f"{bad.size} row(s) have a stride other than 1; the exclusion "
-                    "list is a contiguous span per particle",
-                    count=int(bad.size), first_rows=bad[:10].tolist())
+            rep.add(
+                "REF-EXCL-STRIDE",
+                Severity.ERROR,
+                f"{path}/ranges",
+                f"{bad.size} row(s) have a stride other than 1; the exclusion "
+                "list is a contiguous span per particle",
+                count=int(bad.size),
+                first_rows=bad[:10].tolist(),
+            )
         # The per-particle spans must tile the indices array exactly once.
         if n_particles:
             if int(first[0]) != 1:
-                rep.add("REF-EXCL-COVERAGE", Severity.ERROR, f"{path}/ranges",
-                        f"first span starts at {int(first[0])}, expected 1",
-                        actual=int(first[0]))
+                rep.add(
+                    "REF-EXCL-COVERAGE",
+                    Severity.ERROR,
+                    f"{path}/ranges",
+                    f"first span starts at {int(first[0])}, expected 1",
+                    actual=int(first[0]),
+                )
             gaps = np.flatnonzero(first[1:] != last[:-1] + 1)
             if gaps.size:
-                rep.add("REF-EXCL-COVERAGE", Severity.ERROR, f"{path}/ranges",
-                        f"{gaps.size} discontinuity/ies between consecutive spans; "
-                        "the spans must tile the indices dataset",
-                        count=int(gaps.size), first_rows=gaps[:10].tolist())
+                rep.add(
+                    "REF-EXCL-COVERAGE",
+                    Severity.ERROR,
+                    f"{path}/ranges",
+                    f"{gaps.size} discontinuity/ies between consecutive spans; "
+                    "the spans must tile the indices dataset",
+                    count=int(gaps.size),
+                    first_rows=gaps[:10].tolist(),
+                )
             if int(last[-1]) != n_idx:
-                rep.add("REF-EXCL-COVERAGE", Severity.ERROR, f"{path}/ranges",
-                        f"last span ends at {int(last[-1])} but indices has {n_idx} "
-                        "entries", actual=int(last[-1]), expected=int(n_idx))
+                rep.add(
+                    "REF-EXCL-COVERAGE",
+                    Severity.ERROR,
+                    f"{path}/ranges",
+                    f"last span ends at {int(last[-1])} but indices has {n_idx} "
+                    "entries",
+                    actual=int(last[-1]),
+                    expected=int(n_idx),
+                )
 
     def _check_particle_data(self, ds, path, rep, n_particles, n_components, n_pnames):
         if ds.dtype.names is None:
-            rep.add("STRUCT-DTYPE", Severity.ERROR, path,
-                    "particle_data must be a compound dataset")
+            rep.add(
+                "STRUCT-DTYPE",
+                Severity.ERROR,
+                path,
+                "particle_data must be a compound dataset",
+            )
             return
         got = tuple(ds.dtype.names)
         expected = tuple(fl.name for fl in spec.PARTICLE_DATA_FIELDS)
         if got != expected:
-            rep.add("STRUCT-COMPOUND-FIELDS", Severity.ERROR, path,
-                    f"compound fields {list(got)} do not match the specified "
-                    f"layout {list(expected)}",
-                    expected=list(expected), actual=list(got))
+            rep.add(
+                "STRUCT-COMPOUND-FIELDS",
+                Severity.ERROR,
+                path,
+                f"compound fields {list(got)} do not match the specified "
+                f"layout {list(expected)}",
+                expected=list(expected),
+                actual=list(got),
+            )
             return
 
         for fl in spec.PARTICLE_DATA_FIELDS:
@@ -831,60 +1186,113 @@ class Validator:
                 # Registered mismatch: the writer stores an index into
                 # particle_name_table where the spec declares a String.
                 if self.report_deviations:
-                    rep.add("DEV-TOPO-NAME-TYPE", Severity.DEVIATION, f"{path}.name",
-                            DEVIATIONS["DEV-TOPO-NAME-TYPE"].title,
-                            deviation="DEV-TOPO-NAME-TYPE")
+                    rep.add(
+                        "DEV-TOPO-NAME-TYPE",
+                        Severity.DEVIATION,
+                        f"{path}.name",
+                        DEVIATIONS["DEV-TOPO-NAME-TYPE"].title,
+                        deviation="DEV-TOPO-NAME-TYPE",
+                    )
                 continue
-            rep.add("STRUCT-COMPOUND-DTYPE", Severity.ERROR, f"{path}.{fl.name}",
-                    f"field {fl.name!r} expected {fl.dtype}, found {actual}",
-                    expected=fl.dtype, actual=actual)
+            rep.add(
+                "STRUCT-COMPOUND-DTYPE",
+                Severity.ERROR,
+                f"{path}.{fl.name}",
+                f"field {fl.name!r} expected {fl.dtype}, found {actual}",
+                expected=fl.dtype,
+                actual=actual,
+            )
 
         if ds.shape[0] != n_particles:
-            rep.add("TOPO-PARTICLE-DATA-LENGTH", Severity.ERROR, path,
-                    f"particle_data has {ds.shape[0]} rows but particle_count is "
-                    f"{n_particles}", expected=n_particles, actual=ds.shape[0])
+            rep.add(
+                "TOPO-PARTICLE-DATA-LENGTH",
+                Severity.ERROR,
+                path,
+                f"particle_data has {ds.shape[0]} rows but particle_count is "
+                f"{n_particles}",
+                expected=n_particles,
+                actual=ds.shape[0],
+            )
 
         self._check_units_attr(ds, path, rep, len(got))
 
         data = ds[()]
         # component_id must index a component of this molecule type.
         cid = np.asarray(data["component_id"], dtype=np.int64)
-        self._check_index_range(cid, n_components, f"{path}.component_id", rep,
-                                "REF-COMPONENT-ID", "component_id")
+        self._check_index_range(
+            cid,
+            n_components,
+            f"{path}.component_id",
+            rep,
+            "REF-COMPONENT-ID",
+            "component_id",
+        )
         # When name is an index it must address particle_name_table.
         if _dtype_class(ds.dtype["name"]) == spec.INTEGER and n_pnames:
             nm = np.asarray(data["name"], dtype=np.int64)
-            self._check_index_range(nm, n_pnames, f"{path}.name", rep,
-                                    "REF-PARTICLE-NAME-INDEX", "particle name index")
+            self._check_index_range(
+                nm,
+                n_pnames,
+                f"{path}.name",
+                rep,
+                "REF-PARTICLE-NAME-INDEX",
+                "particle name index",
+            )
         # Physical sanity: masses are non-negative.
         mass = np.asarray(data["mass"], dtype=np.float64)
         bad = np.flatnonzero(mass < 0)
         if bad.size:
-            rep.add("TOPO-NEGATIVE-MASS", Severity.ERROR, f"{path}.mass",
-                    f"{bad.size} particle(s) have negative mass",
-                    count=int(bad.size), first_indices=bad[:10].tolist())
+            rep.add(
+                "TOPO-NEGATIVE-MASS",
+                Severity.ERROR,
+                f"{path}.mass",
+                f"{bad.size} particle(s) have negative mass",
+                count=int(bad.size),
+                first_indices=bad[:10].tolist(),
+            )
 
     def _check_sequence(self, ds, path, rep, n_components, n_cnames):
         if ds.dtype.names is None:
-            rep.add("STRUCT-DTYPE", Severity.ERROR, path,
-                    "sequence must be a compound dataset")
+            rep.add(
+                "STRUCT-DTYPE",
+                Severity.ERROR,
+                path,
+                "sequence must be a compound dataset",
+            )
             return
         got = tuple(ds.dtype.names)
         expected = tuple(fl.name for fl in spec.SEQUENCE_FIELDS)
         if got != expected:
-            rep.add("STRUCT-COMPOUND-FIELDS", Severity.ERROR, path,
-                    f"compound fields {list(got)} do not match {list(expected)}",
-                    expected=list(expected), actual=list(got))
+            rep.add(
+                "STRUCT-COMPOUND-FIELDS",
+                Severity.ERROR,
+                path,
+                f"compound fields {list(got)} do not match {list(expected)}",
+                expected=list(expected),
+                actual=list(got),
+            )
             return
         if ds.shape[0] != n_components:
-            rep.add("TOPO-SEQUENCE-LENGTH", Severity.ERROR, path,
-                    f"sequence has {ds.shape[0]} rows but component_count is "
-                    f"{n_components}", expected=n_components, actual=ds.shape[0])
+            rep.add(
+                "TOPO-SEQUENCE-LENGTH",
+                Severity.ERROR,
+                path,
+                f"sequence has {ds.shape[0]} rows but component_count is "
+                f"{n_components}",
+                expected=n_components,
+                actual=ds.shape[0],
+            )
         data = ds[()]
         if n_cnames:
             idx = np.asarray(data["component_name"], dtype=np.int64)
-            self._check_index_range(idx, n_cnames, f"{path}.component_name", rep,
-                                    "REF-COMPONENT-NAME-INDEX", "component name index")
+            self._check_index_range(
+                idx,
+                n_cnames,
+                f"{path}.component_name",
+                rep,
+                "REF-COMPONENT-NAME-INDEX",
+                "component name index",
+            )
 
     def _check_interaction(self, grp, path, tname, rep, n_particles, ff_params):
         itype = spec.INTERACTION_TYPES.get(tname)
@@ -892,94 +1300,168 @@ class Validator:
             # An interaction list for a type outside Table SI is permitted as an
             # extension; its arity and parameter layout cannot be checked here,
             # only that it references a parameter table that exists.
-            rep.add("STRUCT-EXTENSION", Severity.INFO, path,
-                    f"{tname!r} is outside the predefined set of Table SI; its "
-                    "layout is not checked", name=tname)
+            rep.add(
+                "STRUCT-EXTENSION",
+                Severity.INFO,
+                path,
+                f"{tname!r} is outside the predefined set of Table SI; its "
+                "layout is not checked",
+                name=tname,
+            )
             if "parameter_id" in grp and tname not in ff_params:
-                rep.add("REF-PARAMETER-TABLE-MISSING", Severity.ERROR,
-                        f"{path}/parameter_id",
-                        f"extension type {tname!r} has an interaction list but no "
-                        "force_field parameters dataset", name=tname)
+                rep.add(
+                    "REF-PARAMETER-TABLE-MISSING",
+                    Severity.ERROR,
+                    f"{path}/parameter_id",
+                    f"extension type {tname!r} has an interaction list but no "
+                    "force_field parameters dataset",
+                    name=tname,
+                )
             return
         if not itype.bonded:
-            rep.add("STRUCT-FF-CLASSIFICATION", Severity.ERROR, path,
-                    f"{tname!r} is a nonbonded type and has no per-molecule "
-                    "interaction list")
+            rep.add(
+                "STRUCT-FF-CLASSIFICATION",
+                Severity.ERROR,
+                path,
+                f"{tname!r} is a nonbonded type and has no per-molecule "
+                "interaction list",
+            )
         pid = grp.get("parameter_id")
         ids = grp.get("particle_ids")
         if pid is None:
-            rep.add("STRUCT-MISSING-DATASET", Severity.ERROR, f"{path}/parameter_id",
-                    "required dataset parameter_id is absent")
+            rep.add(
+                "STRUCT-MISSING-DATASET",
+                Severity.ERROR,
+                f"{path}/parameter_id",
+                "required dataset parameter_id is absent",
+            )
         if ids is None:
-            rep.add("STRUCT-MISSING-DATASET", Severity.ERROR, f"{path}/particle_ids",
-                    "required dataset particle_ids is absent")
+            rep.add(
+                "STRUCT-MISSING-DATASET",
+                Severity.ERROR,
+                f"{path}/particle_ids",
+                "required dataset particle_ids is absent",
+            )
         if pid is None or ids is None:
             return
 
         n_entries = pid.shape[0]
         if ids.shape[0] != n_entries:
-            rep.add("STRUCT-INTERACTION-LENGTH", Severity.ERROR, path,
-                    f"parameter_id has {n_entries} entries but particle_ids has "
-                    f"{ids.shape[0]}", expected=n_entries, actual=ids.shape[0])
+            rep.add(
+                "STRUCT-INTERACTION-LENGTH",
+                Severity.ERROR,
+                path,
+                f"parameter_id has {n_entries} entries but particle_ids has "
+                f"{ids.shape[0]}",
+                expected=n_entries,
+                actual=ids.shape[0],
+            )
         if itype.n_particles is not None and ids.ndim == 2:
             if ids.shape[1] != itype.n_particles:
-                rep.add("STRUCT-INTERACTION-ARITY", Severity.ERROR,
-                        f"{path}/particle_ids",
-                        f"{tname!r} relates {itype.n_particles} particles but "
-                        f"particle_ids has {ids.shape[1]} columns "
-                        "(arity assumed; see DEV-SPEC-GAP-ARITY)",
-                        expected=itype.n_particles, actual=ids.shape[1])
+                rep.add(
+                    "STRUCT-INTERACTION-ARITY",
+                    Severity.ERROR,
+                    f"{path}/particle_ids",
+                    f"{tname!r} relates {itype.n_particles} particles but "
+                    f"particle_ids has {ids.shape[1]} columns "
+                    "(arity assumed; see DEV-SPEC-GAP-ARITY)",
+                    expected=itype.n_particles,
+                    actual=ids.shape[1],
+                )
 
         # parameter_id must address an existing force-field parameter entry.
         n_params = ff_params.get(tname)
         pid_data = np.asarray(pid[()], dtype=np.int64).ravel()
         if n_params is None:
             if pid_data.size:
-                rep.add("REF-PARAMETER-TABLE-MISSING", Severity.ERROR, f"{path}/parameter_id",
-                        f"interaction list references {tname!r} parameters but no "
-                        f"force_field parameters dataset exists for it", name=tname)
+                rep.add(
+                    "REF-PARAMETER-TABLE-MISSING",
+                    Severity.ERROR,
+                    f"{path}/parameter_id",
+                    f"interaction list references {tname!r} parameters but no "
+                    f"force_field parameters dataset exists for it",
+                    name=tname,
+                )
         else:
-            self._check_index_range(pid_data, n_params, f"{path}/parameter_id", rep,
-                                    "REF-PARAMETER-ID", "parameter_id")
+            self._check_index_range(
+                pid_data,
+                n_params,
+                f"{path}/parameter_id",
+                rep,
+                "REF-PARAMETER-ID",
+                "parameter_id",
+            )
 
         # particle_ids are molecule-local (see DEV-TOPO-PARTICLE-ID-SCOPE).
         id_data = np.asarray(ids[()], dtype=np.int64).ravel()
-        self._check_index_range(id_data, n_particles, f"{path}/particle_ids", rep,
-                                "REF-PARTICLE-ID", "particle_id")
+        self._check_index_range(
+            id_data,
+            n_particles,
+            f"{path}/particle_ids",
+            rep,
+            "REF-PARTICLE-ID",
+            "particle_id",
+        )
 
     def _check_index_container(self, grp, path, rep, n_particles, prefix):
         """Validate a (ranges, indices) pair against an upper bound."""
         idx = grp.get("indices")
         if isinstance(idx, h5py.Dataset) and idx.size:
             data = np.asarray(idx[()], dtype=np.int64).ravel()
-            self._check_index_range(data, n_particles, f"{path}/indices", rep,
-                                    f"REF-{prefix}-INDEX", "index")
+            self._check_index_range(
+                data,
+                n_particles,
+                f"{path}/indices",
+                rep,
+                f"REF-{prefix}-INDEX",
+                "index",
+            )
         rng = grp.get("ranges")
         if isinstance(rng, h5py.Dataset) and rng.size:
             data = np.asarray(rng[()], dtype=np.int64)
             if data.ndim != 2 or data.shape[1] != 3:
-                rep.add("STRUCT-SHAPE", Severity.ERROR, f"{path}/ranges",
-                        f"ranges must be Integer[N][3], found shape {list(data.shape)}",
-                        expected="[N,3]", actual=list(data.shape))
+                rep.add(
+                    "STRUCT-SHAPE",
+                    Severity.ERROR,
+                    f"{path}/ranges",
+                    f"ranges must be Integer[N][3], found shape {list(data.shape)}",
+                    expected="[N,3]",
+                    actual=list(data.shape),
+                )
                 return
             first, last, stride = data[:, 0], data[:, 1], data[:, 2]
             bad = np.flatnonzero((first < 0) | (first >= n_particles))
             if bad.size:
-                rep.add(f"REF-{prefix}-RANGE", Severity.ERROR, f"{path}/ranges",
-                        f"{bad.size} range(s) start outside [0, {n_particles})",
-                        count=int(bad.size), first_rows=bad[:10].tolist())
+                rep.add(
+                    f"REF-{prefix}-RANGE",
+                    Severity.ERROR,
+                    f"{path}/ranges",
+                    f"{bad.size} range(s) start outside [0, {n_particles})",
+                    count=int(bad.size),
+                    first_rows=bad[:10].tolist(),
+                )
             # S9 says 'last' is exclusive; Algorithm S1 says inclusive.  Accept
             # both bounds here and report the ambiguity once, per the registry.
             bad = np.flatnonzero((last < 0) | (last > n_particles))
             if bad.size:
-                rep.add(f"REF-{prefix}-RANGE", Severity.ERROR, f"{path}/ranges",
-                        f"{bad.size} range(s) end outside [0, {n_particles}]",
-                        count=int(bad.size), first_rows=bad[:10].tolist())
+                rep.add(
+                    f"REF-{prefix}-RANGE",
+                    Severity.ERROR,
+                    f"{path}/ranges",
+                    f"{bad.size} range(s) end outside [0, {n_particles}]",
+                    count=int(bad.size),
+                    first_rows=bad[:10].tolist(),
+                )
             bad = np.flatnonzero(stride == 0)
             if bad.size:
-                rep.add(f"REF-{prefix}-STRIDE", Severity.ERROR, f"{path}/ranges",
-                        f"{bad.size} range(s) have a zero stride",
-                        count=int(bad.size), first_rows=bad[:10].tolist())
+                rep.add(
+                    f"REF-{prefix}-STRIDE",
+                    Severity.ERROR,
+                    f"{path}/ranges",
+                    f"{bad.size} range(s) have a zero stride",
+                    count=int(bad.size),
+                    first_rows=bad[:10].tolist(),
+                )
 
     def _check_index_range(self, data, upper, path, rep, code, label):
         if data.size == 0 or upper is None:
@@ -987,12 +1469,18 @@ class Validator:
         lo, hi = int(data.min()), int(data.max())
         if lo < 0 or hi >= upper:
             bad = np.flatnonzero((data < 0) | (data >= upper))
-            rep.add(code, Severity.ERROR, path,
-                    f"{bad.size} {label} value(s) outside [0, {upper}); "
-                    f"observed range [{lo}, {hi}]",
-                    count=int(bad.size), bound=int(upper),
-                    observed_min=lo, observed_max=hi,
-                    first_offsets=bad[:10].tolist())
+            rep.add(
+                code,
+                Severity.ERROR,
+                path,
+                f"{bad.size} {label} value(s) outside [0, {upper}); "
+                f"observed range [{lo}, {hi}]",
+                count=int(bad.size),
+                bound=int(upper),
+                observed_min=lo,
+                observed_max=hi,
+                first_offsets=bad[:10].tolist(),
+            )
 
     # -------------------------------------------------------- S5 connectivity
     def _check_connectivity(self, f, rep, topo):
@@ -1008,25 +1496,44 @@ class Validator:
         if not isinstance(bonds, h5py.Dataset):
             return
         if _dtype_class(bonds.dtype) != spec.INTEGER:
-            rep.add("STRUCT-DTYPE", Severity.ERROR, "connectivity/bonds",
-                    f"expected Integer, found {_dtype_class(bonds.dtype)}")
+            rep.add(
+                "STRUCT-DTYPE",
+                Severity.ERROR,
+                "connectivity/bonds",
+                f"expected Integer, found {_dtype_class(bonds.dtype)}",
+            )
             return
         if bonds.ndim != 2 or bonds.shape[-1] != 2:
-            rep.add("STRUCT-SHAPE", Severity.ERROR, "connectivity/bonds",
-                    f"bonds must be Integer[N][2], found shape {list(bonds.shape)}",
-                    expected="[N,2]", actual=list(bonds.shape))
+            rep.add(
+                "STRUCT-SHAPE",
+                Severity.ERROR,
+                "connectivity/bonds",
+                f"bonds must be Integer[N][2], found shape {list(bonds.shape)}",
+                expected="[N,2]",
+                actual=list(bonds.shape),
+            )
             return
         if topo and topo.get("n_particles"):
             data = np.asarray(bonds[()], dtype=np.int64).ravel()
-            self._check_index_range(data, topo["n_particles"], "connectivity/bonds",
-                                    rep, "CONN-PARTICLE-ID", "global particle index")
+            self._check_index_range(
+                data,
+                topo["n_particles"],
+                "connectivity/bonds",
+                rep,
+                "CONN-PARTICLE-ID",
+                "global particle index",
+            )
         data2 = np.asarray(bonds[()], dtype=np.int64)
         self_bonded = np.flatnonzero(data2[:, 0] == data2[:, 1])
         if self_bonded.size:
-            rep.add("CONN-SELF-BOND", Severity.ERROR, "connectivity/bonds",
-                    f"{self_bonded.size} bond(s) connect a particle to itself",
-                    count=int(self_bonded.size),
-                    first_rows=self_bonded[:10].tolist())
+            rep.add(
+                "CONN-SELF-BOND",
+                Severity.ERROR,
+                "connectivity/bonds",
+                f"{self_bonded.size} bond(s) connect a particle to itself",
+                count=int(self_bonded.size),
+                first_rows=self_bonded[:10].tolist(),
+            )
 
     # ------------------------------------------------------------ S9 selections
     def _check_selections(self, f, rep, topo):
@@ -1039,31 +1546,55 @@ class Validator:
             grp = sel[name]
             path = f"selections/{name}"
             if not isinstance(grp, h5py.Group):
-                rep.add("STRUCT-NOT-GROUP", Severity.ERROR, path,
-                        "a selection must be a group")
+                rep.add(
+                    "STRUCT-NOT-GROUP",
+                    Severity.ERROR,
+                    path,
+                    "a selection must be a group",
+                )
                 continue
             keys = set(grp)
             index_based = bool(keys & {"ranges", "indices"})
             string_based = bool(keys & {"selection", "software"})
             if not index_based and not string_based:
-                rep.add("SEL-EMPTY", Severity.ERROR, path,
-                        "selection defines neither ranges/indices nor a selection string")
+                rep.add(
+                    "SEL-EMPTY",
+                    Severity.ERROR,
+                    path,
+                    "selection defines neither ranges/indices nor a selection string",
+                )
             if index_based and string_based:
-                rep.add("SEL-MIXED", Severity.WARNING, path,
-                        "selection mixes index-based and string-based definitions")
+                rep.add(
+                    "SEL-MIXED",
+                    Severity.WARNING,
+                    path,
+                    "selection mixes index-based and string-based definitions",
+                )
             if index_based:
                 if n is not None:
                     self._check_index_container(grp, path, rep, n, "SEL")
-                if "ranges" in grp and grp["ranges"].size and self.report_deviations \
-                        and not reported_convention:
-                    rep.add("DEV-SEL-RANGE-CONVENTION", Severity.DEVIATION, path,
-                            DEVIATIONS["DEV-SEL-RANGE-CONVENTION"].title,
-                            deviation="DEV-SEL-RANGE-CONVENTION")
+                if (
+                    "ranges" in grp
+                    and grp["ranges"].size
+                    and self.report_deviations
+                    and not reported_convention
+                ):
+                    rep.add(
+                        "DEV-SEL-RANGE-CONVENTION",
+                        Severity.DEVIATION,
+                        path,
+                        DEVIATIONS["DEV-SEL-RANGE-CONVENTION"].title,
+                        deviation="DEV-SEL-RANGE-CONVENTION",
+                    )
                     reported_convention = True
             if string_based and "selection" in keys and "software" not in keys:
-                rep.add("SEL-NO-SOFTWARE", Severity.WARNING, path,
-                        "string-based selection does not name the software that "
-                        "can parse it")
+                rep.add(
+                    "SEL-NO-SOFTWARE",
+                    Severity.WARNING,
+                    path,
+                    "string-based selection does not name the software that "
+                    "can parse it",
+                )
 
 
 def validate(path, **kwargs) -> Report:

@@ -15,11 +15,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import pathlib
 import shutil
 import subprocess
 import sys
 import time
-import pathlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -27,7 +27,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from config.matrix import DATA_ROOT, GMX, PROTOCOLS, PROTOCOLS_BY_ID, RESULTS_DIR
 from config.systems import SYSTEMS, SYSTEMS_BY_ID, prepare_system
-
 
 
 def _r(name: str) -> str:
@@ -38,8 +37,14 @@ ROOT = Path(DATA_ROOT)
 
 
 def run(cmd, cwd=None, check=True, timeout=7200, input=None):
-    proc = subprocess.run([str(c) for c in cmd], cwd=cwd, capture_output=True,
-                          text=True, timeout=timeout, input=input)
+    proc = subprocess.run(
+        [str(c) for c in cmd],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        input=input,
+    )
     if check and proc.returncode != 0:
         raise RuntimeError(
             f"command failed ({proc.returncode}): {' '.join(str(c) for c in cmd)}\n"
@@ -73,9 +78,26 @@ def build_tpr(system, protocol, work: Path, force=False) -> Path:
     resolved_mdp = ROOT / "resolved_mdp" / f"{system.id}__{protocol.id}.mdp"
     resolved_mdp.parent.mkdir(parents=True, exist_ok=True)
 
-    cmd = [GMX, "-quiet", "-nobackup", "grompp",
-           "-f", mdp, "-c", prep["structure"], "-r", prep["structure"],
-           "-p", prep["topology"], "-o", tpr, "-po", resolved_mdp, "-maxwarn", "20"]
+    cmd = [
+        GMX,
+        "-quiet",
+        "-nobackup",
+        "grompp",
+        "-f",
+        mdp,
+        "-c",
+        prep["structure"],
+        "-r",
+        prep["structure"],
+        "-p",
+        prep["topology"],
+        "-o",
+        tpr,
+        "-po",
+        resolved_mdp,
+        "-maxwarn",
+        "20",
+    ]
     if prep.get("index"):
         cmd += ["-n", prep["index"]]
     run(cmd, cwd=work)
@@ -98,10 +120,31 @@ def run_mdrun(tpr: Path, out: Path, ntomp=8, force=False) -> dict:
     work.mkdir(parents=True)
     t0 = time.perf_counter()
     try:
-        run([GMX, "-quiet", "-nobackup", "mdrun", "-s", tpr, "-o", out,
-         "-ntmpi", "1", "-ntomp", str(ntomp),
-             "-g", work / "md.log", "-e", edr, "-c", work / "out.gro",
-             "-cpo", work / "state.cpt"], cwd=work)
+        run(
+            [
+                GMX,
+                "-quiet",
+                "-nobackup",
+                "mdrun",
+                "-s",
+                tpr,
+                "-o",
+                out,
+                "-ntmpi",
+                "1",
+                "-ntomp",
+                str(ntomp),
+                "-g",
+                work / "md.log",
+                "-e",
+                edr,
+                "-c",
+                work / "out.gro",
+                "-cpo",
+                work / "state.cpt",
+            ],
+            cwd=work,
+        )
     except Exception:
         # A writer that aborts mid-run leaves a partial, unreadable file behind.
         # Keep it out of the reference corpus; the failure is recorded instead.
@@ -111,8 +154,12 @@ def run_mdrun(tpr: Path, out: Path, ntomp=8, force=False) -> dict:
         raise
     elapsed = time.perf_counter() - t0
     shutil.rmtree(work, ignore_errors=True)
-    return {"cached": False, "wall_seconds": elapsed,
-            "size_bytes": out.stat().st_size, "edr": str(edr)}
+    return {
+        "cached": False,
+        "wall_seconds": elapsed,
+        "size_bytes": out.stat().st_size,
+        "edr": str(edr),
+    }
 
 
 def main():
@@ -136,8 +183,9 @@ def main():
         return 0
 
     systems = [SYSTEMS_BY_ID[s] for s in args.system] if args.system else SYSTEMS
-    protocols = ([PROTOCOLS_BY_ID[p] for p in args.protocol]
-                 if args.protocol else PROTOCOLS)
+    protocols = (
+        [PROTOCOLS_BY_ID[p] for p in args.protocol] if args.protocol else PROTOCOLS
+    )
     if not args.all and not args.system and not args.protocol:
         ap.error("pass --all, or select with --system / --protocol")
 
@@ -163,16 +211,21 @@ def main():
                 out = ROOT / "reference_files" / f"{key}.h5md"
                 info = run_mdrun(tpr, out, ntomp=args.ntomp, force=args.force)
                 manifest[key] = {
-                    "system": system.id, "protocol": protocol.id,
-                    "tpr": str(tpr), "h5md": str(out),
+                    "system": system.id,
+                    "protocol": protocol.id,
+                    "tpr": str(tpr),
+                    "h5md": str(out),
                     "dimensions": list(system.dimensions),
                     "exercises": list(protocol.exercises),
                     **info,
                 }
                 print(f"    ok  {out.name}  {info.get('size_bytes', 0) / 1e6:.1f} MB")
             except Exception as exc:
-                manifest[key] = {"system": system.id, "protocol": protocol.id,
-                                 "error": f"{type(exc).__name__}: {exc}"}
+                manifest[key] = {
+                    "system": system.id,
+                    "protocol": protocol.id,
+                    "error": f"{type(exc).__name__}: {exc}",
+                }
                 print(f"    FAILED: {str(exc)[:400]}")
             finally:
                 shutil.rmtree(work, ignore_errors=True)
@@ -180,7 +233,9 @@ def main():
             manifest_path.write_text(json.dumps(manifest, indent=2))
 
     ok = sum(1 for v in manifest.values() if "error" not in v)
-    print(f"\n{ok}/{len(manifest)} reference files available; manifest at {manifest_path}")
+    print(
+        f"\n{ok}/{len(manifest)} reference files available; manifest at {manifest_path}"
+    )
     return 0
 
 

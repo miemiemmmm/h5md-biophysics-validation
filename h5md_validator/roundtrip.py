@@ -23,15 +23,14 @@ Used by:
 
 from __future__ import annotations
 
-import json
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from typing import Any, Optional
 
 import h5py
 import numpy as np
 
 from . import vocabulary as vocab
-from .gmxdump import TprDump, MoleculeType
+from .gmxdump import MoleculeType, TprDump
 
 #: float32 has ~7.2 decimal digits; leave a factor of a few for accumulated
 #: conversion error in the writer.
@@ -41,7 +40,7 @@ _FLOAT32_EPS = 4 * float(np.finfo(np.float32).eps)
 # --------------------------------------------------------------------------
 @dataclass
 class Value:
-    kind: str           # categorical | integer | float | int_array | float_array | str_array | nested_int
+    kind: str  # categorical | integer | float | int_array | float_array | str_array | nested_int
     value: Any
     unit: Optional[str] = None
 
@@ -51,7 +50,7 @@ class Comparison:
     key: str
     category: str
     kind: str
-    status: str         # match | match_unordered | mismatch | missing_in_file | missing_in_source | absent_both
+    status: str  # match | match_unordered | mismatch | missing_in_file | missing_in_source | absent_both
     source: Any = None
     target: Any = None
     detail: dict = field(default_factory=dict)
@@ -111,33 +110,60 @@ def extract_source(d: TprDump) -> dict:
     put("parameters.run_control.simulation_type", "categorical", simtype)
     put("parameters.run_control.numsteps", "integer", ir.get("nsteps"))
     if simtype in ("molecular_dynamics", "stochastic_dynamics"):
-        put(f"parameters.run_control.{simtype}.integrator", "categorical",
-            vocab.INTEGRATOR.get(integrator))
+        put(
+            f"parameters.run_control.{simtype}.integrator",
+            "categorical",
+            vocab.INTEGRATOR.get(integrator),
+        )
         put(f"parameters.run_control.{simtype}.timestep", "float", ir.get("dt"), "ps")
     elif simtype == "energy_minimization":
-        put("parameters.run_control.energy_minimization.algorithm", "categorical",
-            vocab.INTEGRATOR.get(integrator))
-        put("parameters.run_control.energy_minimization.step_size", "float",
-            ir.get("emstep"), "nm")
-        put("parameters.run_control.energy_minimization.tolerance", "float",
-            ir.get("emtol"), "kJ mol-1 nm-1")
+        put(
+            "parameters.run_control.energy_minimization.algorithm",
+            "categorical",
+            vocab.INTEGRATOR.get(integrator),
+        )
+        put(
+            "parameters.run_control.energy_minimization.step_size",
+            "float",
+            ir.get("emstep"),
+            "nm",
+        )
+        put(
+            "parameters.run_control.energy_minimization.tolerance",
+            "float",
+            ir.get("emtol"),
+            "kJ mol-1 nm-1",
+        )
 
     com_mode = vocab.COM_MODE.get(str(ir.get("comm-mode")))
     if com_mode is not None:
-        put("parameters.run_control.center_of_mass_motion_removal.mode",
-            "categorical", com_mode)
-        put("parameters.run_control.center_of_mass_motion_removal.interval",
-            "integer", ir.get("nstcomm"))
-        put("parameters.run_control.center_of_mass_motion_removal.groups",
-            "str_array", d.groups.get("VCM", []))
+        put(
+            "parameters.run_control.center_of_mass_motion_removal.mode",
+            "categorical",
+            com_mode,
+        )
+        put(
+            "parameters.run_control.center_of_mass_motion_removal.interval",
+            "integer",
+            ir.get("nstcomm"),
+        )
+        put(
+            "parameters.run_control.center_of_mass_motion_removal.groups",
+            "str_array",
+            d.groups.get("VCM", []),
+        )
     factor = ir.get("mass-repartition-factor")
     if factor is not None and float(factor) != 1.0:
         put("parameters.run_control.mass_repartitioning.factor", "float", factor)
 
     # ---------------- output control -------------------------------------
-    for key, mdp in (("position", "nstxout"), ("velocity", "nstvout"),
-                     ("force", "nstfout"), ("energy", "nstenergy"),
-                     ("log", "nstlog")):
+    for key, mdp in (
+        ("position", "nstxout"),
+        ("velocity", "nstvout"),
+        ("force", "nstfout"),
+        ("energy", "nstenergy"),
+        ("log", "nstlog"),
+    ):
         put(f"parameters.output_control.{key}", "integer", ir.get(mdp))
 
     # ---------------- temperature coupling --------------------------------
@@ -145,65 +171,121 @@ def extract_source(d: TprDump) -> dict:
     if thermostat:
         put("parameters.temperature_coupling.algorithm", "categorical", thermostat)
         put("parameters.temperature_coupling.interval", "integer", ir.get("nsttcouple"))
-        put("parameters.temperature_coupling.groups", "str_array",
-            d.groups.get("T-Coupling", []))
-        put("parameters.temperature_coupling.reference_temperature", "float_array",
-            d.grpopts.get("ref-t"), "K")
+        put(
+            "parameters.temperature_coupling.groups",
+            "str_array",
+            d.groups.get("T-Coupling", []),
+        )
+        put(
+            "parameters.temperature_coupling.reference_temperature",
+            "float_array",
+            d.grpopts.get("ref-t"),
+            "K",
+        )
         tfield = vocab.THERMOSTAT_TIME_FIELD[thermostat]
-        put(f"parameters.temperature_coupling.{thermostat}.{tfield}", "float_array",
-            d.grpopts.get("tau-t"), "ps")
+        put(
+            f"parameters.temperature_coupling.{thermostat}.{tfield}",
+            "float_array",
+            d.grpopts.get("tau-t"),
+            "ps",
+        )
         if thermostat == "nose_hoover":
-            put("parameters.temperature_coupling.nose_hoover.chain_length", "integer",
-                ir.get("nh-chain-length"))
+            put(
+                "parameters.temperature_coupling.nose_hoover.chain_length",
+                "integer",
+                ir.get("nh-chain-length"),
+            )
 
     # ---------------- pressure coupling -----------------------------------
     barostat = vocab.BAROSTAT.get(str(ir.get("pcoupl")))
     if barostat:
         put("parameters.pressure_coupling.algorithm", "categorical", barostat)
         put("parameters.pressure_coupling.interval", "integer", ir.get("nstpcouple"))
-        put("parameters.pressure_coupling.reference_pressure", "float_array",
-            _flat(ir.get("ref-p")), "10+5 Pa")
-        put("parameters.pressure_coupling.compressibility", "float_array",
-            _flat(ir.get("compressibility")), "10-5 Pa-1")
-        put("parameters.pressure_coupling.reference_coordinate_scaling", "categorical",
-            vocab.REFCOORD_SCALING.get(str(ir.get("refcoord-scaling"))))
+        put(
+            "parameters.pressure_coupling.reference_pressure",
+            "float_array",
+            _flat(ir.get("ref-p")),
+            "10+5 Pa",
+        )
+        put(
+            "parameters.pressure_coupling.compressibility",
+            "float_array",
+            _flat(ir.get("compressibility")),
+            "10-5 Pa-1",
+        )
+        put(
+            "parameters.pressure_coupling.reference_coordinate_scaling",
+            "categorical",
+            vocab.REFCOORD_SCALING.get(str(ir.get("refcoord-scaling"))),
+        )
         pfield = vocab.BAROSTAT_TIME_FIELD[barostat]
-        put(f"parameters.pressure_coupling.{barostat}.{pfield}", "float",
-            ir.get("tau-p"), "ps")
+        put(
+            f"parameters.pressure_coupling.{barostat}.{pfield}",
+            "float",
+            ir.get("tau-p"),
+            "ps",
+        )
 
     # ---------------- coulomb ---------------------------------------------
     ctype = vocab.COULOMB_TYPE.get(str(ir.get("coulombtype")))
     put("parameters.coulomb_interactions.type", "categorical", ctype)
-    put("parameters.coulomb_interactions.cutoff_distance", "float",
-        ir.get("rcoulomb"), "nm")
-    put("parameters.coulomb_interactions.relative_permittivity", "float",
-        ir.get("epsilon-r"))
+    put(
+        "parameters.coulomb_interactions.cutoff_distance",
+        "float",
+        ir.get("rcoulomb"),
+        "nm",
+    )
+    put(
+        "parameters.coulomb_interactions.relative_permittivity",
+        "float",
+        ir.get("epsilon-r"),
+    )
     if ctype == "cutoff":
-        put("parameters.coulomb_interactions.cutoff.potential_modifier", "categorical",
-            vocab.POTENTIAL_MODIFIER.get(str(ir.get("coulomb-modifier"))))
+        put(
+            "parameters.coulomb_interactions.cutoff.potential_modifier",
+            "categorical",
+            vocab.POTENTIAL_MODIFIER.get(str(ir.get("coulomb-modifier"))),
+        )
         if ir.get("rcoulomb-switch"):
-            put("parameters.coulomb_interactions.cutoff.switch_distance", "float",
-                ir.get("rcoulomb-switch"), "nm")
+            put(
+                "parameters.coulomb_interactions.cutoff.switch_distance",
+                "float",
+                ir.get("rcoulomb-switch"),
+                "nm",
+            )
     if ctype == "reaction_field":
         eps_rf = ir.get("epsilon-rf")
-        if isinstance(eps_rf, str):          # "inf" means infinite permittivity
+        if isinstance(eps_rf, str):  # "inf" means infinite permittivity
             eps_rf = 0.0
-        put("parameters.coulomb_interactions.reaction_field.relative_permittivity",
-            "float", eps_rf)
+        put(
+            "parameters.coulomb_interactions.reaction_field.relative_permittivity",
+            "float",
+            eps_rf,
+        )
 
     # ---------------- van der Waals ---------------------------------------
     vtype = vocab.VDW_TYPE.get(str(ir.get("vdw-type")))
     put("parameters.vdw_interactions.type", "categorical", vtype)
     put("parameters.vdw_interactions.cutoff_distance", "float", ir.get("rvdw"), "nm")
-    put("parameters.vdw_interactions.dispersion_correction", "categorical",
-        vocab.DISPERSION_CORRECTION.get(str(ir.get("DispCorr"))))
+    put(
+        "parameters.vdw_interactions.dispersion_correction",
+        "categorical",
+        vocab.DISPERSION_CORRECTION.get(str(ir.get("DispCorr"))),
+    )
     if vtype == "cutoff":
         modifier = vocab.POTENTIAL_MODIFIER.get(str(ir.get("vdw-modifier")))
-        put("parameters.vdw_interactions.cutoff.potential_modifier", "categorical",
-            modifier)
+        put(
+            "parameters.vdw_interactions.cutoff.potential_modifier",
+            "categorical",
+            modifier,
+        )
         if modifier in ("potential_switch", "force_switch"):
-            put("parameters.vdw_interactions.cutoff.switch_distance", "float",
-                ir.get("rvdw-switch"), "nm")
+            put(
+                "parameters.vdw_interactions.cutoff.switch_distance",
+                "float",
+                ir.get("rvdw-switch"),
+                "nm",
+            )
 
     # ---------------- boundary conditions ---------------------------------
     pbc = str(ir.get("pbc", "")).lower()
@@ -215,7 +297,11 @@ def extract_source(d: TprDump) -> dict:
     if algo and _has_constraints(d):
         put("parameters.constraints.algorithm", "categorical", algo)
         if algo == "lincs":
-            put("parameters.constraints.lincs.iterations", "integer", ir.get("lincs-iter"))
+            put(
+                "parameters.constraints.lincs.iterations",
+                "integer",
+                ir.get("lincs-iter"),
+            )
             put("parameters.constraints.lincs.order", "integer", ir.get("lincs-order"))
         elif algo == "shake":
             put("parameters.constraints.shake.tolerance", "float", ir.get("shake-tol"))
@@ -247,9 +333,11 @@ def _source_topology(d: TprDump) -> dict:
         total_components += block["nmol"] * mol.n_residues
     out["topology.total_component_count"] = Value("integer", total_components)
     out["topology.molecule_blocks.names"] = Value(
-        "str_array", [b["name"] for b in d.molblocks])
+        "str_array", [b["name"] for b in d.molblocks]
+    )
     out["topology.molecule_blocks.counts"] = Value(
-        "int_array", [b["nmol"] for b in d.molblocks])
+        "int_array", [b["nmol"] for b in d.molblocks]
+    )
 
     for mol in d.moltypes:
         p = f"topology.{mol.name}"
@@ -257,22 +345,26 @@ def _source_topology(d: TprDump) -> dict:
         out[f"{p}.component_count"] = Value("integer", mol.n_residues)
         out[f"{p}.particle_names"] = Value("str_array", list(mol.atom_names))
         out[f"{p}.species"] = Value(
-            "int_array", [a.get("atomnumber", -1) for a in mol.atoms])
+            "int_array", [a.get("atomnumber", -1) for a in mol.atoms]
+        )
         out[f"{p}.charges"] = Value("float_array", [a.get("q") for a in mol.atoms], "e")
         out[f"{p}.masses"] = Value("float_array", [a.get("m") for a in mol.atoms], "u")
         out[f"{p}.component_ids"] = Value(
-            "int_array", [a.get("resind", -1) for a in mol.atoms])
+            "int_array", [a.get("resind", -1) for a in mol.atoms]
+        )
         out[f"{p}.component_names"] = Value("str_array", [r[0] for r in mol.residues])
         out[f"{p}.component_numbers"] = Value("int_array", [r[1] for r in mol.residues])
-        out[f"{p}.exclusions"] = Value(
-            "nested_int", [sorted(e) for e in mol.excls])
+        out[f"{p}.exclusions"] = Value("nested_int", [sorted(e) for e in mol.excls])
 
         for schema_type, entries in _source_interactions(d, mol).items():
             ids, params = entries
-            out[f"{p}.interactions.{schema_type}.particle_ids"] = Value("int_array", ids)
+            out[f"{p}.interactions.{schema_type}.particle_ids"] = Value(
+                "int_array", ids
+            )
             if params:
                 out[f"{p}.interactions.{schema_type}.parameters"] = Value(
-                    "float_array", params)
+                    "float_array", params
+                )
             # Else the dump parser cannot resolve this type's parameters -- CMAP
             # is the case: gmx dump prints the grids in their own section and
             # the tpr keeps every grid the force field defines, while the file
@@ -383,8 +475,10 @@ def _target_topology(f, out):
     topo = f.get("topology")
     if topo is None:
         return
-    for attr, key in (("total_particle_count", "topology.total_particle_count"),
-                      ("total_component_count", "topology.total_component_count")):
+    for attr, key in (
+        ("total_particle_count", "topology.total_particle_count"),
+        ("total_component_count", "topology.total_component_count"),
+    ):
         if attr in topo.attrs:
             out[key] = Value("integer", int(np.atleast_1d(topo.attrs[attr])[0]))
 
@@ -392,9 +486,11 @@ def _target_topology(f, out):
     if blocks is not None:
         data = blocks[()]
         out["topology.molecule_blocks.names"] = Value(
-            "str_array", [_decode(v) for v in data["name"]])
+            "str_array", [_decode(v) for v in data["name"]]
+        )
         out["topology.molecule_blocks.counts"] = Value(
-            "int_array", [int(v) for v in data["count"]])
+            "int_array", [int(v) for v in data["count"]]
+        )
 
     ff_params = _target_ff_parameters(f)
 
@@ -405,11 +501,16 @@ def _target_topology(f, out):
         p = f"topology.{name}"
         for attr in ("particle_count", "component_count"):
             if attr in mol.attrs:
-                out[f"{p}.{attr}"] = Value("integer", int(np.atleast_1d(mol.attrs[attr])[0]))
+                out[f"{p}.{attr}"] = Value(
+                    "integer", int(np.atleast_1d(mol.attrs[attr])[0])
+                )
 
         pdata = mol["particle_data"][()]
-        pnames = [_decode(v) for v in mol["particle_name_table"][()]] \
-            if "particle_name_table" in mol else []
+        pnames = (
+            [_decode(v) for v in mol["particle_name_table"][()]]
+            if "particle_name_table" in mol
+            else []
+        )
         name_field = pdata["name"]
         if name_field.dtype.kind in ("i", "u") and pnames:
             resolved = [pnames[i] for i in name_field]
@@ -417,29 +518,48 @@ def _target_topology(f, out):
             resolved = [_decode(v) for v in name_field]
         out[f"{p}.particle_names"] = Value("str_array", resolved)
         out[f"{p}.species"] = Value("int_array", [int(v) for v in pdata["species"]])
-        units = [_decode(u) for u in np.atleast_1d(mol["particle_data"].attrs.get("units", []))]
-        out[f"{p}.charges"] = Value("float_array", [float(v) for v in pdata["charge"]],
-                                    units[2] if len(units) > 2 else None)
-        out[f"{p}.masses"] = Value("float_array", [float(v) for v in pdata["mass"]],
-                                   units[3] if len(units) > 3 else None)
+        units = [
+            _decode(u)
+            for u in np.atleast_1d(mol["particle_data"].attrs.get("units", []))
+        ]
+        out[f"{p}.charges"] = Value(
+            "float_array",
+            [float(v) for v in pdata["charge"]],
+            units[2] if len(units) > 2 else None,
+        )
+        out[f"{p}.masses"] = Value(
+            "float_array",
+            [float(v) for v in pdata["mass"]],
+            units[3] if len(units) > 3 else None,
+        )
         out[f"{p}.component_ids"] = Value(
-            "int_array", [int(v) for v in pdata["component_id"]])
+            "int_array", [int(v) for v in pdata["component_id"]]
+        )
 
         if "sequence" in mol:
             seq = mol["sequence"][()]
-            cnames = [_decode(v) for v in mol["component_name_table"][()]] \
-                if "component_name_table" in mol else []
+            cnames = (
+                [_decode(v) for v in mol["component_name_table"][()]]
+                if "component_name_table" in mol
+                else []
+            )
             idx = seq["component_name"]
             if idx.dtype.kind in ("i", "u") and cnames:
-                out[f"{p}.component_names"] = Value("str_array", [cnames[i] for i in idx])
+                out[f"{p}.component_names"] = Value(
+                    "str_array", [cnames[i] for i in idx]
+                )
             else:
                 out[f"{p}.component_names"] = Value(
-                    "str_array", [_decode(v) for v in idx])
+                    "str_array", [_decode(v) for v in idx]
+                )
             out[f"{p}.component_numbers"] = Value(
-                "int_array", [int(v) for v in seq["component_number"]])
+                "int_array", [int(v) for v in seq["component_number"]]
+            )
 
         if "exclusions" in mol:
-            out[f"{p}.exclusions"] = Value("nested_int", _decode_exclusions(mol["exclusions"]))
+            out[f"{p}.exclusions"] = Value(
+                "nested_int", _decode_exclusions(mol["exclusions"])
+            )
 
         inter = mol.get("interactions")
         if isinstance(inter, h5py.Group):
@@ -449,7 +569,8 @@ def _target_topology(f, out):
                     continue
                 ids = np.asarray(grp["particle_ids"][()], dtype=np.int64)
                 out[f"{p}.interactions.{tname}.particle_ids"] = Value(
-                    "int_array", ids.ravel().tolist())
+                    "int_array", ids.ravel().tolist()
+                )
                 table = ff_params.get(tname)
                 if table is not None:
                     pid = np.asarray(grp["parameter_id"][()], dtype=np.int64).ravel()
@@ -468,15 +589,18 @@ def _target_topology(f, out):
                         for i in pid:
                             if 0 <= i < table.shape[0]:
                                 resolved.extend(
-                                    float(x) for x in np.asarray(table[i]).ravel())
+                                    float(x) for x in np.asarray(table[i]).ravel()
+                                )
                     out[f"{p}.interactions.{tname}.parameters"] = Value(
-                        "float_array", resolved)
+                        "float_array", resolved
+                    )
 
     conn = f.get("connectivity/bonds")
     if isinstance(conn, h5py.Dataset):
         data = np.asarray(conn[()], dtype=np.int64)
         out["connectivity.bonds"] = Value(
-            "int_array", [tuple(int(x) for x in row) for row in data])
+            "int_array", [tuple(int(x) for x in row) for row in data]
+        )
 
 
 def _decode_exclusions(grp):
@@ -488,7 +612,7 @@ def _decode_exclusions(grp):
     out = []
     for first, last, stride in ranges:
         # 1-based, right-closed offsets into ``indices`` (see DEV-EXCL-UNDOCUMENTED)
-        out.append(sorted(indices[first - 1: last: max(int(stride), 1)].tolist()))
+        out.append(sorted(indices[first - 1 : last : max(int(stride), 1)].tolist()))
     return out
 
 
@@ -546,8 +670,9 @@ def extract_source_observables(edr) -> dict:
         if rows:
             # Frame-major, to match the file's (n_frames, 3, 3).
             out[f"observables.{element}"] = Value(
-                "float_array", [rows[c][f] for f in range(edr.n_frames)
-                                for c in range(9)])
+                "float_array",
+                [rows[c][f] for f in range(edr.n_frames) for c in range(9)],
+            )
     return out
 
 
@@ -561,13 +686,16 @@ def _target_observables(path, out):
         for name in obs:
             node = obs[name]
             if not isinstance(node, h5py.Group) or "value" not in node:
-                continue        # per-group subgroups (observables/<group>/...)
-            if name not in vocab.OBSERVABLE.values() and \
-               name not in vocab.OBSERVABLE_TENSOR:
+                continue  # per-group subgroups (observables/<group>/...)
+            if (
+                name not in vocab.OBSERVABLE.values()
+                and name not in vocab.OBSERVABLE_TENSOR
+            ):
                 continue
             value = np.asarray(node["value"][()])
-            out[f"observables.{name}"] = Value("float_array",
-                                               [float(x) for x in value.ravel()])
+            out[f"observables.{name}"] = Value(
+                "float_array", [float(x) for x in value.ravel()]
+            )
             if steps is None and "step" in node:
                 steps = [int(s) for s in np.atleast_1d(node["step"][()])]
         if steps is not None:
@@ -617,12 +745,16 @@ def compare(source: dict, target: dict, *, ignore=()) -> list:
         src, tgt = source.get(key), target.get(key)
         category = _category_of(key)
         if src is None:
-            results.append(Comparison(key, category, tgt.kind, "missing_in_source",
-                                      None, tgt.value))
+            results.append(
+                Comparison(
+                    key, category, tgt.kind, "missing_in_source", None, tgt.value
+                )
+            )
             continue
         if tgt is None:
-            results.append(Comparison(key, category, src.kind, "missing_in_file",
-                                      src.value, None))
+            results.append(
+                Comparison(key, category, src.kind, "missing_in_file", src.value, None)
+            )
             continue
         results.append(_compare_one(key, category, src, tgt))
     return results
@@ -637,13 +769,27 @@ def _compare_one(key, category, src: Value, tgt: Value) -> Comparison:
 
     if kind == "categorical":
         ok = str(src.value) == str(tgt.value)
-        return Comparison(key, category, kind, "match" if ok else "mismatch",
-                          src.value, tgt.value, detail)
+        return Comparison(
+            key,
+            category,
+            kind,
+            "match" if ok else "mismatch",
+            src.value,
+            tgt.value,
+            detail,
+        )
 
     if kind == "integer":
         ok = int(src.value) == int(tgt.value)
-        return Comparison(key, category, kind, "match" if ok else "mismatch",
-                          src.value, tgt.value, detail)
+        return Comparison(
+            key,
+            category,
+            kind,
+            "match" if ok else "mismatch",
+            src.value,
+            tgt.value,
+            detail,
+        )
 
     if kind == "float":
         tol = _tolerance(src.value)
@@ -651,8 +797,15 @@ def _compare_one(key, category, src: Value, tgt: Value) -> Comparison:
         detail["tolerance"] = tol
         if not ok:
             detail["abs_diff"] = abs(float(src.value) - float(tgt.value))
-        return Comparison(key, category, kind, "match" if ok else "mismatch",
-                          src.value, tgt.value, detail)
+        return Comparison(
+            key,
+            category,
+            kind,
+            "match" if ok else "mismatch",
+            src.value,
+            tgt.value,
+            detail,
+        )
 
     if kind == "str_array":
         a = [str(x) for x in src.value]
@@ -687,8 +840,9 @@ def _compare_one(key, category, src: Value, tgt: Value) -> Comparison:
             return Comparison(key, category, kind, "match", a, b, detail)
         detail["n_outside_tolerance"] = len(bad)
         detail["first_offsets"] = bad[:8]
-        detail["examples"] = [{"i": i, "source": float(a[i]), "file": float(b[i])}
-                              for i in bad[:4]]
+        detail["examples"] = [
+            {"i": i, "source": float(a[i]), "file": float(b[i])} for i in bad[:4]
+        ]
         return Comparison(key, category, kind, "mismatch", a, b, detail)
 
     if kind == "nested_int":
@@ -701,7 +855,11 @@ def _compare_one(key, category, src: Value, tgt: Value) -> Comparison:
         detail["n_differing_rows"] = len(bad)
         if bad:
             i = bad[0]
-            detail["first_difference"] = {"row": i, "source": a[i][:12], "file": b[i][:12]}
+            detail["first_difference"] = {
+                "row": i,
+                "source": a[i][:12],
+                "file": b[i][:12],
+            }
         return Comparison(key, category, kind, "mismatch", len(a), len(b), detail)
 
     return Comparison(key, category, kind, "mismatch", src.value, tgt.value, detail)
@@ -747,8 +905,9 @@ class RoundTripReport:
     @property
     def missing_in_file(self):
         """Items of a predefined kind that the source had and the file does not."""
-        return [c for c in self._by("missing_in_file")
-                if c.category != "outside_predefined"]
+        return [
+            c for c in self._by("missing_in_file") if c.category != "outside_predefined"
+        ]
 
     @property
     def outside_predefined(self):
@@ -758,14 +917,12 @@ class RoundTripReport:
         deliberately not exhaustive. What the comparison shows is whether each
         one reached the file at all.
         """
-        return [c for c in self.comparisons
-                if c.category == "outside_predefined"]
+        return [c for c in self.comparisons if c.category == "outside_predefined"]
 
     @property
     def dropped_terms(self):
         """Terms outside the predefined set that reached the file nowhere."""
-        return [c for c in self.outside_predefined
-                if c.status == "missing_in_file"]
+        return [c for c in self.outside_predefined if c.status == "missing_in_file"]
 
     @property
     def extra_in_file(self):
@@ -789,12 +946,22 @@ class RoundTripReport:
     def counts_by_category(self):
         out = {}
         for c in self.comparisons:
-            e = out.setdefault(c.category, {"compared": 0, "match": 0, "mismatch": 0,
-                                            "missing_in_file": 0, "extra_in_file": 0})
+            e = out.setdefault(
+                c.category,
+                {
+                    "compared": 0,
+                    "match": 0,
+                    "mismatch": 0,
+                    "missing_in_file": 0,
+                    "extra_in_file": 0,
+                },
+            )
             if c.status in ("match", "match_unordered"):
-                e["compared"] += 1; e["match"] += 1
+                e["compared"] += 1
+                e["match"] += 1
             elif c.status == "mismatch":
-                e["compared"] += 1; e["mismatch"] += 1
+                e["compared"] += 1
+                e["mismatch"] += 1
             elif c.status == "missing_in_file":
                 e["missing_in_file"] += 1
             elif c.status == "missing_in_source":
@@ -813,8 +980,10 @@ class RoundTripReport:
             "n_missing_in_file": len(self.missing_in_file),
             "n_outside_predefined": len(self.outside_predefined),
             "n_dropped_terms": len(self.dropped_terms),
-            "dropped_terms": [{"term": c.key.split(".")[-1],
-                               "entries": c.source} for c in self.dropped_terms],
+            "dropped_terms": [
+                {"term": c.key.split(".")[-1], "entries": c.source}
+                for c in self.dropped_terms
+            ],
             "n_extra_in_file": len(self.extra_in_file),
             "by_category": self.counts_by_category(),
             "comparisons": [c.to_dict() for c in self.comparisons],
@@ -823,18 +992,22 @@ class RoundTripReport:
     def summary(self):
         verdict = "FAITHFUL" if self.faithful else "DIVERGENT"
         gap = "" if self.all_terms_written else f" dropped={len(self.dropped_terms)}"
-        return (f"{verdict}  {self.file}  items={len(self.comparisons)} "
-                f"match={len(self.matches)} mismatch={len(self.mismatches)} "
-                f"missing={len(self.missing_in_file)} "
-                f"extra={len(self.extra_in_file)}{gap}")
+        return (
+            f"{verdict}  {self.file}  items={len(self.comparisons)} "
+            f"match={len(self.matches)} mismatch={len(self.mismatches)} "
+            f"missing={len(self.missing_in_file)} "
+            f"extra={len(self.extra_in_file)}{gap}"
+        )
 
 
-def roundtrip(dump: TprDump, h5md_path, tpr_path="", ignore=(),
-              edr=None) -> RoundTripReport:
+def roundtrip(
+    dump: TprDump, h5md_path, tpr_path="", ignore=(), edr=None
+) -> RoundTripReport:
     source = extract_source(dump)
     target = extract_target(h5md_path)
     if edr is not None:
         source.update(extract_source_observables(edr))
         _target_observables(h5md_path, target)
-    return RoundTripReport(str(h5md_path), str(tpr_path),
-                           compare(source, target, ignore=ignore))
+    return RoundTripReport(
+        str(h5md_path), str(tpr_path), compare(source, target, ignore=ignore)
+    )

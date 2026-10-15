@@ -4,9 +4,9 @@ Translation between GROMACS vocabulary and the ``biophysics`` schema vocabulary.
 This module is the concrete, auditable statement of what the reference
 implementation claims when it calls the schema engine-independent: every entry
 is a GROMACS-specific spelling on the left and the schema-level concept it
-denotes on the right. 
+denotes on the right.
 
-Used by: 
+Used by:
     Validation 2: round-trip test
     Validation 6: cross-engine mapping
 """
@@ -62,7 +62,7 @@ BAROSTAT = {
     "Berendsen": "berendsen",
     "C-rescale": "stochastic_cell_rescaling",
     "Parrinello-Rahman": "parrinello_rahman",
-    "MTTK": "mttk",          # not a predefined value of the schema
+    "MTTK": "mttk",  # not a predefined value of the schema
 }
 
 # MD parameter -> pressure_coupling/algorithm time field map
@@ -205,11 +205,16 @@ PARAMETER_FIELDS = {
 # NOTE: SETTLE carries IF_CHEMBOND too, but its entry is a rigid water of three
 # atoms that expands to two O-H bonds, so roundtrip.py handles it separately.
 BOND_LIKE = {
-    "BONDS", "G96BONDS", "MORSE", "CUBICBONDS",
-    "CONNBONDS",            # a connection carrying no interaction
-    "FENEBONDS", "TABBONDS",
-    "POLARIZATION", "ANHARM_POL",   # shell particle bonded to its parent atom
-    "CONSTR",               # a bond converted to a constraint keeps its chemistry
+    "BONDS",
+    "G96BONDS",
+    "MORSE",
+    "CUBICBONDS",
+    "CONNBONDS",  # a connection carrying no interaction
+    "FENEBONDS",
+    "TABBONDS",
+    "POLARIZATION",
+    "ANHARM_POL",  # shell particle bonded to its parent atom
+    "CONSTR",  # a bond converted to a constraint keeps its chemistry
 }
 
 
