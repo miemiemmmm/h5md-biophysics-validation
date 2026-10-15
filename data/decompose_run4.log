@@ -1,0 +1,183 @@
+Note: Google Test filter = BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/*
+[==========] Running 58 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 58 tests from BenchmarkTprs/H5mdTopologyBenchmarkTest
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/0
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_128k__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/0 (21 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/1
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_12k__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/1 (6 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/2
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_200k__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/2 (27 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/3
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_22k__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/3 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/4
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_30k__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/4 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/5
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_351k__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/5 (18 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/6
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_457k__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/6 (20 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/7
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_49k__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/7 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/8
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_826k__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/8 (48 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/9
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_82k__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/9 (8 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/10
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bench_adh__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/10 (14 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/11
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bench_aquaporin__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/11 (6 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/12
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bench_ion_channel__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/12 (7 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/13
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bench_rnase__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/13 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/14
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bench_stmv__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/14 (466 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/15
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bench_villin__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/15 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/16
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/dna_amber__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/16 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/17
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a0017b_dna__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/17 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/18
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a0017p_rna__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/18 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/19
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a0017u_rna__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/19 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/20
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a00186_dna__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/20 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/21
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a001av_dna_protein__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/21 (5 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/22
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a001fc_dna_protein__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/22 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/23
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a001tx_rna_protein__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/23 (12 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/24
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a001u2_rna_protein__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/24 (13 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/25
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/memprotmd_3k1b_cg__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/25 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/26
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/memprotmd_5bkf__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/26 (20 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/27
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/memprotmd_5bkf_cg__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/27 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/28
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/memprotmd_5nc4__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/28 (10 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/29
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/memprotmd_7e6u_cg__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/29 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/30
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/memprotmd_8axd__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/30 (25 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/31
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_1fl6__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/31 (7 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/32
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_1tfq__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/32 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/33
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_1z3j__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/33 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/34
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_2xde__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/34 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/35
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_2zyn__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/35 (6 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/36
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_3f78__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/36 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/37
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_3lq5__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/37 (10 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/38
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_3ptg__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/38 (7 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/39
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_3s2v__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/39 (7 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/40
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_3unz__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/40 (5 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/41
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_4d0w__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/41 (6 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/42
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_4q1n__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/42 (6 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/43
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_4xua__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/43 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/44
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_4zw5__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/44 (10 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/45
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_5ivt__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/45 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/46
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_5nhj__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/46 (5 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/47
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_6dyw__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/47 (5 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/48
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_6i77__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/48 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/49
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_6mim__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/49 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/50
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_6nwc__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/50 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/51
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/prot_amber__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/51 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/52
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/prot_charmm27__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/52 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/53
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/prot_gromos__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/53 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/54
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/prot_opls__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/54 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/55
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/protein_dna__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/55 (6 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/56
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/rna_amber__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/56 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/57
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/solvent_ions__nvt-vrescale.tpr, VERSION 2027.0-dev-20260923-1c81f0f4a4 (single precision)
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/57 (1 ms)
+[----------] 58 tests from BenchmarkTprs/H5mdTopologyBenchmarkTest (926 ms total)
+
+[----------] Global test environment tear-down
+[==========] 58 tests from 1 test suite ran. (926 ms total)
+[  PASSED  ] 58 tests.
