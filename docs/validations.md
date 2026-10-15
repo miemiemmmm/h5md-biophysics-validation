@@ -158,11 +158,11 @@ Validations 2 and 3.
 $PY_EXE scripts/check_reference_files.py
 ```
 
-Write *time* is not measured here. Comparing whole-process wall time between
-H5MD and trajectory-only runs is dominated by start-up, and GROMACS's own
-`Write traj.` counter brackets the file initialisation together with the
-per-frame writes, so neither separates the one-off metadata write from ordinary
-trajectory output. Isolating it needs a timer inside the writer.
+Write *time* is measured inside the GROMACS writer instead: whole-process wall
+time and GROMACS's `Write traj.` counter both mix the one-off metadata write with
+start-up and per-frame output. A GROMACS benchmark times each phase of the
+metadata write for every system; its output ships in `data/` (see
+[data/README.md](../data/README.md)) and is panel C of the figure.
 
 **Artifacts**
 
@@ -175,9 +175,9 @@ trajectory output. Isolating it needs a timer inside the writer.
 ## Validation 6 — cross-engine interoperability
 
 **Objective.** Show that the schema's concepts are not GROMACS concepts under
-another name. The same molecule is prepared independently in two engines with
-different force fields, and the chemistry each one records is compared through
-the schema.
+another name. Every system that was set up in AMBER (the hexABC and MISATO
+groups of the dataset) is compared item by item: its deposited AMBER topology
+against the H5MD file GROMACS writes after ParmEd converted that topology.
 
 ```bash
 $PY_EXE scripts/validation6_amber_interop.py --run-all     # every pair in AMBER_INTEROP_PAIRS
@@ -194,11 +194,12 @@ stated in one place rather than left to the person passing the flags.
 `pairs`, each with per-item rows under `chemistry` and `parametrisation` and an
 `interoperable` verdict, plus `n_pairs` and `n_interoperable`.
 
-The chemistry items compared are particle and residue counts, molecular
-formula, bond count and bond topology, total charge, masses and atomic numbers.
-Naming differences are resolved by an alias table and reported rather than
-hidden — `O1P`/`OP1`, `H3T`/`HO3*`, and terminal residues named `DA5`/`DA3`
-against plain `DA`.
+The chemistry items are particle and residue counts, residue sequence,
+molecular formula, atom names, atomic numbers, bond count and bond topology; the
+parametrisation items are total charge, partial charges and masses. The H5MD
+side is rebuilt to the full system from `topology/molecule_blocks`. The H–H
+"bond" AMBER gives rigid water keeps it rigid under SHAKE and is not chemistry,
+so it is removed from the AMBER side and the number removed is reported.
 
 ---
 
@@ -224,7 +225,7 @@ $PY_EXE scripts/validation5_cost_figure.py
 
 | Path | What it is |
 |:--|:--|
-| `_results/figures/` | `validation5_cost.png`; the `validation_framework` schematic is rendered by `renderer/render_framework_figure.py` |
+| `_results/figures/` | `validation5_cost.png`: metadata storage per system (panels A, B) and the write-time decomposition (panel C) |
 
 The figures are derived from the JSON beside them. Re-running the validation
 on different hardware, or with a different GROMACS build, means regenerating

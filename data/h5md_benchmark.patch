@@ -1,0 +1,346 @@
+diff --git a/src/gromacs/fileio/h5md/h5md.h b/src/gromacs/fileio/h5md/h5md.h
+index 4c9f1410ae..44ac3bcf28 100644
+--- a/src/gromacs/fileio/h5md/h5md.h
++++ b/src/gromacs/fileio/h5md/h5md.h
+@@ -300,7 +300,7 @@ public:
+      */
+     void writeEnergyBins(const t_ebin& energyBins, int64_t step, double time);
+ 
+-private:
++    // private:
+     /*! \brief Set up particle blocks for trajectory writing according to the H5md specification.
+      *
+      * \param[in] topology         Molecular topology for the simulated system.
+diff --git a/src/gromacs/fileio/h5md/tests/CMakeLists.txt b/src/gromacs/fileio/h5md/tests/CMakeLists.txt
+index a0d9ae9a02..612d8e33e0 100644
+--- a/src/gromacs/fileio/h5md/tests/CMakeLists.txt
++++ b/src/gromacs/fileio/h5md/tests/CMakeLists.txt
+@@ -37,6 +37,7 @@ if (GMX_USE_HDF5)
+             h5md.cpp
+             h5mdtestbase.cpp
+             h5md_attribute.cpp
++            h5md_benchmark.cpp
+             h5md_compounddataset.cpp
+             h5md_datasetbase.cpp
+             h5md_datasetbuilder.cpp
+diff --git a/src/gromacs/fileio/h5md/tests/h5md_benchmark.cpp b/src/gromacs/fileio/h5md/tests/h5md_benchmark.cpp
+new file mode 100644
+index 0000000000..05f51f78d4
+--- /dev/null
++++ b/src/gromacs/fileio/h5md/tests/h5md_benchmark.cpp
+@@ -0,0 +1,315 @@
++/*
++ * This file is part of the GROMACS molecular simulation package.
++ *
++ * Copyright 2026- The GROMACS Authors
++ * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
++ * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
++ *
++ * GROMACS is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public License
++ * as published by the Free Software Foundation; either version 2.1
++ * of the License, or (at your option) any later version.
++ *
++ * GROMACS is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with GROMACS; if not, see
++ * https://www.gnu.org/licenses, or write to the Free Software Foundation,
++ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
++ *
++ * If you want to redistribute modifications to GROMACS, please
++ * consider that scientific software is very special. Version
++ * control is crucial - bugs must be traceable. We will be happy to
++ * consider code for inclusion in the official distribution, but
++ * derived work must not be called official GROMACS. Details are found
++ * in the README & COPYING files - if they are missing, get the
++ * official version at https://www.gromacs.org.
++ *
++ * To help us fund GROMACS development, we humbly ask that you cite
++ * the research papers on the package. Check out https://www.gromacs.org.
++ */
++
++/*! \internal \file
++ * \brief Tests for compound data set class.
++ *
++ * \author Yang Zhang <yang.zhang@scilifelab.se>
++ * \ingroup module_fileio
++ */
++
++#include "gmxpre.h"
++
++#include <chrono>
++#include <filesystem>
++#include <vector>
++
++#include <gtest/gtest.h>
++
++#include "gromacs/fileio/confio.h"
++#include "gromacs/fileio/h5md/h5md.h"
++#include "gromacs/fileio/h5md/h5md_compounddataset.h"
++#include "gromacs/fileio/h5md/h5md_datasetbuilder.h"
++#include "gromacs/fileio/h5md/h5md_fixeddataset.h"
++#include "gromacs/fileio/h5md/h5md_group.h"
++#include "gromacs/fileio/h5md/h5md_guard.h"
++#include "gromacs/fileio/h5md/h5md_topologyutils.h"
++#include "gromacs/fileio/h5md/h5md_type.h"
++#include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
++#include "gromacs/fileio/tpxio.h"
++#include "gromacs/mdtypes/inputrec.h"
++#include "gromacs/mdtypes/md_enums.h"
++#include "gromacs/topology/mtop_atomloops.h"
++#include "gromacs/topology/topology.h"
++#include "gromacs/utility/exceptions.h"
++#include "gromacs/utility/stringutil.h"
++
++#include "testutils/tprfilegenerator.h"
++
++
++namespace gmx
++{
++namespace test
++{
++namespace
++{
++
++using H5mdCompoundDataSetTest = H5mdTestBase;
++
++// ---------------------------------------------------------------------------
++// Benchmark fixtures
++// ---------------------------------------------------------------------------
++// TODO: Run the following command to run it.
++// make -j32 h5md-test && ./bin/h5md-test --gtest_output="json:output.json" --gtest_filter="BenchmarkTprs/H5mdTopologyBenchmarkTest.*"
++// ---------------------------------------------------------------------------
++// Adjust this path to point at the folder containing the renewed_tprs directory.
++static const std::string kTprBaseDir = "/path/to/validation_systems/_data/tprs"; // set before building
++
++// clang-format off
++static const std::vector<std::string> kBenchmarkTprFiles = {
++    "bena_128k__nvt-vrescale.tpr",
++    "bena_12k__nvt-vrescale.tpr",
++    "bena_200k__nvt-vrescale.tpr",
++    "bena_22k__nvt-vrescale.tpr",
++    "bena_30k__nvt-vrescale.tpr",
++    "bena_351k__nvt-vrescale.tpr",
++    "bena_457k__nvt-vrescale.tpr",
++    "bena_49k__nvt-vrescale.tpr",
++    "bena_826k__nvt-vrescale.tpr",
++    "bena_82k__nvt-vrescale.tpr",
++    "bench_adh__nvt-vrescale.tpr",
++    "bench_aquaporin__nvt-vrescale.tpr",
++    "bench_ion_channel__nvt-vrescale.tpr",
++    "bench_rnase__nvt-vrescale.tpr",
++    "bench_stmv__nvt-vrescale.tpr",
++    "bench_villin__nvt-vrescale.tpr",
++    "dna_amber__nvt-vrescale.tpr",
++    "hexabc_a0017b_dna__nvt-vrescale.tpr",
++    "hexabc_a0017p_rna__nvt-vrescale.tpr",
++    "hexabc_a0017u_rna__nvt-vrescale.tpr",
++    "hexabc_a00186_dna__nvt-vrescale.tpr",
++    "hexabc_a001av_dna_protein__nvt-vrescale.tpr",
++    "hexabc_a001fc_dna_protein__nvt-vrescale.tpr",
++    "hexabc_a001tx_rna_protein__nvt-vrescale.tpr",
++    "hexabc_a001u2_rna_protein__nvt-vrescale.tpr",
++    "memprotmd_3k1b_cg__nvt-vrescale.tpr",
++    "memprotmd_5bkf__nvt-vrescale.tpr",
++    "memprotmd_5bkf_cg__nvt-vrescale.tpr",
++    "memprotmd_5nc4__nvt-vrescale.tpr",
++    "memprotmd_7e6u_cg__nvt-vrescale.tpr",
++    "memprotmd_8axd__nvt-vrescale.tpr",
++    "misato_1fl6__nvt-vrescale.tpr",
++    "misato_1tfq__nvt-vrescale.tpr",
++    "misato_1z3j__nvt-vrescale.tpr",
++    "misato_2xde__nvt-vrescale.tpr",
++    "misato_2zyn__nvt-vrescale.tpr",
++    "misato_3f78__nvt-vrescale.tpr",
++    "misato_3lq5__nvt-vrescale.tpr",
++    "misato_3ptg__nvt-vrescale.tpr",
++    "misato_3s2v__nvt-vrescale.tpr",
++    "misato_3unz__nvt-vrescale.tpr",
++    "misato_4d0w__nvt-vrescale.tpr",
++    "misato_4q1n__nvt-vrescale.tpr",
++    "misato_4xua__nvt-vrescale.tpr",
++    "misato_4zw5__nvt-vrescale.tpr",
++    "misato_5ivt__nvt-vrescale.tpr",
++    "misato_5nhj__nvt-vrescale.tpr",
++    "misato_6dyw__nvt-vrescale.tpr",
++    "misato_6i77__nvt-vrescale.tpr",
++    "misato_6mim__nvt-vrescale.tpr",
++    "misato_6nwc__nvt-vrescale.tpr",
++    "prot_amber__nvt-vrescale.tpr",
++    "prot_charmm27__nvt-vrescale.tpr",
++    "prot_gromos__nvt-vrescale.tpr",
++    "prot_opls__nvt-vrescale.tpr",
++    "protein_dna__nvt-vrescale.tpr",
++    "rna_amber__nvt-vrescale.tpr",
++    "solvent_ions__nvt-vrescale.tpr",
++};
++
++// clang-format on
++
++//! Fixture combining H5mdTestBase (temp HDF5 file) with parameterization over tpr paths.
++class H5mdTopologyBenchmarkTest : public H5mdTestBase, public ::testing::WithParamInterface<std::string>
++{
++};
++
++INSTANTIATE_TEST_SUITE_P(BenchmarkTprs, H5mdTopologyBenchmarkTest, ::testing::ValuesIn(kBenchmarkTprFiles));
++
++TEST_P(H5mdTopologyBenchmarkTest, BenchmarkAsFlatTopology)
++{
++    const std::string tprPath = kTprBaseDir + "/" + GetParam();
++    if (!std::filesystem::exists(tprPath))
++    {
++        GTEST_SKIP() << "TPR file not found: " << tprPath;
++    }
++
++    t_inputrec inputRecord;
++    gmx_mtop_t topology;
++    matrix     box;
++    int        numAtoms;
++    read_tpx(tprPath, &inputRecord, box, &numAtoms, nullptr, nullptr, &topology);
++    ASSERT_GT(numAtoms, 0) << "Failed to read number of atoms from " << tprPath;
++
++    AtomRange atomRange(topology);
++    const auto [container, containerGuard] =
++            makeH5mdGroupGuard(createGroup(fileid(), "/benchmark_compound/particles"));
++
++    auto t0 = std::chrono::high_resolution_clock::now();
++    writeCompoundTopologyData(atomRange, container);
++    H5Fflush(fileid(), H5F_SCOPE_LOCAL);
++    auto t1        = std::chrono::high_resolution_clock::now();
++    auto elapsedUs = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
++
++    hsize_t fileSizeBytes = 0;
++    H5Fget_filesize(fileid(), &fileSizeBytes);
++
++    std::printf("  [compound ] %-44s  atoms=%7d  time=%lld us  size=%llu B\n",
++                GetParam().c_str(),
++                topology.natoms,
++                static_cast<long long>(elapsedUs),
++                static_cast<unsigned long long>(fileSizeBytes));
++
++    RecordProperty("natoms", topology.natoms);
++    RecordProperty("elapsed_us", static_cast<long long>(elapsedUs));
++    RecordProperty("file_size_bytes", static_cast<long long>(fileSizeBytes));
++
++    SUCCEED();
++}
++
++TEST_P(H5mdTopologyBenchmarkTest, BenchmarkAsMoleculeBlockTopology)
++{
++    const std::string tprPath = kTprBaseDir + "/" + GetParam();
++    if (!std::filesystem::exists(tprPath))
++    {
++        GTEST_SKIP() << "TPR file not found: " << tprPath;
++    }
++
++    t_inputrec inputRecord;
++    gmx_mtop_t topology;
++    matrix     box;
++    int        numAtoms;
++    read_tpx(tprPath, &inputRecord, box, &numAtoms, nullptr, nullptr, &topology);
++    ASSERT_GT(numAtoms, 0) << "Failed to read number of atoms from " << tprPath;
++
++    const auto [container, containerGuard] =
++            makeH5mdGroupGuard(createGroup(fileid(), "/benchmark_multids/particles"));
++
++
++    auto t0 = std::chrono::high_resolution_clock::now();
++    writeMoleculeTypesAsCompound(container, makeConstArrayRef(topology.moltype));
++    H5Fflush(fileid(), H5F_SCOPE_LOCAL);
++    auto t1        = std::chrono::high_resolution_clock::now();
++    auto elapsedUs = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
++
++    hsize_t fileSizeBytes = 0;
++    H5Fget_filesize(fileid(), &fileSizeBytes);
++
++    std::printf("  [multids  ] %-44s  atoms=%7d  time=%lld us  size=%llu B\n",
++                GetParam().c_str(),
++                topology.natoms,
++                static_cast<long long>(elapsedUs),
++                static_cast<unsigned long long>(fileSizeBytes));
++
++    RecordProperty("natoms", topology.natoms);
++    RecordProperty("elapsed_us", static_cast<long long>(elapsedUs));
++    RecordProperty("file_size_bytes", static_cast<long long>(fileSizeBytes));
++
++    SUCCEED();
++}
++
++TEST_P(H5mdTopologyBenchmarkTest, BenchmarkDecomposeWritingProcess)
++{
++    //! \brief Group name for all atoms in system.
++    constexpr char c_fullSystemGroupName[] = "system";
++
++    const std::string tprPath = kTprBaseDir + "/" + GetParam();
++    if (!std::filesystem::exists(tprPath))
++    {
++        GTEST_SKIP() << "TPR file not found: " << tprPath;
++    }
++
++    t_inputrec inputRecord;
++    gmx_mtop_t topology;
++    matrix     box;
++    int        numAtoms;
++    read_tpx(tprPath, &inputRecord, box, &numAtoms, nullptr, nullptr, &topology);
++    ASSERT_GT(numAtoms, 0) << "Failed to read number of atoms from " << tprPath;
++
++    auto metadataStart = std::chrono::high_resolution_clock::now();
++    file().setupMetadataGroup();
++    auto metadataEnd = std::chrono::high_resolution_clock::now();
++    auto metadataElapsedUs =
++            std::chrono::duration_cast<std::chrono::microseconds>(metadataEnd - metadataStart).count();
++
++    auto pbStart = std::chrono::high_resolution_clock::now();
++    file().setupParticleBlockForGroup(topology, {}, c_fullSystemGroupName, inputRecord);
++    auto pbEnd = std::chrono::high_resolution_clock::now();
++    auto pbElapsedUs = std::chrono::duration_cast<std::chrono::microseconds>(pbEnd - pbStart).count();
++
++    // Topology information and system title/version
++    auto topStart = std::chrono::high_resolution_clock::now();
++    file().setupGromacsTopology(topology);
++    auto topEnd = std::chrono::high_resolution_clock::now();
++    auto topElapsedUs = std::chrono::duration_cast<std::chrono::microseconds>(topEnd - topStart).count();
++
++    // Bond connectivity (/connectivity)
++    auto bondStart = std::chrono::high_resolution_clock::now();
++    file().setupBondConnectivity(topology);
++    auto bondEnd = std::chrono::high_resolution_clock::now();
++    auto bondElapsedUs =
++            std::chrono::duration_cast<std::chrono::microseconds>(bondEnd - bondStart).count();
++
++    // Force field parameters (/force_field)
++    auto ffStart = std::chrono::high_resolution_clock::now();
++    file().setupForceFieldParameters(topology.ffparams, inputRecord.efep != FreeEnergyPerturbationType::No);
++    auto ffEnd = std::chrono::high_resolution_clock::now();
++    auto ffElapsedUs = std::chrono::duration_cast<std::chrono::microseconds>(ffEnd - ffStart).count();
++
++    // MD parameters (/parameters)
++    auto mdParamsStart = std::chrono::high_resolution_clock::now();
++    file().setupMDParameters(inputRecord, topology);
++    auto mdParamsEnd = std::chrono::high_resolution_clock::now();
++    auto mdParamsElapsedUs =
++            std::chrono::duration_cast<std::chrono::microseconds>(mdParamsEnd - mdParamsStart).count();
++
++    // Selection groups (/selections)
++    auto selStart = std::chrono::high_resolution_clock::now();
++    file().setupIndexGroups(topology);
++    auto selEnd = std::chrono::high_resolution_clock::now();
++    auto selElapsedUs = std::chrono::duration_cast<std::chrono::microseconds>(selEnd - selStart).count();
++
++    RecordProperty("natoms", topology.natoms);
++    RecordProperty("metadata_elapsed_us", static_cast<long long>(metadataElapsedUs));
++    RecordProperty("particle_block_elapsed_us", static_cast<long long>(pbElapsedUs));
++    RecordProperty("topology_elapsed_us", static_cast<long long>(topElapsedUs));
++    RecordProperty("bond_connectivity_elapsed_us", static_cast<long long>(bondElapsedUs));
++    RecordProperty("force_field_elapsed_us", static_cast<long long>(ffElapsedUs));
++    RecordProperty("md_parameters_elapsed_us", static_cast<long long>(mdParamsElapsedUs));
++    RecordProperty("selection_groups_elapsed_us", static_cast<long long>(selElapsedUs));
++}
++
++} // namespace
++} // namespace test
++} // namespace gmx
