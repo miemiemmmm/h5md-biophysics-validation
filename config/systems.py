@@ -901,7 +901,7 @@ SYSTEMS = [
     ),
     _sys(
         "memprotmd_5bkf_cg",
-        "MemProtMD 5BKF: coarse grained 5BKF, MARTINI 2.2 with DPPC and W beads; the only non-atomistic system in the set",
+        "MemProtMD 5BKF: coarse grained 5BKF, MARTINI 2.2 with DPPC and W beads; relaxed before use",
         ("protein", "membrane: DPPC", "coarse grained: MARTINI 2.2", "solvent", "ions"),
         location=f"{VS}/memprotmd/memprotmd_5bkf_cg",
         topology="coarsegrain.top",
@@ -911,6 +911,7 @@ SYSTEMS = [
         water_model="martini-w",
         mdp={
             "coulombtype": "reaction-field",
+            "epsilon-r": "15",
             "epsilon-rf": "0",
             "rcoulomb": "1.1",
             "rvdw": "1.1",
@@ -924,7 +925,7 @@ SYSTEMS = [
     ),
     _sys(
         "memprotmd_3k1b_cg",
-        "MemProtMD 3K1B: coarse grained 3K1B, MARTINI 2.2 with DPPC and W beads; rebuilt from the deposit without intervention",
+        "MemProtMD 3K1B: coarse grained 3K1B, MARTINI 2.2 with DPPC and W beads; relaxed before use",
         ("protein", "membrane: DPPC", "coarse grained: MARTINI 2.2", "solvent", "ions"),
         location=f"{VS}/memprotmd/memprotmd_3k1b_cg",
         topology="coarsegrain.top",
@@ -934,6 +935,7 @@ SYSTEMS = [
         water_model="martini-w",
         mdp={
             "coulombtype": "reaction-field",
+            "epsilon-r": "15",
             "epsilon-rf": "0",
             "rcoulomb": "1.1",
             "rvdw": "1.1",
@@ -947,7 +949,7 @@ SYSTEMS = [
     ),
     _sys(
         "memprotmd_7e6u_cg",
-        "MemProtMD 7E6U: coarse grained 7E6U, MARTINI 2.2 with DPPC and W beads; rebuilt from the deposit without intervention",
+        "MemProtMD 7E6U: coarse grained 7E6U, MARTINI 2.2 with DPPC and W beads; relaxed before use",
         ("protein", "membrane: DPPC", "coarse grained: MARTINI 2.2", "solvent", "ions"),
         location=f"{VS}/memprotmd/memprotmd_7e6u_cg",
         topology="coarsegrain.top",
@@ -957,6 +959,7 @@ SYSTEMS = [
         water_model="martini-w",
         mdp={
             "coulombtype": "reaction-field",
+            "epsilon-r": "15",
             "epsilon-rf": "0",
             "rcoulomb": "1.1",
             "rvdw": "1.1",

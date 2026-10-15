@@ -1,31 +1,33 @@
 #!/usr/bin/env python
 """
-Cross-engine interoperability: the same molecule, two engines, one schema.
+Cross-engine interoperability: the same system, two engines, one schema.
 
 The interoperability claim is that engine-specific names denote the same
-schema-level concepts.  This script tests the topology half of that claim with
-data: not a stated correspondence, but one molecule compared item by item.
+schema-level concepts. This script tests the topology half of that claim with
+data, item by item, on systems that were set up in AMBER.
 
-The same B-DNA dodecamer (PDB 1BNA) is prepared twice and independently:
+Each pair in ``config.matrix.AMBER_INTEROP_PAIRS`` is a deposited AMBER topology
+(the hexABC and MISATO groups of the validation dataset) and the H5MD file
+GROMACS writes for the same system after ParmEd converted that topology:
 
-    GROMACS   pdb2gmx with AMBER99SB-ILDN   -> .tpr  -> H5MD biophysics file
-    AMBER     tleap with DNA.OL15           -> .prmtop
+    AMBER     deposited .prmtop                              -> read with pytraj
+    GROMACS   .prmtop -> ParmEd -> topol.top -> .tpr -> H5MD biophysics file
 
-Both are reduced to the schema's own vocabulary and compared. The two halves of
-the comparison say different things and are reported separately:
+The H5MD side is rebuilt to the full system from ``topology/molecule_blocks``.
+On the AMBER side the H-H "bond" of rigid three-site water is dropped: it keeps
+the water rigid under SHAKE and is not chemistry. Both sides are reduced to the
+schema's own vocabulary and compared in two groups:
 
-  * CHEMISTRY -- particle count, component count and names, atomic numbers, bond
-    topology.  These are properties of the molecule, not of the force field, so
-    the two engines must agree. Agreement shows the schema elements carry the
-    molecule rather than one engine's bookkeeping.
+  * CHEMISTRY -- particle and component counts, residue sequence, molecular
+    formula, atom names, atomic numbers and bond topology. These are properties
+    of the molecule, so the two must agree.
 
-  * PARAMETRISATION -- charges and masses.  These are properties of the force
-    field, and OL15 is not AMBER99SB-ILDN, so they are expected to differ. What
-    matters is that the same schema elements hold both without either engine
-    needing an element the other does not.
+  * PARAMETRISATION -- total charge, partial charges and masses. The same force
+    field sits on both sides, so these agree too; what is tested is that the
+    schema's elements carry the AMBER values without loss.
 
-    python scripts/validation6_amber_interop.py --h5md <file.h5md> --prmtop <file.prmtop>
     python scripts/validation6_amber_interop.py -a     # every AMBER_INTEROP_PAIRS entry
+    python scripts/validation6_amber_interop.py --h5md <file.h5md> --prmtop <file.prmtop>
 """
 
 from __future__ import annotations
@@ -197,8 +199,8 @@ def compare(gmx: dict, amb: dict) -> dict:
         "".join(seq_g),
         "".join(seq_a),
         seq_g == seq_a,
-        "terminal residue naming differs between engines (DA5/DA3 vs DA); "
-        "compared on base identity",
+        "compared on residue identity, with terminal variants (e.g. DA5/DA3) "
+        "folded into the base name",
     )
 
     formula_g = _formula(gmx["species"])
@@ -301,8 +303,7 @@ def compare(gmx: dict, amb: dict) -> dict:
         round(tot_q_g, 4),
         round(tot_q_a, 4),
         abs(tot_q_g - tot_q_a) < 1e-3,
-        "net charge is set by the chemistry and must agree even though the "
-        "individual partial charges do not",
+        "net charge is set by the chemistry and must agree",
     )
     if mapping:
         dq = max(
@@ -314,9 +315,8 @@ def compare(gmx: dict, amb: dict) -> dict:
             "-",
             round(dq, 4),
             None,
-            "the schema holds whatever the force field assigns. Here the two "
-            "agree exactly: DNA.OL15 revises torsions and inherits the "
-            "parmbsc0/ff99 charges that AMBER99SB-ILDN also uses",
+            "the same force field sits on both sides, so any difference is a "
+            "loss in the conversion or in the writer",
         )
         dm = max(
             abs(gmx["masses"][gi] - amb["masses"][ai]) for gi, ai in mapping.items()

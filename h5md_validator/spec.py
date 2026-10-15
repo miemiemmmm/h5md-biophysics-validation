@@ -1,8 +1,9 @@
 """
 Declarative model of the H5MD ``biophysics`` module, version 1.0.
 
-Normative source: ``si-specification.tex``; section numbers in the comments
-below (S4, S5, ...) refer to it. Nothing here is derived from the GROMACS
+Normative source: the module specification, version 1.0 (``SI-Specification.pdf``
+in the paper's supplementary material); section numbers in the comments below
+(S4, S5, ...) refer to it. Nothing here is derived from the GROMACS
 reference implementation -- disagreements are recorded in
 :mod:`h5md_validator.deviations` rather than absorbed into the model.
 
