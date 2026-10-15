@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 """
-Validation 5 figure: what the metadata costs to store.
+Validation 5 figure: what the metadata costs to store and to write.
 
-    validation5_cost.png  storage against system size
+    validation5_cost.png  A  metadata stored against system size
+                          B  metadata bytes per unique atom (connectivity excluded)
+                          C  each phase's share of the write time, from the timing
+                             data in data/decompose_run*.json (see data/README.md)
 
-Written to <results>/figures/. The validation_framework schematic is a diagram
-rather than a measurement and lives in renderer/render_framework_figure.py.
+Written to <results>/figures/.
 
 Used by:
     Validation 5: storage overhead
