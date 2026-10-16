@@ -136,10 +136,10 @@ def _m_total_particle_count(f):
     return True
 
 
-def _m_total_component_count(f):
+def _m_total_residue_count(f):
     t = f["topology"]
-    t.attrs["total_component_count"] = (
-        int(np.atleast_1d(t.attrs["total_component_count"])[0]) + 1
+    t.attrs["total_residue_count"] = (
+        int(np.atleast_1d(t.attrs["total_residue_count"])[0]) + 1
     )
     return True
 
@@ -199,11 +199,11 @@ def _m_sequence_truncated(f):
     return True
 
 
-def _m_component_id_out_of_range(f):
+def _m_sequence_index_out_of_range(f):
     mol = _largest_mol(f)
     data = mol["particle_data"][()]
-    n = int(np.atleast_1d(mol.attrs["component_count"])[0])
-    data["component_id"][0] = n + 5
+    n = int(np.atleast_1d(mol.attrs["residue_count"])[0])
+    data["sequence_index"][0] = n + 5
     _replace(mol, "particle_data", data)
     return True
 
@@ -619,11 +619,11 @@ CORRUPTIONS = [
         _m_total_particle_count,
     ),
     Corruption(
-        "C-TOPO-TOTAL-COMPONENTS",
+        "C-TOPO-TOTAL-RESIDUES",
         "topology invariant",
-        "inflate total_component_count by one",
-        "TOPO-INVARIANT-COMPONENTS",
-        _m_total_component_count,
+        "inflate total_residue_count by one",
+        "TOPO-INVARIANT-RESIDUES",
+        _m_total_residue_count,
     ),
     Corruption(
         "C-TOPO-BLOCK-COUNT",
@@ -675,11 +675,11 @@ CORRUPTIONS = [
         _m_sequence_truncated,
     ),
     Corruption(
-        "C-TOPO-COMPONENT-ID",
+        "C-TOPO-SEQUENCE-INDEX",
         "referential integrity",
-        "set a component_id beyond component_count",
-        "REF-COMPONENT-ID",
-        _m_component_id_out_of_range,
+        "set a sequence_index beyond residue_count",
+        "REF-SEQUENCE-INDEX",
+        _m_sequence_index_out_of_range,
     ),
     Corruption(
         "C-TOPO-NAME-INDEX",

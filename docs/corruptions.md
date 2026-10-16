@@ -21,7 +21,7 @@ The list mirrors `CORRUPTIONS` in `h5md_validator/corrupt.py`, in the same order
 | Corruption | Defect injected | Expected finding |
 |:--|:--|:--|
 | `C-TOPO-TOTAL-PARTICLES` | inflate total_particle_count by one | `TOPO-INVARIANT-PARTICLES` |
-| `C-TOPO-TOTAL-COMPONENTS` | inflate total_component_count by one | `TOPO-INVARIANT-COMPONENTS` |
+| `C-TOPO-TOTAL-RESIDUES` | inflate total_residue_count by one | `TOPO-INVARIANT-RESIDUES` |
 | `C-TOPO-BLOCK-COUNT` | inflate the molecule count of the first block | `TOPO-INVARIANT-PARTICLES` |
 | `C-TOPO-PARTICLE-DATA-SHORT` | drop the last row of particle_data | `TOPO-PARTICLE-DATA-LENGTH` |
 | `C-TOPO-PARTICLE-COUNT-ATTR` | inflate particle_count of a molecule type | `TOPO-PARTICLE-DATA-LENGTH` |
@@ -32,7 +32,7 @@ The list mirrors `CORRUPTIONS` in `h5md_validator/corrupt.py`, in the same order
 | Corruption | Defect injected | Expected finding |
 |:--|:--|:--|
 | `C-TOPO-BLOCK-DANGLING` | point a molecule block at a molecule type that does not exist | `REF-BLOCK-DANGLING` |
-| `C-TOPO-COMPONENT-ID` | set a component_id beyond component_count | `REF-COMPONENT-ID` |
+| `C-TOPO-SEQUENCE-INDEX` | set a sequence_index beyond residue_count | `REF-SEQUENCE-INDEX` |
 | `C-TOPO-NAME-INDEX` | set a particle name index beyond particle_name_table | `REF-PARTICLE-NAME-INDEX` |
 | `C-TOPO-COMPONENT-NAME-INDEX` | set a component name index beyond component_name_table | `REF-COMPONENT-NAME-INDEX` |
 | `C-FF-PARAM-ID-DANGLING` | reference a force-field parameter index that does not exist | `REF-PARAMETER-ID` |

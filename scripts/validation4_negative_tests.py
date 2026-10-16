@@ -129,7 +129,7 @@ def main():
         help="the bases declared in config/matrix.py (the default)",
     )
     ap.add_argument("--manifest", default=_r("reference_files.json"))
-    ap.add_argument("--out-dir", default=_r("negative"))
+    ap.add_argument("--out-dir", default=str(Path(DATA_ROOT) / "negative"))
     ap.add_argument("--json", default=_r("negative_tests.json"))
     ap.add_argument(
         "--keep",
@@ -179,6 +179,8 @@ def main():
                     }
                 )
                 print(f"  [INRT] {corruption.code:32s} changed nothing")
+                if not args.keep:
+                    path.unlink(missing_ok=True)
                 continue
             report = validator.validate(path)
             codes = {f.code for f in report.findings}

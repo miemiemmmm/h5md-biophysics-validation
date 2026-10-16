@@ -69,7 +69,7 @@ DEVIATIONS = {
             title="particle_data.name is an index, not a String",
             spec=(
                 "S10: particle_data: Compound[N] <- {name: String, species: Integer, "
-                "charge: Float, mass: Float, component_id: Integer}."
+                "charge: Float, mass: Float, sequence_index: Integer}."
             ),
             implementation=(
                 "The name field is written as Integer and is an index into the "
@@ -90,7 +90,7 @@ DEVIATIONS = {
         Deviation(
             code="DEV-TOPO-SYSTEM-NAME",
             title="topology carries an undocumented system_name attribute",
-            spec="S10 lists only total_particle_count and total_component_count on topology.",
+            spec="S10 lists only total_particle_count and total_residue_count on topology.",
             implementation="Files additionally carry topology/++system_name: String.",
             impact=(
                 "Harmless for readers, but an undocumented element in a schema that "

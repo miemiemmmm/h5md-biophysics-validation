@@ -74,7 +74,7 @@ def specified_elements():
     for attr in spec.FORCE_FIELD_ATTRS:
         out[f"force_field/@{attr.name}"] = "optional"
     out["topology/@total_particle_count"] = "required"
-    out["topology/@total_component_count"] = "required"
+    out["topology/@total_residue_count"] = "required"
 
     for name in (
         "topology/molecule_blocks",

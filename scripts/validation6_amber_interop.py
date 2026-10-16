@@ -90,10 +90,10 @@ def amber_topology(prmtop) -> dict:
 
     return {
         "particle_count": top.n_atoms,
-        "component_count": top.n_residues,
+        "residue_count": top.n_residues,
         "particle_names": [a.name.strip() for a in atoms],
         "species": [int(a.atomic_number) for a in atoms],
-        "component_ids": [int(a.resid) for a in atoms],
+        "sequence_indices": [int(a.resid) for a in atoms],
         "component_names": [r.name.strip() for r in residues],
         "charges": [float(a.charge) for a in atoms],
         "masses": [float(a.mass) for a in atoms],
@@ -123,10 +123,10 @@ def h5md_topology(path) -> dict:
     out = {
         "molecule_blocks": list(zip(names, counts)),
         "particle_count": 0,
-        "component_count": 0,
+        "residue_count": 0,
         "particle_names": [],
         "species": [],
-        "component_ids": [],
+        "sequence_indices": [],
         "component_names": [],
         "charges": [],
         "masses": [],
@@ -139,14 +139,14 @@ def h5md_topology(path) -> dict:
 
         for _ in range(count):
             out["particle_count"] += int(g("particle_count"))
-            out["component_count"] += int(g("component_count"))
+            out["residue_count"] += int(g("residue_count"))
             out["particle_names"] += list(g("particle_names"))
             out["species"] += [int(v) for v in g("species")]
-            out["component_ids"] += [int(v) + offset for v in g("component_ids")]
+            out["sequence_indices"] += [int(v) + offset for v in g("sequence_indices")]
             out["component_names"] += list(g("component_names"))
             out["charges"] += [float(v) for v in g("charges")]
             out["masses"] += [float(v) for v in g("masses")]
-            offset += int(g("component_count"))
+            offset += int(g("residue_count"))
 
     # The global bond list already indexes the full system.
     conn = items.get("connectivity.bonds")
@@ -185,10 +185,10 @@ def compare(gmx: dict, amb: dict) -> dict:
     )
     add(
         "chemistry",
-        "component count",
-        gmx["component_count"],
-        amb["component_count"],
-        gmx["component_count"] == amb["component_count"],
+        "residue count",
+        gmx["residue_count"],
+        amb["residue_count"],
+        gmx["residue_count"] == amb["residue_count"],
     )
 
     seq_g = [s.strip().lstrip("D").rstrip("35") for s in gmx["component_names"]]
@@ -373,7 +373,7 @@ def _align(gmx: dict, amb: dict, use_aliases=True):
 
     def index(d):
         out = {}
-        for i, (cid, name) in enumerate(zip(d["component_ids"], d["particle_names"])):
+        for i, (cid, name) in enumerate(zip(d["sequence_indices"], d["particle_names"])):
             out.setdefault((cid, norm(name)), []).append(i)
         return out
 

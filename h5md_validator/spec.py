@@ -1,7 +1,7 @@
 """
 Declarative model of the H5MD ``biophysics`` module, version 1.0.
 
-Normative source: the module specification, version 1.0 (``SI-Specification.pdf``
+Normative source: the module specification, version 1.0 (``SI-specification.pdf``
 in the paper's supplementary material); section numbers in the comments below
 (S4, S5, ...) refer to it. Nothing here is derived from the GROMACS
 reference implementation -- disagreements are recorded in
@@ -576,11 +576,11 @@ PARTICLE_DATA_FIELDS = (
     Field("species", INTEGER),
     Field("charge", FLOAT),
     Field("mass", FLOAT),
-    Field("component_id", INTEGER),
+    Field("sequence_index", INTEGER),
 )
 
 SEQUENCE_FIELDS = (
-    Field("component_number", INTEGER),
+    Field("residue_number", INTEGER),
     Field("component_name", INTEGER),
 )
 

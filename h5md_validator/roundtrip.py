@@ -327,11 +327,11 @@ def _source_topology(d: TprDump) -> dict:
     out: dict = {}
     out["topology.total_particle_count"] = Value("integer", d.n_atoms)
 
-    total_components = 0
+    total_residues = 0
     for block in d.molblocks:
         mol = d.moltypes[block["moltype"]]
-        total_components += block["nmol"] * mol.n_residues
-    out["topology.total_component_count"] = Value("integer", total_components)
+        total_residues += block["nmol"] * mol.n_residues
+    out["topology.total_residue_count"] = Value("integer", total_residues)
     out["topology.molecule_blocks.names"] = Value(
         "str_array", [b["name"] for b in d.molblocks]
     )
@@ -342,18 +342,18 @@ def _source_topology(d: TprDump) -> dict:
     for mol in d.moltypes:
         p = f"topology.{mol.name}"
         out[f"{p}.particle_count"] = Value("integer", mol.n_atoms)
-        out[f"{p}.component_count"] = Value("integer", mol.n_residues)
+        out[f"{p}.residue_count"] = Value("integer", mol.n_residues)
         out[f"{p}.particle_names"] = Value("str_array", list(mol.atom_names))
         out[f"{p}.species"] = Value(
             "int_array", [a.get("atomnumber", -1) for a in mol.atoms]
         )
         out[f"{p}.charges"] = Value("float_array", [a.get("q") for a in mol.atoms], "e")
         out[f"{p}.masses"] = Value("float_array", [a.get("m") for a in mol.atoms], "u")
-        out[f"{p}.component_ids"] = Value(
+        out[f"{p}.sequence_indices"] = Value(
             "int_array", [a.get("resind", -1) for a in mol.atoms]
         )
         out[f"{p}.component_names"] = Value("str_array", [r[0] for r in mol.residues])
-        out[f"{p}.component_numbers"] = Value("int_array", [r[1] for r in mol.residues])
+        out[f"{p}.residue_numbers"] = Value("int_array", [r[1] for r in mol.residues])
         out[f"{p}.exclusions"] = Value("nested_int", [sorted(e) for e in mol.excls])
 
         for schema_type, entries in _source_interactions(d, mol).items():
@@ -477,7 +477,7 @@ def _target_topology(f, out):
         return
     for attr, key in (
         ("total_particle_count", "topology.total_particle_count"),
-        ("total_component_count", "topology.total_component_count"),
+        ("total_residue_count", "topology.total_residue_count"),
     ):
         if attr in topo.attrs:
             out[key] = Value("integer", int(np.atleast_1d(topo.attrs[attr])[0]))
@@ -499,7 +499,7 @@ def _target_topology(f, out):
         if not isinstance(mol, h5py.Group) or "particle_data" not in mol:
             continue
         p = f"topology.{name}"
-        for attr in ("particle_count", "component_count"):
+        for attr in ("particle_count", "residue_count"):
             if attr in mol.attrs:
                 out[f"{p}.{attr}"] = Value(
                     "integer", int(np.atleast_1d(mol.attrs[attr])[0])
@@ -532,8 +532,8 @@ def _target_topology(f, out):
             [float(v) for v in pdata["mass"]],
             units[3] if len(units) > 3 else None,
         )
-        out[f"{p}.component_ids"] = Value(
-            "int_array", [int(v) for v in pdata["component_id"]]
+        out[f"{p}.sequence_indices"] = Value(
+            "int_array", [int(v) for v in pdata["sequence_index"]]
         )
 
         if "sequence" in mol:
@@ -552,8 +552,8 @@ def _target_topology(f, out):
                 out[f"{p}.component_names"] = Value(
                     "str_array", [_decode(v) for v in idx]
                 )
-            out[f"{p}.component_numbers"] = Value(
-                "int_array", [int(v) for v in seq["component_number"]]
+            out[f"{p}.residue_numbers"] = Value(
+                "int_array", [int(v) for v in seq["residue_number"]]
             )
 
         if "exclusions" in mol:

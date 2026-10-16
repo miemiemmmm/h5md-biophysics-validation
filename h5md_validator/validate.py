@@ -68,7 +68,9 @@ def _dtype_class(dtype) -> str:
         # h5py stores variable-length strings as object arrays.
         return spec.STRING
     if kind == "b":
-        return spec.BOOLEAN
+        # h5py writes NumPy bools as an HDF5 enum {FALSE, TRUE}; the
+        # specification's Boolean is an Integer (S3.3), so this is not one.
+        return "Enum (h5py bool)"
     return f"unknown({kind})"
 
 
@@ -267,8 +269,8 @@ class Validator:
                 )
 
     # ------------------------------------------------- generic tree conformance
-    def _check_group(self, parent, node: spec.Group, path: str, rep):
-        """Recursively check a specified group against the file."""
+    def _check_against_model(self, parent, node: spec.Group, path: str, rep):
+        """Recursively check a file group against its node in the spec.py model."""
         obj = parent.get(node.name)
         if obj is None:
             if node.required:
@@ -301,7 +303,7 @@ class Validator:
             self._check_dataset(obj, dsnode, f"{path}/{dsnode.name}", rep)
 
         for sub in node.groups:
-            self._check_group(obj, sub, f"{path}/{sub.name}", rep)
+            self._check_against_model(obj, sub, f"{path}/{sub.name}", rep)
 
         # Elements present in the file that the specification does not define.
         specified = {d.name for d in node.datasets} | {g.name for g in node.groups}
@@ -344,12 +346,13 @@ class Validator:
 
         actual = _dtype_class(obj.dtype)
         expected = spec.INTEGER if node.dtype == spec.BOOLEAN else node.dtype
+        want = "Boolean (Integer 0/1)" if node.dtype == spec.BOOLEAN else node.dtype
         if actual != expected:
             rep.add(
                 "STRUCT-DTYPE",
                 Severity.ERROR,
                 path,
-                f"expected {node.dtype}, found {actual}",
+                f"expected {want}, found {actual}",
                 expected=node.dtype,
                 actual=actual,
             )
@@ -484,7 +487,7 @@ class Validator:
         params = f.get("parameters")
         if params is None:
             return
-        self._check_group(f, spec.PARAMETERS, "parameters", rep)
+        self._check_against_model(f, spec.PARAMETERS, "parameters", rep)
 
         # S7: the subgroup named by the selector dataset must be instantiated.
         for gpath, (selector, owning) in spec.CONDITIONAL_SELECTORS.items():
@@ -762,11 +765,11 @@ class Validator:
         info = {
             "molecule_types": {},
             "total_particle_count": None,
-            "total_component_count": None,
+            "total_residue_count": None,
             "n_particles": None,
         }
 
-        for attr in ("total_particle_count", "total_component_count"):
+        for attr in ("total_particle_count", "total_residue_count"):
             if attr not in topo.attrs:
                 rep.add(
                     "STRUCT-MISSING-ATTR",
@@ -830,7 +833,7 @@ class Validator:
             return info
 
         data = blocks[()]
-        total_p = total_c = 0
+        total_p = total_r = 0
         for i, row in enumerate(data):
             bname = _decode(row["name"])
             count = int(row["count"])
@@ -857,7 +860,7 @@ class Validator:
                 )
                 continue
             total_p += count * mol["particle_count"]
-            total_c += count * mol["component_count"]
+            total_r += count * mol["residue_count"]
 
         info["n_particles"] = total_p
         # sum_i n_i N_i == total_particle_count
@@ -875,17 +878,17 @@ class Validator:
                 declared=info["total_particle_count"],
             )
         if (
-            info["total_component_count"] is not None
-            and total_c != info["total_component_count"]
+            info["total_residue_count"] is not None
+            and total_r != info["total_residue_count"]
         ):
             rep.add(
-                "TOPO-INVARIANT-COMPONENTS",
+                "TOPO-INVARIANT-RESIDUES",
                 Severity.ERROR,
                 "topology",
-                f"sum over molecule blocks of count x component_count is {total_c}, "
-                f"but total_component_count is {info['total_component_count']}",
-                computed=total_c,
-                declared=info["total_component_count"],
+                f"sum over molecule blocks of count x residue_count is {total_r}, "
+                f"but total_residue_count is {info['total_residue_count']}",
+                computed=total_r,
+                declared=info["total_residue_count"],
             )
 
         # The trajectory must describe the same number of particles.
@@ -939,9 +942,9 @@ class Validator:
         return counts
 
     def _check_molecule_type(self, mol, path, rep, ff_params):
-        summary = {"particle_count": 0, "component_count": 0}
+        summary = {"particle_count": 0, "residue_count": 0}
 
-        for attr in ("particle_count", "component_count"):
+        for attr in ("particle_count", "residue_count"):
             if attr not in mol.attrs:
                 rep.add(
                     "STRUCT-MISSING-ATTR",
@@ -953,7 +956,7 @@ class Validator:
                 summary[attr] = int(np.atleast_1d(mol.attrs[attr])[0])
 
         n_particles = summary["particle_count"]
-        n_components = summary["component_count"]
+        n_residues = summary["residue_count"]
 
         pnames = mol.get("particle_name_table")
         cnames = mol.get("component_name_table")
@@ -989,7 +992,7 @@ class Validator:
             )
         else:
             self._check_particle_data(
-                pdata, f"{path}/particle_data", rep, n_particles, n_components, n_pnames
+                pdata, f"{path}/particle_data", rep, n_particles, n_residues, n_pnames
             )
 
         # --- sequence --------------------------------------------------------
@@ -1002,7 +1005,7 @@ class Validator:
                 "required dataset sequence is absent",
             )
         else:
-            self._check_sequence(seq, f"{path}/sequence", rep, n_components, n_cnames)
+            self._check_sequence(seq, f"{path}/sequence", rep, n_residues, n_cnames)
 
         # --- interactions ----------------------------------------------------
         inter = mol.get("interactions")
@@ -1155,7 +1158,7 @@ class Validator:
                     expected=int(n_idx),
                 )
 
-    def _check_particle_data(self, ds, path, rep, n_particles, n_components, n_pnames):
+    def _check_particle_data(self, ds, path, rep, n_particles, n_residues, n_pnames):
         if ds.dtype.names is None:
             rep.add(
                 "STRUCT-DTYPE",
@@ -1217,15 +1220,15 @@ class Validator:
         self._check_units_attr(ds, path, rep, len(got))
 
         data = ds[()]
-        # component_id must index a component of this molecule type.
-        cid = np.asarray(data["component_id"], dtype=np.int64)
+        # sequence_index must address a row of this molecule type's sequence.
+        cid = np.asarray(data["sequence_index"], dtype=np.int64)
         self._check_index_range(
             cid,
-            n_components,
-            f"{path}.component_id",
+            n_residues,
+            f"{path}.sequence_index",
             rep,
-            "REF-COMPONENT-ID",
-            "component_id",
+            "REF-SEQUENCE-INDEX",
+            "sequence_index",
         )
         # When name is an index it must address particle_name_table.
         if _dtype_class(ds.dtype["name"]) == spec.INTEGER and n_pnames:
@@ -1251,7 +1254,7 @@ class Validator:
                 first_indices=bad[:10].tolist(),
             )
 
-    def _check_sequence(self, ds, path, rep, n_components, n_cnames):
+    def _check_sequence(self, ds, path, rep, n_residues, n_cnames):
         if ds.dtype.names is None:
             rep.add(
                 "STRUCT-DTYPE",
@@ -1272,14 +1275,14 @@ class Validator:
                 actual=list(got),
             )
             return
-        if ds.shape[0] != n_components:
+        if ds.shape[0] != n_residues:
             rep.add(
                 "TOPO-SEQUENCE-LENGTH",
                 Severity.ERROR,
                 path,
-                f"sequence has {ds.shape[0]} rows but component_count is "
-                f"{n_components}",
-                expected=n_components,
+                f"sequence has {ds.shape[0]} rows but residue_count is "
+                f"{n_residues}",
+                expected=n_residues,
                 actual=ds.shape[0],
             )
         data = ds[()]
@@ -1590,10 +1593,12 @@ class Validator:
                         deviation="DEV-SEL-RANGE-CONVENTION",
                     )
                     reported_convention = True
+            # A selection string is unreadable without the software that
+            # parses it, so its absence is an error, not advice.
             if string_based and "selection" in keys and "software" not in keys:
                 rep.add(
                     "SEL-NO-SOFTWARE",
-                    Severity.WARNING,
+                    Severity.ERROR,
                     path,
                     "string-based selection does not name the software that "
                     "can parse it",

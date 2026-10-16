@@ -18,30 +18,43 @@ from enum import Enum
 
 
 class Severity(str, Enum):
+    """How serious a finding is; only ERROR decides the verdict.
+
+    The severity is chosen by the check that raises the finding, at its
+    ``rep.add`` call in :mod:`h5md_validator.validate`.
+    """
+
     #: The file violates a MUST of the specification.  A conformant file has none.
     ERROR = "ERROR"
     #: A known specification-vs-implementation mismatch, tracked in
     #: :mod:`h5md_validator.deviations`.  Reported separately so that it does
     #: not drown out genuine errors while the mismatch is unresolved.
     DEVIATION = "DEVIATION"
-    #: The file violates a SHOULD / RECOMMENDED of the specification.
+    #: The file violates a SHOULD / RECOMMENDED of the specification, e.g. an
+    #: unknown unit symbol or an algorithm name outside the predefined set.
     WARNING = "WARNING"
-    #: Informational, no conformance consequence.
+    #: Informational, no conformance consequence, e.g. an interaction type
+    #: outside Table SI that carries a reference.
     INFO = "INFO"
 
 
 @dataclass
 class Finding:
-    #: Stable check identifier, e.g. ``TOPO-INVARIANT-PARTICLES``.
+    """One problem found in one file, as written to ``validation.json``."""
+
+    #: Stable check identifier, e.g. ``TOPO-INVARIANT-PARTICLES``; the
+    #: families are listed in docs/check-codes.md.
     code: str
     severity: Severity
-    #: HDF5 path the finding is anchored to.
+    #: HDF5 path the finding is anchored to ("" for the file itself).
     path: str
+    #: Human-readable explanation; not stable, do not parse it.
     message: str
     #: Free-form supporting values (expected/actual, indices, ...).
     detail: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
+        """JSON-ready form, with the severity as its string value."""
         d = asdict(self)
         d["severity"] = self.severity.value
         return d
@@ -52,15 +65,21 @@ class Finding:
 
 @dataclass
 class Report:
-    """Result of validating one file."""
+    """Result of validating one file: every finding, in the order raised.
+
+    Checks only record findings; the verdict is derived afterwards by
+    :attr:`conformant`.
+    """
 
     file: str
     findings: list = field(default_factory=list)
 
     def add(self, code, severity, path, message, **detail):
+        """Record one finding; keyword arguments become its ``detail``."""
         self.findings.append(Finding(code, severity, path, message, detail))
 
     def by_severity(self, severity: Severity) -> list:
+        """The findings raised at one severity."""
         return [f for f in self.findings if f.severity is severity]
 
     @property
@@ -86,6 +105,7 @@ class Report:
         return not self.errors
 
     def to_dict(self) -> dict:
+        """The ``conformance`` section of a ``validation.json`` entry."""
         return {
             "file": self.file,
             "conformant": self.conformant,
@@ -97,6 +117,7 @@ class Report:
         return json.dumps(self.to_dict(), indent=indent)
 
     def summary(self) -> str:
+        """One line: PASS/FAIL, the file, and the counts per severity."""
         c = {s.value: len(self.by_severity(s)) for s in Severity}
         verdict = "PASS" if self.conformant else "FAIL"
         return (

@@ -2,7 +2,7 @@
 
 This technical validation associates with the H5MD `biophysics` metadata schema with its publication entitled "A Hierarchical Metadata Schema for Self-Contained Molecular Dynamics Trajectory Archives".
 This directory holds everything needed to reproduce the Technical Validation in its supplementary information (`SI-technical-validation`). 
-The specification (`SI-Specification.pdf` in the supplementary material), version 1.0 of the `biophysics` module, is the normative source when building the validation suite and schema model (`h5md_validator/spec.py`). 
+The specification (`SI-specification.pdf` in the supplementary material), version 1.0 of the `biophysics` module, is the normative source when building the validation suite and schema model (`h5md_validator/spec.py`). 
 By generating the H5MD outputs from the GROMACS reference implementation, the validation suite can compare them against the schema model to identify any discrepancies.
 Where the two disagree, the disagreement is reported as a finding rather than absorbed into the model.
 
