@@ -779,13 +779,16 @@ class Validator:
                 )
             else:
                 info[attr] = int(np.atleast_1d(topo.attrs[attr])[0])
-        if "system_name" in topo.attrs and self.report_deviations:
+        # system_name is an optional attribute (S10); nothing to check when absent.
+        if "system_name" in topo.attrs and not isinstance(
+            _decode(topo.attrs["system_name"]), str
+        ):
             rep.add(
-                "DEV-TOPO-SYSTEM-NAME",
-                Severity.DEVIATION,
-                "topology",
-                DEVIATIONS["DEV-TOPO-SYSTEM-NAME"].title,
-                deviation="DEV-TOPO-SYSTEM-NAME",
+                "STRUCT-DTYPE",
+                Severity.ERROR,
+                "topology/@system_name",
+                "system_name must be a String",
+                expected=spec.STRING,
             )
 
         ff_params = self._collect_parameter_counts(f)
@@ -1008,18 +1011,8 @@ class Validator:
             self._check_sequence(seq, f"{path}/sequence", rep, n_residues, n_cnames)
 
         # --- interactions ----------------------------------------------------
+        # Optional (S10): absent when the molecule type has no bonded interaction.
         inter = mol.get("interactions")
-        if inter is None and self.report_deviations:
-            # S10 marks the group mandatory; monatomic species legitimately have
-            # no bonded interactions and the writer omits it.
-            rep.add(
-                "DEV-TOPO-INTERACTIONS-REQUIRED",
-                Severity.DEVIATION,
-                path,
-                DEVIATIONS["DEV-TOPO-INTERACTIONS-REQUIRED"].title,
-                deviation="DEV-TOPO-INTERACTIONS-REQUIRED",
-                particle_count=n_particles,
-            )
         if isinstance(inter, h5py.Group):
             for tname in inter:
                 self._check_interaction(
@@ -1038,125 +1031,75 @@ class Validator:
         return summary
 
     def _check_exclusions(self, grp, path, rep, n_particles):
-        """Validate the per-particle exclusion list.
+        """Validate the excluded particle pairs.
 
-        S10 shows the two datasets but defines neither (DEV-EXCL-UNDOCUMENTED).
-        The encoding in use is a compressed per-particle list: ``ranges`` has one
-        row per particle, and row i is a 1-based, right-closed span of offsets
-        into ``indices``; ``indices`` holds 0-based particle indices.
+        S10: one dataset, ``particle_ids`` of shape [N_e][2], holding every
+        excluded pair once as 0-based particle indices of this molecule type
+        with i < j; the exclusion of a particle from itself is implied. The
+        group is absent when the molecule type has no excluded pair.
         """
-        idx = grp.get("indices")
-        rng = grp.get("ranges")
-        if idx is None or rng is None:
-            for nm, ds in (("indices", idx), ("ranges", rng)):
-                if ds is None:
-                    rep.add(
-                        "STRUCT-MISSING-DATASET",
-                        Severity.ERROR,
-                        f"{path}/{nm}",
-                        f"required dataset {nm!r} is absent",
-                    )
-            return
-        if self.report_deviations:
+        ds = grp.get("particle_ids")
+        if ds is None:
             rep.add(
-                "DEV-EXCL-UNDOCUMENTED",
-                Severity.DEVIATION,
-                path,
-                DEVIATIONS["DEV-EXCL-UNDOCUMENTED"].title,
-                deviation="DEV-EXCL-UNDOCUMENTED",
+                "STRUCT-MISSING-DATASET",
+                Severity.ERROR,
+                f"{path}/particle_ids",
+                "required dataset 'particle_ids' is absent",
             )
+            return
 
-        indices = np.asarray(idx[()], dtype=np.int64).ravel()
+        pairs = np.asarray(ds[()], dtype=np.int64)
+        if pairs.ndim != 2 or pairs.shape[1] != 2:
+            rep.add(
+                "STRUCT-SHAPE",
+                Severity.ERROR,
+                f"{path}/particle_ids",
+                f"particle_ids must be Integer[P][2], found shape {list(pairs.shape)}",
+                expected="[P,2]",
+                actual=list(pairs.shape),
+            )
+            return
+        if pairs.shape[0] == 0:
+            rep.add(
+                "TOPO-EXCLUSION-EMPTY",
+                Severity.WARNING,
+                f"{path}/particle_ids",
+                "the exclusions group holds no pair; a molecule type without "
+                "excluded pairs is expected to have no exclusions group",
+            )
+            return
+
         # Exclusions name particles of this molecule type.
         self._check_index_range(
-            indices,
+            pairs.ravel(),
             n_particles,
-            f"{path}/indices",
+            f"{path}/particle_ids",
             rep,
             "REF-EXCL-INDEX",
             "excluded particle index",
         )
-
-        ranges = np.asarray(rng[()], dtype=np.int64)
-        if ranges.ndim != 2 or ranges.shape[1] != 3:
-            rep.add(
-                "STRUCT-SHAPE",
-                Severity.ERROR,
-                f"{path}/ranges",
-                f"ranges must be Integer[N][3], found shape {list(ranges.shape)}",
-                expected="[N,3]",
-                actual=list(ranges.shape),
-            )
-            return
-        if ranges.shape[0] != n_particles:
-            rep.add(
-                "TOPO-EXCLUSION-ROWS",
-                Severity.ERROR,
-                f"{path}/ranges",
-                f"ranges has {ranges.shape[0]} rows for {n_particles} particle(s); "
-                "one row per particle is expected",
-                expected=n_particles,
-                actual=int(ranges.shape[0]),
-            )
-            return
-
-        first, last, stride = ranges[:, 0], ranges[:, 1], ranges[:, 2]
-        n_idx = indices.size
-        # 1-based, right-closed offsets into ``indices``.
-        bad = np.flatnonzero((first < 1) | (last > n_idx) | (first > last + 1))
+        # Each pair is stored once, lower index first, which also rules out a
+        # particle excluding itself.
+        bad = np.flatnonzero(pairs[:, 0] >= pairs[:, 1])
         if bad.size:
             rep.add(
-                "REF-EXCL-RANGE",
+                "REF-EXCL-ORDER",
                 Severity.ERROR,
-                f"{path}/ranges",
-                f"{bad.size} row(s) span outside the 1-based inclusive bounds "
-                f"[1, {n_idx}] of the indices dataset",
-                count=int(bad.size),
-                bound=int(n_idx),
-                first_rows=bad[:10].tolist(),
-            )
-        bad = np.flatnonzero(stride != 1)
-        if bad.size:
-            rep.add(
-                "REF-EXCL-STRIDE",
-                Severity.ERROR,
-                f"{path}/ranges",
-                f"{bad.size} row(s) have a stride other than 1; the exclusion "
-                "list is a contiguous span per particle",
+                f"{path}/particle_ids",
+                f"{bad.size} pair(s) do not satisfy i < j",
                 count=int(bad.size),
                 first_rows=bad[:10].tolist(),
             )
-        # The per-particle spans must tile the indices array exactly once.
-        if n_particles:
-            if int(first[0]) != 1:
-                rep.add(
-                    "REF-EXCL-COVERAGE",
-                    Severity.ERROR,
-                    f"{path}/ranges",
-                    f"first span starts at {int(first[0])}, expected 1",
-                    actual=int(first[0]),
-                )
-            gaps = np.flatnonzero(first[1:] != last[:-1] + 1)
-            if gaps.size:
-                rep.add(
-                    "REF-EXCL-COVERAGE",
-                    Severity.ERROR,
-                    f"{path}/ranges",
-                    f"{gaps.size} discontinuity/ies between consecutive spans; "
-                    "the spans must tile the indices dataset",
-                    count=int(gaps.size),
-                    first_rows=gaps[:10].tolist(),
-                )
-            if int(last[-1]) != n_idx:
-                rep.add(
-                    "REF-EXCL-COVERAGE",
-                    Severity.ERROR,
-                    f"{path}/ranges",
-                    f"last span ends at {int(last[-1])} but indices has {n_idx} "
-                    "entries",
-                    actual=int(last[-1]),
-                    expected=int(n_idx),
-                )
+        # Compare unordered, so (i, j) and (j, i) count as the same pair.
+        n_unique = np.unique(np.sort(pairs, axis=1), axis=0).shape[0]
+        if n_unique != pairs.shape[0]:
+            rep.add(
+                "REF-EXCL-DUPLICATE",
+                Severity.ERROR,
+                f"{path}/particle_ids",
+                f"{pairs.shape[0] - n_unique} pair(s) are listed more than once",
+                count=int(pairs.shape[0] - n_unique),
+            )
 
     def _check_particle_data(self, ds, path, rep, n_particles, n_residues, n_pnames):
         if ds.dtype.names is None:
@@ -1184,18 +1127,6 @@ class Validator:
         for fl in spec.PARTICLE_DATA_FIELDS:
             actual = _dtype_class(ds.dtype[fl.name])
             if actual == fl.dtype:
-                continue
-            if fl.name == "name" and actual == spec.INTEGER:
-                # Registered mismatch: the writer stores an index into
-                # particle_name_table where the spec declares a String.
-                if self.report_deviations:
-                    rep.add(
-                        "DEV-TOPO-NAME-TYPE",
-                        Severity.DEVIATION,
-                        f"{path}.name",
-                        DEVIATIONS["DEV-TOPO-NAME-TYPE"].title,
-                        deviation="DEV-TOPO-NAME-TYPE",
-                    )
                 continue
             rep.add(
                 "STRUCT-COMPOUND-DTYPE",
@@ -1230,7 +1161,7 @@ class Validator:
             "REF-SEQUENCE-INDEX",
             "sequence_index",
         )
-        # When name is an index it must address particle_name_table.
+        # name is an index into particle_name_table (S10).
         if _dtype_class(ds.dtype["name"]) == spec.INTEGER and n_pnames:
             nm = np.asarray(data["name"], dtype=np.int64)
             self._check_index_range(
@@ -1398,7 +1329,7 @@ class Validator:
                 "parameter_id",
             )
 
-        # particle_ids are molecule-local (see DEV-TOPO-PARTICLE-ID-SCOPE).
+        # particle_ids are 0-based and local to the molecule type (S10).
         id_data = np.asarray(ids[()], dtype=np.int64).ravel()
         self._check_index_range(
             id_data,
@@ -1547,7 +1478,6 @@ class Validator:
         if sel is None:
             return
         n = topo.get("n_particles") if topo else None
-        reported_convention = False
         for name in sel:
             grp = sel[name]
             path = f"selections/{name}"
@@ -1576,23 +1506,8 @@ class Validator:
                     path,
                     "selection mixes index-based and string-based definitions",
                 )
-            if index_based:
-                if n is not None:
-                    self._check_index_container(grp, path, rep, n, "SEL")
-                if (
-                    "ranges" in grp
-                    and grp["ranges"].size
-                    and self.report_deviations
-                    and not reported_convention
-                ):
-                    rep.add(
-                        "DEV-SEL-RANGE-CONVENTION",
-                        Severity.DEVIATION,
-                        path,
-                        DEVIATIONS["DEV-SEL-RANGE-CONVENTION"].title,
-                        deviation="DEV-SEL-RANGE-CONVENTION",
-                    )
-                    reported_convention = True
+            if index_based and n is not None:
+                self._check_index_container(grp, path, rep, n, "SEL")
             # A selection string is unreadable without the software that
             # parses it, so its absence is an error, not advice.
             if string_based and "selection" in keys and "software" not in keys:

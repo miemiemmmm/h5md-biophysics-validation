@@ -75,12 +75,14 @@ def specified_elements():
         out[f"force_field/@{attr.name}"] = "optional"
     out["topology/@total_particle_count"] = "required"
     out["topology/@total_residue_count"] = "required"
+    out["topology/@system_name"] = "optional"
 
     for name in (
         "topology/molecule_blocks",
         "topology/<molecule>/particle_data",
         "topology/<molecule>/sequence",
         "topology/<molecule>/exclusions",
+        "topology/<molecule>/exclusions/particle_ids",
         "topology/<molecule>/particle_name_table",
         "topology/<molecule>/component_name_table",
         "connectivity/bonds",

@@ -45,3 +45,25 @@ Findings carry a stable code so they can be cited and tracked.
 
 A file is conformant when it has no `ERROR` finding. Each check sets its own
 severity when it raises the finding.
+
+## Deviations
+
+A deviation is a registered mismatch between the specification and the
+reference implementation, awaiting an editorial decision. Each is kept in
+`h5md_validator/deviations.py` with what the implementation does, why it
+matters and a suggested resolution. Four are raised as `DEVIATION` findings
+when a file shows them; the other six are gaps in the specification text that
+no single file can show, and are recorded for the decision only. All are open.
+
+| Code | Mismatch | Raised per file |
+|:--|:--|:--|
+| `DEV-FF-BONDED-LAYER` | `force_field` has an undocumented `bonded`/`nonbonded` layer | yes |
+| `DEV-OBS-GROUP-NESTING` | observables may nest per-selection-group subgroups | yes |
+| `DEV-CONSTRAINTS-MODE-UNWRITTEN` | `constraints/mode` is specified but never written | yes |
+| `DEV-CONSTRAINTS-ALGORITHM-UNCONDITIONAL` | `constraints/algorithm` is written even when nothing is constrained | yes |
+| `DEV-REFCOORD-NO-VOCABULARY` | `reference_coordinate_scaling` has no defined value set | no |
+| `DEV-FF-PROVENANCE-UNWRITTEN` | no file records which force field it used | no |
+| `DEV-FF-NO-EXTENSION-CONVENTION` | S8 gives no convention for interaction types outside the table | no |
+| `DEV-FF-NO-FUNCTIONAL-FORM` | interaction types do not state their functional form | no |
+| `DEV-SPEC-GAP-ARITY` | the particle arity of interactions is not specified | no |
+| `DEV-NO-ATOM-NAME-CONVENTION` | atom and component names have no canonical convention | no |

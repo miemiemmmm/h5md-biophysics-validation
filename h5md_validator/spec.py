@@ -585,7 +585,7 @@ FORCE_FIELD_ATTRS = (
 # S10  Topology
 # ==========================================================================
 PARTICLE_DATA_FIELDS = (
-    Field("name", STRING),
+    Field("name", INTEGER),
     Field("species", INTEGER),
     Field("charge", FLOAT),
     Field("mass", FLOAT),

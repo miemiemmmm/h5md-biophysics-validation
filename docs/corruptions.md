@@ -39,7 +39,7 @@ The list mirrors `CORRUPTIONS` in `h5md_validator/corrupt.py`, in the same order
 | `C-FF-PARAM-ID-NEGATIVE` | reference a negative force-field parameter index | `REF-PARAMETER-ID` |
 | `C-FF-PARAM-TABLE-MISSING` | remove a parameters dataset that an interaction list references | `REF-PARAMETER-TABLE-MISSING` |
 | `C-INT-PARTICLE-ID` | set an interaction particle_id beyond particle_count | `REF-PARTICLE-ID` |
-| `C-EXCL-COVERAGE` | open a gap between consecutive exclusion spans | `REF-EXCL-COVERAGE` |
+| `C-EXCL-ORDER` | store an exclusion pair higher index first | `REF-EXCL-ORDER` |
 | `C-EXCL-INDEX` | set an exclusion index beyond particle_count | `REF-EXCL-INDEX` |
 | `C-CONN-INDEX` | set a bond particle index beyond the system size | `CONN-PARTICLE-ID` |
 | `C-SEL-INDEX` | set a selection index beyond the system size | `REF-SEL-INDEX` |
@@ -69,7 +69,7 @@ The list mirrors `CORRUPTIONS` in `h5md_validator/corrupt.py`, in the same order
 | `C-FF-FIELD-RENAMED` | rename a force-field compound parameter field | `STRUCT-COMPOUND-FIELDS` |
 | `C-INT-ARITY` | drop a column from particle_ids | `STRUCT-INTERACTION-ARITY` |
 | `C-INT-LENGTH` | make parameter_id and particle_ids differ in length | `STRUCT-INTERACTION-LENGTH` |
-| `C-EXCL-STRIDE` | set an exclusion span stride to zero | `REF-EXCL-STRIDE` |
+| `C-EXCL-DUPLICATE` | list an exclusion pair twice | `REF-EXCL-DUPLICATE` |
 | `C-CONN-SHAPE` | store bonds as Integer[N][3] | `STRUCT-SHAPE` |
 | `C-OBS-SHAPE` | store the pressure tensor as 3x2 | `STRUCT-SHAPE` |
 | `C-OBS-UNKNOWN` | add an observable that the specification does not define | `STRUCT-UNDOCUMENTED` |

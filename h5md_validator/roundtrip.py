@@ -354,7 +354,13 @@ def _source_topology(d: TprDump) -> dict:
         )
         out[f"{p}.component_names"] = Value("str_array", [r[0] for r in mol.residues])
         out[f"{p}.residue_numbers"] = Value("int_array", [r[1] for r in mol.residues])
-        out[f"{p}.exclusions"] = Value("nested_int", [sorted(e) for e in mol.excls])
+        # Each excluded pair once, (i, j) with i < j, as the file stores it. The
+        # per-particle lists of gmx dump are symmetric and include the particle
+        # itself, both implied by the pairs. Without a pair there is no
+        # exclusions group in the file, so there is no entry here either.
+        pairs = [[i, j] for i, e in enumerate(mol.excls) for j in sorted(e) if j > i]
+        if pairs:
+            out[f"{p}.exclusions"] = Value("nested_int", pairs)
 
         for schema_type, entries in _source_interactions(d, mol).items():
             ids, params = entries
@@ -604,16 +610,11 @@ def _target_topology(f, out):
 
 
 def _decode_exclusions(grp):
-    """Expand the compressed per-particle exclusion list into plain lists."""
-    if "ranges" not in grp or "indices" not in grp:
+    """The excluded pairs, one [i, j] per row of ``particle_ids``."""
+    if "particle_ids" not in grp:
         return []
-    ranges = np.asarray(grp["ranges"][()], dtype=np.int64)
-    indices = np.asarray(grp["indices"][()], dtype=np.int64)
-    out = []
-    for first, last, stride in ranges:
-        # 1-based, right-closed offsets into ``indices`` (see DEV-EXCL-UNDOCUMENTED)
-        out.append(sorted(indices[first - 1 : last : max(int(stride), 1)].tolist()))
-    return out
+    pairs = np.atleast_2d(np.asarray(grp["particle_ids"][()], dtype=np.int64))
+    return pairs.tolist()
 
 
 def _target_ff_parameters(f):

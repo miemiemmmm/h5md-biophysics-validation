@@ -60,37 +60,6 @@ DEVIATIONS = {
             ),
         ),
         Deviation(
-            code="DEV-TOPO-NAME-TYPE",
-            title="particle_data.name is an index, not a String",
-            section="S10",
-            implementation=(
-                "The name field is written as Integer and is an index into the "
-                "sibling particle_name_table dataset."
-            ),
-            impact=(
-                "This is the single largest interoperability risk in the schema: a "
-                "reader following the specification would read an integer as a "
-                "string. The indirection itself is sound and saves considerable "
-                "space -- it is the specification text that is out of date."
-            ),
-            suggestion=(
-                "Amend S10 to declare name: Integer and state that it indexes "
-                "particle_name_table, mirroring how sequence.component_name already "
-                "indexes component_name_table in the same listing."
-            ),
-        ),
-        Deviation(
-            code="DEV-TOPO-SYSTEM-NAME",
-            title="topology carries an undocumented system_name attribute",
-            section="S10",
-            implementation="Files additionally carry topology/++system_name: String.",
-            impact=(
-                "Harmless for readers, but an undocumented element in a schema that "
-                "claims to be self-describing."
-            ),
-            suggestion="Add system_name as an optional attribute in S10.",
-        ),
-        Deviation(
             code="DEV-OBS-GROUP-NESTING",
             title="observables may nest per-selection-group subgroups",
             section="S6",
@@ -106,54 +75,6 @@ DEVIATIONS = {
                 "Document the nesting in S6 and state the rule that distinguishes a "
                 "group subgroup from an observable (e.g. an observable group always "
                 "contains a 'value' element)."
-            ),
-        ),
-        Deviation(
-            code="DEV-SEL-RANGE-CONVENTION",
-            title="the two range conventions in the schema contradict each other",
-            section="S9",
-            implementation=(
-                "Both conventions are in use, for different datasets of the same name. "
-                "selections/<group>/ranges follows the S9 body text (0-based, last "
-                "exclusive): the single-selection example covering a 29788-particle "
-                "system is written [[0, 29788, 1]]. topology/<mol>/exclusions/ranges "
-                "follows Algorithm S1 (1-based, right-closed)."
-            ),
-            impact=(
-                "Two datasets named 'ranges' in one file carry different bases and "
-                "different closures, and the specification documents only one of them. "
-                "A reader that applies the S9 rule to exclusions is off by one at both "
-                "ends of every entry."
-            ),
-            suggestion=(
-                "State the convention separately and explicitly at each of the two "
-                "sites, and say in S9 that Algorithm S1 describes the exclusions "
-                "encoding rather than the selections encoding -- or rename one of the "
-                "two datasets."
-            ),
-        ),
-        Deviation(
-            code="DEV-EXCL-UNDOCUMENTED",
-            title="exclusions encoding is shown but never defined",
-            section="S10",
-            implementation=(
-                "exclusions is a compressed per-particle list: ranges has exactly "
-                "particle_count rows, and row i is a 1-based, right-closed, contiguous "
-                "span [first, last, stride] of offsets into the sibling indices array. "
-                "indices holds the 0-based particle indices excluded from each particle. "
-                "ranges therefore indexes indices, not particles."
-            ),
-            impact=(
-                "A reader following the S9 analogy would interpret ranges as particle "
-                "indices and silently produce an exclusion list that is wrong for every "
-                "molecule type. This is the most consequential undocumented element in "
-                "the schema."
-            ),
-            suggestion=(
-                "Document the exclusions group in S10: state that ranges is indexed by "
-                "particle, that its entries are offsets into indices, and give the base "
-                "and closure. A two-line worked example would remove the ambiguity "
-                "entirely."
             ),
         ),
         Deviation(
@@ -235,26 +156,6 @@ DEVIATIONS = {
             suggestion=(
                 "Add the defined values to S7.4 in the same style as the neighbouring "
                 "elements: none, all, center_of_mass."
-            ),
-        ),
-        Deviation(
-            code="DEV-TOPO-INTERACTIONS-REQUIRED",
-            title="interactions is marked required but is absent for monatomic species",
-            section="S10",
-            implementation=(
-                "Molecule types with no bonded interactions, such as the monatomic "
-                "ions CL- and K+, are written with an exclusions group but no "
-                "interactions group at all."
-            ),
-            impact=(
-                "Read literally, every ion in every file violates the specification. "
-                "The implementation's behaviour is the sensible one; the notation is "
-                "what is wrong, and a validator written strictly from S10 would reject "
-                "correct files."
-            ),
-            suggestion=(
-                "Parenthesise interactions in the S10 listing, and say that it is "
-                "absent when a molecule type has no bonded interactions."
             ),
         ),
         Deviation(
@@ -434,21 +335,6 @@ DEVIATIONS = {
                 "are an assumption, not a specified value."
             ),
             suggestion="Add an N_particles column to Table SI.",
-        ),
-        Deviation(
-            code="DEV-TOPO-PARTICLE-ID-SCOPE",
-            title="scope of interaction particle_ids is not stated",
-            section="S5, S10",
-            implementation="particle_ids are local to the molecule type, 0-based.",
-            impact=(
-                "Global and molecule-local indices are indistinguishable from the "
-                "data alone for any molecule type placed first in the system, so a "
-                "reader can silently mis-resolve every interaction in the file."
-            ),
-            suggestion=(
-                "State in S10 that particle_ids are 0-based indices into the "
-                "particle_data of the enclosing molecule type."
-            ),
         ),
     )
 }

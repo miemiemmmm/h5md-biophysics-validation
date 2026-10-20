@@ -358,15 +358,13 @@ def _m_interaction_length_mismatch(f):
     return True
 
 
-def _m_exclusion_coverage(f):
+def _m_exclusion_order(f):
     mol = _largest_mol(f)
     if mol is None or "exclusions" not in mol:
         return False
-    rng = mol["exclusions/ranges"][()]
-    if rng.shape[0] < 2:
-        return False
-    rng[1, 0] += 2  # open a gap between consecutive spans
-    _replace(mol["exclusions"], "ranges", rng)
+    pairs = mol["exclusions/particle_ids"][()]
+    pairs[0] = pairs[0, ::-1]  # store the pair higher index first
+    _replace(mol["exclusions"], "particle_ids", pairs)
     return True
 
 
@@ -374,19 +372,18 @@ def _m_exclusion_index(f):
     mol = _largest_mol(f)
     if mol is None or "exclusions" not in mol:
         return False
-    idx = mol["exclusions/indices"][()]
-    idx[0] = 10**6
-    _replace(mol["exclusions"], "indices", idx)
+    pairs = mol["exclusions/particle_ids"][()]
+    pairs[0, 1] = 10**6  # the second index, so the pair still has i < j
+    _replace(mol["exclusions"], "particle_ids", pairs)
     return True
 
 
-def _m_exclusion_stride(f):
+def _m_exclusion_duplicate(f):
     mol = _largest_mol(f)
     if mol is None or "exclusions" not in mol:
         return False
-    rng = mol["exclusions/ranges"][()]
-    rng[0, 2] = 0
-    _replace(mol["exclusions"], "ranges", rng)
+    pairs = mol["exclusions/particle_ids"][()]
+    _replace(mol["exclusions"], "particle_ids", np.vstack([pairs, pairs[:1]]))
     return True
 
 
@@ -788,11 +785,11 @@ CORRUPTIONS = [
         _m_interaction_length_mismatch,
     ),
     Corruption(
-        "C-EXCL-COVERAGE",
+        "C-EXCL-ORDER",
         "referential integrity",
-        "open a gap between consecutive exclusion spans",
-        "REF-EXCL-COVERAGE",
-        _m_exclusion_coverage,
+        "store an exclusion pair higher index first",
+        "REF-EXCL-ORDER",
+        _m_exclusion_order,
     ),
     Corruption(
         "C-EXCL-INDEX",
@@ -802,11 +799,11 @@ CORRUPTIONS = [
         _m_exclusion_index,
     ),
     Corruption(
-        "C-EXCL-STRIDE",
+        "C-EXCL-DUPLICATE",
         "structure",
-        "set an exclusion span stride to zero",
-        "REF-EXCL-STRIDE",
-        _m_exclusion_stride,
+        "list an exclusion pair twice",
+        "REF-EXCL-DUPLICATE",
+        _m_exclusion_duplicate,
     ),
     # Connectivity related corruptions
     Corruption(
