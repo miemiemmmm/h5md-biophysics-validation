@@ -366,7 +366,7 @@ PROTOCOLS = [
     Protocol(
         "nvt-andersen",
         "NVT, Andersen (massive) thermostat with velocity Verlet",
-        ("temperature_coupling/andersen",),
+        ("temperature_coupling/andersen_massive",),
         _md(
             integrator="md-vv",
             tcoupl="andersen-massive",

@@ -551,7 +551,7 @@ class Validator:
                 holder = sub if sub is not None else grp.get(selector)
                 if holder is not None and not ({"doi", "url"} & set(holder.attrs)):
                     rep.add(
-                        "REF-PROVENANCE-MISSING",
+                        "EXT-NO-REFERENCE",
                         Severity.WARNING,
                         f"{gpath}/{value}"
                         if sub is not None
@@ -656,7 +656,7 @@ class Validator:
                     # not yet state this, so the check is advisory.
                     if not ({"doi", "url"} & set(tgrp.attrs)):
                         rep.add(
-                            "REF-PROVENANCE-MISSING",
+                            "EXT-NO-REFERENCE",
                             Severity.WARNING,
                             path,
                             f"{tname!r} is outside the predefined set of "
@@ -667,7 +667,7 @@ class Validator:
                         )
                     else:
                         rep.add(
-                            "STRUCT-EXTENSION",
+                            "EXT-REFERENCED",
                             Severity.INFO,
                             path,
                             f"{tname!r} is an extension outside Table SI, with "
@@ -1304,7 +1304,7 @@ class Validator:
             # extension; its arity and parameter layout cannot be checked here,
             # only that it references a parameter table that exists.
             rep.add(
-                "STRUCT-EXTENSION",
+                "EXT-LAYOUT-UNCHECKED",
                 Severity.INFO,
                 path,
                 f"{tname!r} is outside the predefined set of Table SI; its "

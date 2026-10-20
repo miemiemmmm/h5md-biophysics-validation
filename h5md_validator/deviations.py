@@ -1,14 +1,14 @@
 """
 Registry of specification-vs-implementation mismatches.
 
-``si-specification.tex`` is normative here: where the GROMACS reference
-implementation writes something it does not describe, the schema model is not
-bent to accommodate it. The validator raises a DEVIATION finding carrying one
+``SI-Specification.pdf`` is normative here. If the reference files write something
+that is out of the specification, the validator raises a DEVIATION finding with one
 of the codes below, so the mismatch waits for an editorial decision instead of
 being reported as a file error.
 
-Each entry quotes both sides, so the decision can be made from the registry
-alone. ``status`` is OPEN until it is taken; ``resolution`` records what it was.
+Each entry cites the specification section concerned rather than quoting its
+text, so the registry does not go stale as the text is revised. ``status`` is
+OPEN until a decision is taken; ``resolution`` records what it was.
 
 Used by:
     Validation 3: internal consistency
@@ -23,8 +23,8 @@ from dataclasses import asdict, dataclass
 class Deviation:
     code: str
     title: str
-    #: What the specification says, and where.
-    spec: str
+    #: Section(s) of the specification concerned, e.g. "S8".
+    section: str
     #: What the reference implementation does, and where.
     implementation: str
     #: Why it matters for a reader or a third-party implementer.
@@ -44,12 +44,7 @@ DEVIATIONS = {
         Deviation(
             code="DEV-FF-BONDED-LAYER",
             title="force_field has an undocumented bonded/nonbonded layer",
-            spec=(
-                "S8: 'Each interaction type stores a parameters compound dataset "
-                "(and optionally parameters_B ...) under the force_field group'. "
-                "No intermediate grouping is described, and the table marks "
-                "nonbonded types only with an asterisk."
-            ),
+            section="S8",
             implementation=(
                 "Files are written as force_field/bonded/<type>/parameters and "
                 "force_field/nonbonded/<type>/parameters."
@@ -67,10 +62,7 @@ DEVIATIONS = {
         Deviation(
             code="DEV-TOPO-NAME-TYPE",
             title="particle_data.name is an index, not a String",
-            spec=(
-                "S10: particle_data: Compound[N] <- {name: String, species: Integer, "
-                "charge: Float, mass: Float, sequence_index: Integer}."
-            ),
+            section="S10",
             implementation=(
                 "The name field is written as Integer and is an index into the "
                 "sibling particle_name_table dataset."
@@ -90,7 +82,7 @@ DEVIATIONS = {
         Deviation(
             code="DEV-TOPO-SYSTEM-NAME",
             title="topology carries an undocumented system_name attribute",
-            spec="S10 lists only total_particle_count and total_residue_count on topology.",
+            section="S10",
             implementation="Files additionally carry topology/++system_name: String.",
             impact=(
                 "Harmless for readers, but an undocumented element in a schema that "
@@ -101,10 +93,7 @@ DEVIATIONS = {
         Deviation(
             code="DEV-OBS-GROUP-NESTING",
             title="observables may nest per-selection-group subgroups",
-            spec=(
-                "S6 describes observables/<observable> directly, with each element "
-                "being a time-dependent or time-independent dataset."
-            ),
+            section="S6",
             implementation=(
                 "Per-coupling-group observables are written one level deeper, as "
                 "observables/<group_name>/<observable> (e.g. observables/solvent/temperature)."
@@ -122,15 +111,7 @@ DEVIATIONS = {
         Deviation(
             code="DEV-SEL-RANGE-CONVENTION",
             title="the two range conventions in the schema contradict each other",
-            spec=(
-                "S9 body: selection ranges are '[first, last, stride]' over global, "
-                "0-based particle indices with 'last the last (exclusive)'. "
-                "Algorithm S1, printed in the same section, states that the ranges it "
-                "emits are 'left-closed and right closed, 1-based indexing' and that "
-                "its plain indices are '1-based' -- disagreeing with the body text on "
-                "the base of both the ranges and the indices, and on the closure of "
-                "the ranges."
-            ),
+            section="S9",
             implementation=(
                 "Both conventions are in use, for different datasets of the same name. "
                 "selections/<group>/ranges follows the S9 body text (0-based, last "
@@ -154,12 +135,7 @@ DEVIATIONS = {
         Deviation(
             code="DEV-EXCL-UNDOCUMENTED",
             title="exclusions encoding is shown but never defined",
-            spec=(
-                "S10 lists exclusions with two datasets, 'ranges: Integer[N_r][3]' and "
-                "'indices: Integer[N_e]', and gives no accompanying description. The "
-                "notation is identical to the selections group of S9, which suggests "
-                "ranges enumerates particle indices."
-            ),
+            section="S10",
             implementation=(
                 "exclusions is a compressed per-particle list: ranges has exactly "
                 "particle_count rows, and row i is a 1-based, right-closed, contiguous "
@@ -183,11 +159,7 @@ DEVIATIONS = {
         Deviation(
             code="DEV-CONSTRAINTS-MODE-UNWRITTEN",
             title="constraints/mode is specified but never written",
-            spec=(
-                "S7.8 defines constraints/mode with the values 'hydrogens' and "
-                "'all_bonds', describing which chemical bonds in the topology were "
-                "converted to constraints."
-            ),
+            section="S7.8",
             implementation=(
                 "No run writes the element. GROMACS applies the mdp 'constraints' "
                 "setting during preprocessing and does not retain it in the run "
@@ -224,11 +196,7 @@ DEVIATIONS = {
         Deviation(
             code="DEV-CONSTRAINTS-ALGORITHM-UNCONDITIONAL",
             title="constraints/algorithm is written even when nothing is constrained",
-            spec=(
-                "S7.8 presents constraints/algorithm as the name of the constraint "
-                "algorithm used, within a group describing the constraints applied to "
-                "the simulation."
-            ),
+            section="S7.8",
             implementation=(
                 "The element is written unconditionally from the GROMACS "
                 "constraint-algorithm setting, which carries its default value whether "
@@ -251,14 +219,7 @@ DEVIATIONS = {
         Deviation(
             code="DEV-REFCOORD-NO-VOCABULARY",
             title="reference_coordinate_scaling has no defined value set",
-            spec=(
-                "S7.4 lists reference_coordinate_scaling: String and describes it as "
-                "'Treatment on how the position restraint reference coordinates scale "
-                "when the box is rescaled'. Unlike every other categorical element of "
-                "S7 -- algorithm, type, mode, potential_modifier, "
-                "dispersion_correction, simulation_type, integrator -- it is given no "
-                "list of allowed values."
-            ),
+            section="S7.4",
             implementation=(
                 "The writer emits 'none', 'all' and 'center_of_mass', corresponding to "
                 "the GROMACS refcoord-scaling settings No, All and COM."
@@ -279,13 +240,7 @@ DEVIATIONS = {
         Deviation(
             code="DEV-TOPO-INTERACTIONS-REQUIRED",
             title="interactions is marked required but is absent for monatomic species",
-            spec=(
-                "In the S10 listing, optional elements are written in parentheses -- "
-                "the individual interaction types appear as '(bond)' -- while "
-                "'interactions' and 'exclusions' themselves are written without them. "
-                "By the notation of S3.1 that makes both groups mandatory for every "
-                "molecule type."
-            ),
+            section="S10",
             implementation=(
                 "Molecule types with no bonded interactions, such as the monatomic "
                 "ions CL- and K+, are written with an exclusions group but no "
@@ -305,11 +260,7 @@ DEVIATIONS = {
         Deviation(
             code="DEV-NO-ATOM-NAME-CONVENTION",
             title="atom and component names have no canonical convention",
-            spec=(
-                "S10 stores atom names in particle_name_table and component names in "
-                "component_name_table as free String values, with no statement of "
-                "which naming convention they follow."
-            ),
+            section="S10",
             implementation=(
                 "Names are copied from whatever the preparation tool produced. The "
                 "same B-DNA dodecamer prepared in GROMACS and in AMBER gives 48 of "
@@ -334,15 +285,7 @@ DEVIATIONS = {
         Deviation(
             code="DEV-FF-PROVENANCE-UNWRITTEN",
             title="no file records which force field it used",
-            spec=(
-                "S8 defines thirteen optional attributes on the force_field group "
-                "for exactly this: source (a DOI or URL for the force field), "
-                "polymer_force_field ('charmm36m', 'amber ff14sb'), solvent_model "
-                "('TIP3P'), solvent_force_field, ion_type, ion_force_field, "
-                "membrane_components, membrane_force_field, ligand_components, "
-                "ligand_force_field, polymer_types, solvent_component and "
-                "modifications."
-            ),
+            section="S8",
             implementation=(
                 "None of the thirteen is written in any of the 158 reference files, "
                 "which between them use CHARMM36, CHARMM27, AMBER99SB-ILDN, OPLS-AA "
@@ -416,26 +359,7 @@ DEVIATIONS = {
         Deviation(
             code="DEV-FF-NO-EXTENSION-CONVENTION",
             title="S8 gives no convention for interaction types outside the table",
-            spec=(
-                "S7 states an extension convention and restates it three times. The "
-                "preamble: 'The specification defines a set of commonly used "
-                "simulation types and algorithms. When an algorithm falls outside "
-                "this predefined set, its parameters may still be specified as "
-                "described above; in such cases, it is recommended to supplement the "
-                "nested subgroup with a doi or url attribute pointing to a permanent "
-                "reference for the algorithm... Names of new groups are not allowed "
-                "to collide with other elements inside the group as defined by the "
-                "specification.' S7.3, S7.4 and S7.8 repeat it for thermostats, "
-                "barostats and constraint algorithms.\n"
-                "S8 has no equivalent sentence. It opens 'The following table lists "
-                "the supported bonded interaction types' -- 'supported', where S7 "
-                "says 'predefined' -- and says nothing about a term that is not in "
-                "the table. cmap is the live case: the S8 preamble names it as the "
-                "one type stored as a grid rather than a compound, but it has no row "
-                "in Table SI and no structural definition anywhere, so the grid "
-                "shape, angle_start, angle_spacing and axis_order the writer emits "
-                "are described nowhere."
-            ),
+            section="S7, S8",
             implementation=(
                 "The writer now emits a dedicated group for every term outside the "
                 "table, so nothing is silently lost (defects.IMP-SILENT-INTERACTION-"
@@ -472,14 +396,7 @@ DEVIATIONS = {
         Deviation(
             code="DEV-FF-NO-FUNCTIONAL-FORM",
             title="interaction types do not state their functional form",
-            spec=(
-                "Table SI of S8 names each interaction type and its parameter fields "
-                "-- 'bond' carries equilibrium_distance and force_constant, 'angle' "
-                "carries equilibrium_angle and force_constant -- but nowhere states "
-                "the potential these parameters belong to. A comment left in the "
-                "specification source ('Make it explicit the functional form of the "
-                "interaction') shows the omission is already known."
-            ),
+            section="S8",
             implementation=(
                 "The names imply the harmonic forms, and the writer treats them that "
                 "way, but nothing in the document says so."
@@ -506,11 +423,7 @@ DEVIATIONS = {
         Deviation(
             code="DEV-SPEC-GAP-ARITY",
             title="interaction particle arity is not specified",
-            spec=(
-                "S10 shows interactions/<type>/particle_ids: Integer[N_b][2] for bond "
-                "only. Table SI (S8) lists N_params, i.e. the number of force-field "
-                "parameters, but never the number of particles an interaction relates."
-            ),
+            section="S8, S10",
             implementation=(
                 "Arity follows the physics of each term (angle 3, dihedrals 4, "
                 "settle 3, ...) and is implicit in the writer."
@@ -525,10 +438,7 @@ DEVIATIONS = {
         Deviation(
             code="DEV-TOPO-PARTICLE-ID-SCOPE",
             title="scope of interaction particle_ids is not stated",
-            spec=(
-                "S5 says connectivity/bonds indices are global and 0-based. S10 says "
-                "nothing about the scope of interactions/<type>/particle_ids."
-            ),
+            section="S5, S10",
             implementation="particle_ids are local to the molecule type, 0-based.",
             impact=(
                 "Global and molecule-local indices are indistinguishable from the "

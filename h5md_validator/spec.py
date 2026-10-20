@@ -165,7 +165,13 @@ OUTPUT_CONTROL = Group(
 # S7.3  Temperature coupling
 # ==========================================================================
 THERMOSTATS = frozenset(
-    {"stochastic_velocity_rescaling", "andersen", "nose_hoover", "berendsen"}
+    {
+        "stochastic_velocity_rescaling",
+        "andersen",
+        "andersen_massive",
+        "nose_hoover",
+        "berendsen",
+    }
 )
 
 TEMPERATURE_COUPLING = Group(
@@ -186,6 +192,12 @@ TEMPERATURE_COUPLING = Group(
         ),
         Group(
             "andersen",
+            required=False,
+            attrs=(Attr("doi", STRING, required=False),),
+            datasets=(Dataset("coupling_time", FLOAT, shape=("N",), unit=True),),
+        ),
+        Group(
+            "andersen_massive",
             required=False,
             attrs=(Attr("doi", STRING, required=False),),
             datasets=(Dataset("coupling_time", FLOAT, shape=("N",), unit=True),),
@@ -397,6 +409,7 @@ PER_GROUP_DATASETS = {
         "reference_temperature",
         "stochastic_velocity_rescaling/coupling_time",
         "andersen/coupling_time",
+        "andersen_massive/coupling_time",
         "nose_hoover/period_time",
         "berendsen/coupling_time",
     ],
