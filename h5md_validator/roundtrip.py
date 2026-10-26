@@ -8,15 +8,14 @@ Round-trip fidelity test: does the metadata come back unchanged?
         -> compare
 
 Both sides reduce to the same flat vocabulary of metadata items, so every item
-is matched, mismatched, or absent on one side. That same reduction gives the
-coverage matrix: an item in the source and not in the file is a coverage gap.
+is matched, mismatched, or absent on one side; aggregated over every file, the
+same comparisons give the item fidelity of Validation 2.
 
 Numerical comparison uses a per-value tolerance rather than one global epsilon,
 bounded by whichever is coarser -- ``gmx dump``'s field-dependent text
 precision, or the file's float32 / float64 storage.
 
 Used by:
-    Validation 1: schema coverage
     Validation 2: round-trip test
     Validation 6: cross-engine mapping
 """
@@ -1022,7 +1021,7 @@ class RoundTripReport:
 
         Deliberately independent of what happens to terms outside the
         predefined set, which is reported by ``all_terms_written`` and by
-        scripts/validation1_interaction_coverage.py.
+        scripts/validation2_interaction_coverage.py.
         """
         return not self.mismatches and not self.missing_in_file
 

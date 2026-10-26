@@ -7,7 +7,9 @@ root, by default `$H5MD_VALIDATION_DATA`; `DATA_DIR` and `RESULTS_DIR` move
 
 ## Build the reference files
 
-Every validation reads this corpus, so reference files are built only once. 
+Every validation reads this corpus, so reference files are built only once.
+Each validation then runs on its own, in any order: none reads another's
+results. 
 This produces one H5MD file per (system, protocol) pair, together with
 the `.tpr` it came from. Both files are kept: the `.tpr` is the source of the
 round-trip comparison.
@@ -42,36 +44,27 @@ produce, and say exactly which parts of it no run exercised. An element that no
 file ever wrote is an untested branch, not a working one, and the difference
 between those two is what separates a coverage claim from an assumption.
 
-Three stages, in increasing sharpness. The first asks which specified elements
-appear anywhere; the second counts individual bonded interaction entries in the
-run input against the file; the third asks how much of a flat GROMACS parameter
-file is actually in force.
+It compares the specification model with the reference files alone. The first
+script asks which specified elements the files write, and which chemical and
+protocol dimensions they cover; the second asks how much of a flat GROMACS
+parameter file is actually in force.
 
 ```bash
 $PY_EXE scripts/validation1_schema_coverage.py
-$PY_EXE scripts/validation1_interaction_coverage.py
 $PY_EXE scripts/validation1_parameter_surface.py     # every .mdp in _data/resolved_mdp
 ```
-
-The first reads `validation.json`, so run Validation 2/3 first. The second reads
-the `.tpr` dumps directly and needs no other stage.
 
 **Artifacts**
 
 | Path | Key contents |
 |:--|:--|
-| `_results/coverage.json` | `element_coverage` (specified / observed / never observed / constant), `item_fidelity`, `dimensions`, `protocol_targets` |
-| `_results/interaction_coverage.json` | `per_system`, `per_file`, `unsupported` |
+| `_results/coverage.json` | `element_coverage` (specified / observed / never observed / constant), `dimensions`, `protocol_targets` |
 | `_results/parameter_surface.json` | per-option classification of the resolved `.mdp` files |
 
-Two results need reading rather than quoting. Every never-observed element is
-listed by name under `element_coverage.never_observed`, and each needs an
-explanation (not written by the reference implementation, or not exercised by
-the test set) before the
-coverage figure is quoted. Separately,
-`cmap.parameters` cannot be verified at all: `gmx dump` emits the CMAP type
-index and never the grid values, so there is nothing on the source side to
-compare against.
+Every never-observed element is listed by name under
+`element_coverage.never_observed`, and each needs an explanation (not written
+by the reference implementation, or not exercised by the test set) before the
+coverage figure is quoted.
 
 ---
 
@@ -81,21 +74,26 @@ compare against.
 The comparison runs against `gmx dump` output rather than the writer's own view,
 so the two sides of the test share no code path.
 
+The first script compares every metadata item; the second counts the bonded
+interaction entries of each type in the run input against the file. Dumps are
+cached after the first run.
+
 ```bash
-$PY_EXE scripts/check_reference_files.py
+$PY_EXE scripts/validation2_roundtrip.py
+$PY_EXE scripts/validation2_interaction_coverage.py
 ```
 
-One pass per file does Validations 2, 3 and 5 together, because all three need
-the file opened and the `.tpr` dumped. Dumps are cached after the first run.
+**Artifacts**
 
-**Artifacts.** `_results/validation.json`, keyed by reference file. The
-`roundtrip` section of each entry holds every compared item with a status of
-`match`, `mismatch`, `missing_in_file` or `missing_in_source`, plus the
-per-category totals and a `faithful` verdict.
+| Path | Key contents |
+|:--|:--|
+| `_results/roundtrip.json` | `files`: per file, every compared item with a status of `match`, `mismatch`, `missing_in_file` or `missing_in_source`, and a `faithful` verdict; `item_fidelity`: the same items aggregated over all files (represented / missing / incorrect) |
+| `_results/interaction_coverage.json` | `per_system`, `per_file`, `unsupported` |
 
 Numerical comparison uses a per-value tolerance bounded by whichever is coarser
 — `gmx dump`'s text precision or the file's float width — rather than one global
-epsilon.
+epsilon. The `cmap` grids cannot be compared: `gmx dump` prints the CMAP type
+index and never the grid values, so there is nothing on the source side.
 
 ---
 
@@ -105,15 +103,16 @@ epsilon.
 types and shapes, enumerated values, unit attributes, time alignment, and the
 referential integrity of every index it contains.
 
-Same command as Validation 2; the two are produced together.
+Each file is checked against the specification model alone.
 
 ```bash
-$PY_EXE scripts/check_reference_files.py
+$PY_EXE scripts/validation3_conformance.py
 ```
 
-**Artifacts.** `_results/validation.json` → the `conformance` section of each
-entry: a list of findings with a stable code, a severity and the HDF5 path it is
-anchored to, plus a `conformant` verdict.
+**Artifacts.** `_results/conformance.json`: under `files`, one entry per
+reference file with a list of findings, each with a stable code, a severity and
+the HDF5 path it is anchored to, plus a `conformant` verdict. The codes are
+listed in [check-codes.md](check-codes.md).
 
 ---
 
@@ -151,11 +150,10 @@ unobjectionable. A schema nobody adopts because it is expensive has not solved
 the problem.
 
 Measured at the HDF5 layer: the stored size of every dataset, attributed to the
-metadata groups or to the trajectory. It comes from the same pass as
-Validations 2 and 3.
+metadata groups or to the trajectory.
 
 ```bash
-$PY_EXE scripts/check_reference_files.py
+$PY_EXE scripts/validation5_storage.py
 ```
 
 Write *time* is measured inside the GROMACS writer instead: whole-process wall
@@ -168,7 +166,7 @@ metadata write for every system; its output ships in `data/` (see
 
 | Path | Key contents |
 |:--|:--|
-| `_results/validation.json` → `storage` | per file: metadata bytes, trajectory bytes, bytes per particle, ratio |
+| `_results/storage.json` | per file: metadata bytes, trajectory bytes, bytes per particle, ratio |
 
 ---
 

@@ -610,7 +610,7 @@ def unique_atoms(h5md_path) -> int:
 # ==========================================================================
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--validation", default=_r("validation.json"))
+    ap.add_argument("--storage", default=_r("storage.json"))
     ap.add_argument("--out", default=str(OUT / "validation5_cost"))
     ap.add_argument(
         "--timing",
@@ -623,26 +623,24 @@ def main():
     args = ap.parse_args()
 
     OUT.mkdir(parents=True, exist_ok=True)
-    results = json.loads(Path(args.validation).read_text())
-    ok = {k: v for k, v in results.items() if v.get("status") == "ok"}
+    storage = json.loads(Path(args.storage).read_text())["files"]
 
     rows = []
     n_unique = {}
-    for v in ok.values():
-        st = v.get("storage") or {}
-        if st.get("n_particles") and st.get("metadata_bytes"):
+    for rec in storage.values():
+        if rec.get("n_particles") and rec.get("metadata_bytes"):
             # N_ua depends only on the system, so read it from one of its files.
-            if v["system"] not in n_unique:
-                n_unique[v["system"]] = unique_atoms(v["conformance"]["file"])
+            if rec["system"] not in n_unique:
+                n_unique[rec["system"]] = unique_atoms(rec["file"])
             rows.append(
                 {
-                    "system": v["system"],
-                    "protocol": v["protocol"],
-                    "n_particles": st["n_particles"],
-                    "n_unique_atoms": n_unique[v["system"]],
-                    "metadata_bytes": st["metadata_bytes"],
-                    "connectivity_bytes": st["per_group_bytes"].get("connectivity", 0),
-                    "bytes_per_particle": st["metadata_bytes_per_particle"],
+                    "system": rec["system"],
+                    "protocol": rec["protocol"],
+                    "n_particles": rec["n_particles"],
+                    "n_unique_atoms": n_unique[rec["system"]],
+                    "metadata_bytes": rec["metadata_bytes"],
+                    "connectivity_bytes": rec["per_group_bytes"].get("connectivity", 0),
+                    "bytes_per_particle": rec["metadata_bytes_per_particle"],
                 }
             )
 

@@ -36,7 +36,7 @@ class Severity(str, Enum):
 
 @dataclass
 class Finding:
-    """One problem found in one file, as written to ``validation.json``."""
+    """One problem found in one file, as written to ``conformance.json``."""
 
     #: Stable check identifier, e.g. ``TOPO-INVARIANT-PARTICLES``; the
     #: families are listed in docs/check-codes.md.
@@ -92,7 +92,7 @@ class Report:
         return not self.errors
 
     def to_dict(self) -> dict:
-        """The ``conformance`` section of a ``validation.json`` entry."""
+        """A file's entry in ``conformance.json``."""
         return {
             "file": self.file,
             "conformant": self.conformant,

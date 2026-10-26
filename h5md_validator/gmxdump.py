@@ -6,7 +6,6 @@ read back out of the run input by GROMACS's own dumper. Nothing here reads an
 H5MD file, so the two sides of the comparison share no code path.
 
 Used by:
-    Validation 1: schema coverage
     Validation 2: round-trip test
 """
 

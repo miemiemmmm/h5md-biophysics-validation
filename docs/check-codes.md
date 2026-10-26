@@ -2,7 +2,8 @@
 
 The validator (Validation 3) reports each problem it finds in a file as a
 finding; Validation 4 checks that each corruption raises its expected code.
-Findings are written to the `conformance.findings` list of `validation.json`:
+Findings are written to the `findings` list of each file's entry in
+`conformance.json`:
 
 | Field | Meaning |
 |:--|:--|
@@ -12,8 +13,8 @@ Findings are written to the `conformance.findings` list of `validation.json`:
 | `message`  | a human-readable explanation; it may change, so do not parse it |
 | `detail`   | supporting values, such as expected and actual |
 
-`conformance.counts` gives the number per severity, and `conformance.conformant`
-the verdict.
+Each entry's `counts` gives the number per severity, and `conformant` the
+verdict.
 
 ## Check codes
 

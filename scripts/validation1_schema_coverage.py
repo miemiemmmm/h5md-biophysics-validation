@@ -2,21 +2,20 @@
 """
 Validation 1 -- schema coverage.
 
-Three questions, kept separate because they have different answers:
+Compares the specification model with the corpus of reference files, and
+needs no other validation's results. Two questions:
 
 1. ELEMENT COVERAGE.  Of the elements the specification defines, which ones does
-   the corpus of reference files actually contain?  An element that is specified
-   but never written by any run is not evidence that the schema works -- it is an
-   untested branch, and coverage.json names it as such.
+   the corpus actually contain?  An element that is specified but never written
+   by any run is not evidence that the schema works -- it is an untested branch,
+   and coverage.json names it as such.
 
-2. ITEM FIDELITY.  Of the metadata items present in the GROMACS source, which are
-   represented in the file, and are they correct?  This is the plan's coverage
-   table: source contains / schema represents / correct / unsupported.
-
-3. DIMENSION COVERAGE.  Which of the chemical and protocol dimensions of the test
+2. DIMENSION COVERAGE.  Which of the chemical and protocol dimensions of the test
    matrix are exercised at all.
 
-    python scripts/validation1_schema_coverage.py --validation results/validation.json
+Whether the written items are correct is Validation 2's question.
+
+    python scripts/validation1_schema_coverage.py
 """
 
 from __future__ import annotations
@@ -196,12 +195,16 @@ def observed_elements(h5_path):
 # --------------------------------------------------------------------------
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--validation", default=_r("validation.json"))
+    ap.add_argument("--manifest", default=_r("reference_files.json"))
     ap.add_argument("--out", default=_r("coverage.json"))
     args = ap.parse_args()
 
-    results = json.loads(Path(args.validation).read_text())
-    ok = {k: v for k, v in results.items() if v.get("status") == "ok"}
+    manifest = json.loads(Path(args.manifest).read_text())
+    ok = {
+        k: v
+        for k, v in manifest.items()
+        if "error" not in v and Path(v.get("h5md", "")).exists()
+    }
 
     # ---- 1. element coverage -------------------------------------------
     specified = specified_elements()
@@ -209,7 +212,7 @@ def main():
     per_file_elements = {}
     distinct_values = defaultdict(set)
     for key, rec in ok.items():
-        path = rec["conformance"]["file"]
+        path = rec["h5md"]
         try:
             elems = observed_elements(path)
             vals = observed_values(path)
@@ -239,44 +242,7 @@ def main():
     never = [r for r in element_rows if not r["observed"]]
     constant = [r for r in element_rows if r.get("constant_value") is not None]
 
-    # ---- 2. item fidelity ----------------------------------------------
-    items = defaultdict(
-        lambda: {
-            "category": "",
-            "files": 0,
-            "match": 0,
-            "mismatch": 0,
-            "missing_in_file": 0,
-            "extra_in_file": 0,
-        }
-    )
-    for rec in ok.values():
-        for comp in rec.get("roundtrip", {}).get("comparisons", []):
-            # collapse the per-molecule-type prefix so items aggregate
-            name = comp["key"]
-            parts = name.split(".")
-            if parts[0] == "topology" and len(parts) > 2:
-                parts[1] = "<molecule>"
-                name = ".".join(parts)
-            e = items[name]
-            e["category"] = comp["category"]
-            if comp["status"] in ("match", "match_unordered"):
-                e["files"] += 1
-                e["match"] += 1
-            elif comp["status"] == "mismatch":
-                e["files"] += 1
-                e["mismatch"] += 1
-            elif comp["status"] == "missing_in_file":
-                e["missing_in_file"] += 1
-            elif comp["status"] == "missing_in_source":
-                e["extra_in_file"] += 1
-
-    item_rows = [{"item": k, **v} for k, v in sorted(items.items())]
-    represented = [r for r in item_rows if r["match"] or r["mismatch"]]
-    unsupported = [r for r in item_rows if r["missing_in_file"] and not r["match"]]
-    incorrect = [r for r in item_rows if r["mismatch"]]
-
-    # ---- 3. dimension coverage ------------------------------------------
+    # ---- 2. dimension coverage ------------------------------------------
     dims = defaultdict(list)
     for rec in ok.values():
         for d in rec.get("dimensions", []):
@@ -286,11 +252,7 @@ def main():
         for e in rec.get("exercises", []):
             exercises[e].append(rec["protocol"])
 
-    not_generated = {
-        k: v.get("error", "")
-        for k, v in results.items()
-        if v.get("status") == "not_generated"
-    }
+    not_generated = {k: v["error"] for k, v in manifest.items() if "error" in v}
 
     summary = {
         "n_reference_files": len(ok),
@@ -310,15 +272,6 @@ def main():
             ],
             "rows": element_rows,
         },
-        "item_fidelity": {
-            "n_items": len(item_rows),
-            "n_represented": len(represented),
-            "n_unsupported": len(unsupported),
-            "n_incorrect": len(incorrect),
-            "unsupported": [r["item"] for r in unsupported],
-            "incorrect": [r["item"] for r in incorrect],
-            "rows": item_rows,
-        },
         "dimensions": {k: sorted(set(v)) for k, v in sorted(dims.items())},
         "protocol_targets": {k: sorted(set(v)) for k, v in sorted(exercises.items())},
         "not_generated": not_generated,
@@ -329,15 +282,10 @@ def main():
     out.write_text(json.dumps(summary, indent=2))
 
     ec = summary["element_coverage"]
-    itf = summary["item_fidelity"]
     print(f"reference files              : {summary['n_reference_files']}")
     print(f"specified elements           : {ec['n_specified']}")
     print(f"  observed in the corpus     : {ec['n_observed']}")
     print(f"  never observed             : {ec['n_never_observed']}")
-    print(f"metadata items compared      : {itf['n_items']}")
-    print(f"  represented in the files   : {itf['n_represented']}")
-    print(f"  present in source, absent  : {itf['n_unsupported']}")
-    print(f"  represented but incorrect  : {itf['n_incorrect']}")
     print(f"chemical dimensions covered  : {len(summary['dimensions'])}")
     if ec["never_observed"]:
         print("\nspecified but never written by any run:")
@@ -351,10 +299,6 @@ def main():
         )
         for r in ec["constant"]:
             print(f"  {r['element']:52s} = {r['value']}")
-    if itf["unsupported"]:
-        print("\npresent in the GROMACS source but absent from every file:")
-        for e in itf["unsupported"]:
-            print(f"  {e}")
     print(f"\nwritten to {out}")
     return 0
 
