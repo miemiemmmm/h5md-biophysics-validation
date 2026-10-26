@@ -2,10 +2,10 @@
 """
 Where could force-field provenance come from?
 
-S8 defines thirteen attributes naming the force field a trajectory used, and no
-reference file carries any of them (deviations.DEV-FF-PROVENANCE-UNWRITTEN).
-Before deciding that the user must supply them by hand, this script measures the
-two automatic alternatives.
+S8 leaves force-field provenance to optional attributes the creator supplies
+(description, doi, url, modifications), because the run input does not record
+it. This script measures the two automatic alternatives that would make such a
+declaration unnecessary.
 
 1. INFER IT FROM THE PARAMETERS the file already holds.  If files built with the
    same force field shared a recognisable parameter signature, provenance would

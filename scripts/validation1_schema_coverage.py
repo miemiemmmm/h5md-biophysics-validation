@@ -61,12 +61,15 @@ def specified_elements():
 
     for name in spec.OBSERVABLES:
         out[f"observables/{name}"] = "optional"
+    # S6: observables of a subset of particles, in a subgroup per selection group.
+    out["observables/<group>"] = "optional"
 
     for name, itype in spec.INTERACTION_TYPES.items():
         layer = "bonded" if itype.bonded else "nonbonded"
         out[f"force_field/{layer}/{name}/parameters"] = "optional"
-        if itype.bonded:
-            out[f"topology/<molecule>/interactions/{name}"] = "optional"
+        out[f"force_field/{layer}/{name}/parameters_end_state"] = "optional"
+        # Bonded lists hold parameter_id (and particle_ids); nonbonded, type_id.
+        out[f"topology/<molecule>/interactions/{name}"] = "optional"
 
     # S8 provenance attributes on the force_field group. These are optional but
     # they are the elements that say *which* force field a trajectory used, so
@@ -126,7 +129,11 @@ def observed_values(h5_path):
                 and parts[1] != "molecule_blocks"
             ):
                 parts[1] = "<molecule>"
-            elif parts[0] == "selections" and len(parts) > 1:
+            elif (parts[0] == "selections" and len(parts) > 1) or (
+                parts[0] == "observables"
+                and len(parts) > 2
+                and parts[1] not in spec.OBSERVABLES
+            ):
                 parts[1] = "<group>"
             elif parts[0] == "particles":
                 return
@@ -170,7 +177,11 @@ def observed_elements(h5_path):
                 and parts[1] != "molecule_blocks"
             ):
                 parts[1] = "<molecule>"
-            elif parts[0] == "selections" and len(parts) > 1:
+            elif (parts[0] == "selections" and len(parts) > 1) or (
+                parts[0] == "observables"
+                and len(parts) > 2
+                and parts[1] not in spec.OBSERVABLES
+            ):
                 parts[1] = "<group>"
             elif parts[0] == "particles":
                 return

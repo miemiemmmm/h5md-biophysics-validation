@@ -285,7 +285,7 @@ def parse(text: str) -> TprDump:
                 dump.functypes[idx] = (m.group("kind"), params)
                 continue
             m = _KV.match(line)
-            if m and m.group("key") in ("atnr", "ntypes"):
+            if m and m.group("key") in ("atnr", "ntypes", "fudgeQQ"):
                 dump.header[m.group("key")] = _coerce(m.group("value"))
             continue
 

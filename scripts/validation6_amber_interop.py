@@ -373,7 +373,9 @@ def _align(gmx: dict, amb: dict, use_aliases=True):
 
     def index(d):
         out = {}
-        for i, (cid, name) in enumerate(zip(d["sequence_indices"], d["particle_names"])):
+        for i, (cid, name) in enumerate(
+            zip(d["sequence_indices"], d["particle_names"])
+        ):
             out.setdefault((cid, norm(name)), []).append(i)
         return out
 

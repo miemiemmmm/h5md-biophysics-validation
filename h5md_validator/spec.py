@@ -1,9 +1,10 @@
 """
-Declarative model of the H5MD ``biophysics`` module, version 1.0.
+Declarative model of the H5MD ``biophysics`` module, version 1.0.0-alpha.
 
-Normative source: the module specification, version 1.0 (``SI-specification.pdf``
-in the paper's supplementary material); section numbers in the comments below
-(S4, S5, ...) refer to it. Nothing here is derived from the GROMACS
+Normative source: the module specification, version 1.0.0-alpha
+(``SI-specification.pdf`` in the paper's supplementary material), whose files
+carry ``version = [1, 0]``; section numbers in the comments below (S4, S5, ...)
+refer to it. Nothing here is derived from the GROMACS
 reference implementation -- disagreements are recorded in
 :mod:`h5md_validator.deviations` rather than absorbed into the model.
 
@@ -91,8 +92,9 @@ class Group:
 SIMULATION_TYPES = frozenset(
     {"molecular_dynamics", "stochastic_dynamics", "energy_minimization"}
 )
-MD_INTEGRATORS = frozenset({"leap_frog", "velocity_verlet", "euler"})
-SD_INTEGRATORS = frozenset({"leap_frog", "langevin", "brownian"})
+MD_INTEGRATORS = frozenset({"leap_frog", "velocity_verlet"})
+SD_DYNAMICS = frozenset({"langevin", "brownian"})
+SD_INTEGRATORS = frozenset({"leap_frog", "velocity_verlet", "euler"})
 EM_ALGORITHMS = frozenset({"steepest_descent", "conjugate_gradient", "l_bfgs"})
 COM_MODES = frozenset({"translation", "rotation", "translation_and_rotation"})
 
@@ -101,7 +103,7 @@ RUN_CONTROL = Group(
     required=False,
     datasets=(
         Dataset("simulation_type", STRING, enum=SIMULATION_TYPES),
-        Dataset("numsteps", INTEGER),
+        Dataset("numsteps", INTEGER, required=False),
     ),
     groups=(
         Group(
@@ -112,21 +114,54 @@ RUN_CONTROL = Group(
                 Dataset("timestep", FLOAT, unit=True),
             ),
         ),
+        # Temperature control is part of the dynamics: no temperature_coupling.
         Group(
             "stochastic_dynamics",
             required=False,
             datasets=(
+                Dataset("dynamics", STRING, enum=SD_DYNAMICS),
                 Dataset("integrator", STRING, enum=SD_INTEGRATORS),
                 Dataset("timestep", FLOAT, unit=True),
+                # Absent: one group holding every particle, one value per array.
+                Dataset("groups", STRING, shape=("N",), required=False),
+                Dataset("reference_temperature", FLOAT, shape=("N",), unit=True),
+                Dataset("random_seed", INTEGER, required=False),
+            ),
+            groups=(
+                Group(
+                    "langevin",
+                    required=False,
+                    datasets=(
+                        Dataset("coupling_time", FLOAT, shape=("N",), unit=True),
+                    ),
+                ),
+                # Exactly one of the two datasets is present (checked separately).
+                Group(
+                    "brownian",
+                    required=False,
+                    datasets=(
+                        Dataset(
+                            "coupling_time",
+                            FLOAT,
+                            shape=("N",),
+                            required=False,
+                            unit=True,
+                        ),
+                        Dataset(
+                            "friction_coefficient", FLOAT, required=False, unit=True
+                        ),
+                    ),
+                ),
             ),
         ),
         Group(
             "center_of_mass_motion_removal",
             required=False,
             datasets=(
-                Dataset("groups", STRING, shape=("N",)),
                 Dataset("mode", STRING, enum=COM_MODES),
                 Dataset("interval", INTEGER),
+                # Absent: the full system.
+                Dataset("groups", STRING, shape=("N",), required=False),
             ),
         ),
         Group(
@@ -134,14 +169,14 @@ RUN_CONTROL = Group(
             required=False,
             datasets=(
                 Dataset("algorithm", STRING, enum=EM_ALGORITHMS),
-                Dataset("step_size", FLOAT, unit=True),
-                Dataset("tolerance", FLOAT, unit=True),
+                Dataset("step_size", FLOAT, required=False, unit=True),
+                Dataset("tolerance", FLOAT, required=False, unit=True),
             ),
         ),
         Group(
             "mass_repartitioning",
             required=False,
-            datasets=(Dataset("factor", FLOAT),),
+            datasets=(Dataset("factor", FLOAT, required=False),),
         ),
     ),
 )
@@ -234,7 +269,6 @@ PRESSURE_COUPLING = Group(
         Dataset("reference_pressure", FLOAT, shape=("scalar_or_tensor",), unit=True),
         Dataset("compressibility", FLOAT, shape=("scalar_or_tensor",), unit=True),
         Dataset("interval", INTEGER),
-        Dataset("reference_coordinate_scaling", STRING),
     ),
     groups=(
         Group(
@@ -276,10 +310,7 @@ COULOMB_INTERACTIONS = Group(
         Group(
             "cutoff",
             required=False,
-            datasets=(
-                Dataset("potential_modifier", STRING, enum=COULOMB_MODIFIERS),
-                Dataset("switch_distance", FLOAT, required=False, unit=True),
-            ),
+            datasets=(Dataset("potential_modifier", STRING, enum=COULOMB_MODIFIERS),),
         ),
         Group(
             "reaction_field",
@@ -388,6 +419,7 @@ CONDITIONAL_SELECTORS = {
         frozenset({"cutoff", "reaction_field"}),
     ),
     "parameters/vdw_interactions": ("type", frozenset({"cutoff"})),
+    "parameters/run_control/stochastic_dynamics": ("dynamics", SD_DYNAMICS),
 }
 
 #: The full predefined value set of each selector dataset (S7).  This is a
@@ -400,11 +432,17 @@ SELECTOR_ENUMS = {
     "parameters/constraints": ("algorithm", CONSTRAINT_ALGORITHMS),
     "parameters/coulomb_interactions": ("type", COULOMB_TYPES),
     "parameters/vdw_interactions": ("type", VDW_TYPES),
+    "parameters/run_control/stochastic_dynamics": ("dynamics", SD_DYNAMICS),
 }
 
 #: Datasets that must have the same length as the ``groups`` dataset of their
-#: enclosing coupling category (S7.3: "one value per group").
+#: enclosing category (S7.1, S7.3: one value per group).
 PER_GROUP_DATASETS = {
+    "parameters/run_control/stochastic_dynamics": [
+        "reference_temperature",
+        "langevin/coupling_time",
+        "brownian/coupling_time",
+    ],
     "parameters/temperature_coupling": [
         "reference_temperature",
         "stochastic_velocity_rescaling/coupling_time",
@@ -414,6 +452,18 @@ PER_GROUP_DATASETS = {
         "berendsen/coupling_time",
     ],
 }
+
+#: Categories whose ``groups`` is optional: when it is absent, a single group
+#: holding every particle is implied and each per-group array holds one value.
+GROUPS_OPTIONAL = frozenset({"parameters/run_control/stochastic_dynamics"})
+
+#: Datasets naming selection groups, each of which must exist in ``selections``
+#: (S9).  Observable subgroups are checked separately.
+SELECTION_REFERENCES = (
+    "parameters/temperature_coupling/groups",
+    "parameters/run_control/stochastic_dynamics/groups",
+    "parameters/run_control/center_of_mass_motion_removal/groups",
+)
 
 # ==========================================================================
 # S6  Observables
@@ -438,20 +488,25 @@ OBSERVABLES = {
 # ==========================================================================
 # S8  Force field terms
 # ==========================================================================
-#: Interaction types, their compound parameter layout, and whether they are
-#: bonded (referenced from ``topology/<mol>/interactions``) or nonbonded.
+#: Interaction types of Table SI (S8): their compound parameter layout, whether
+#: they are bonded or nonbonded, and N_particles, the width of ``particle_ids``.
 #:
-#: ``n_particles`` is the number of particles an interaction entry relates, used
-#: to check the second dimension of ``particle_ids``.  NOTE: the specification's
-#: Table SI (S8) does not state these arities; see deviations.SPEC_GAP_ARITY.
+#: A bonded type's list in ``topology/<mol>/interactions/<type>`` holds
+#: ``parameter_id`` and ``particle_ids``; ``coulomb_14`` holds ``parameter_id``
+#: only, row k applying to row k of ``lennard_jones_14``.  A nonbonded type holds
+#: ``type_id``, one entry per particle, into a T x T matrix of ``parameters``.
 @dataclass(frozen=True)
 class InteractionType:
     name: str
     params: tuple
     bonded: bool
-    n_particles: int | None
+    n_particles: int
     #: Alternative compound layouts the spec permits ("c6/c12 or sigma/epsilon").
     alt_params: tuple | None = None
+    #: False for coulomb_14, which borrows the pairs of lennard_jones_14.
+    has_particle_ids: bool = True
+    #: True for cmap: parameters are Float[K][G][G] with one ``unit`` attribute.
+    grid: bool = False
 
 
 F = FLOAT
@@ -536,6 +591,7 @@ INTERACTION_TYPES = {
             True,
             2,
         ),
+        InteractionType("cmap", (), True, 5, grid=True),
         InteractionType("constraint", (Field("distance", F),), True, 2),
         InteractionType(
             "settle", (Field("distance_OH", F), Field("distance_HH", F)), True, 3
@@ -549,37 +605,35 @@ INTERACTION_TYPES = {
         ),
         InteractionType("virtual_site_3", (Field("a", F), Field("b", F)), True, 4),
         InteractionType(
+            "coulomb_14", (Field("scale_factor", F),), True, 2, has_particle_ids=False
+        ),
+        InteractionType(
             "lennard_jones_short_range",
             (Field("c6", F), Field("c12", F)),
             False,
-            None,
+            2,
             alt_params=(Field("sigma", F), Field("epsilon", F)),
         ),
         InteractionType(
             "buckingham",
             (Field("constant_a", F), Field("constant_b", F), Field("constant_c", F)),
             False,
-            None,
+            2,
         ),
     )
 }
 
-#: Optional provenance attributes on the ``force_field`` group (S8).
+#: Optional provenance attributes on the ``force_field`` group (S8), supplied by
+#: the creator; S8 states they are not checked by a validator.
 FORCE_FIELD_ATTRS = (
-    Attr("source", STRING, required=False),
+    Attr("description", STRING, required=False),
+    Attr("doi", STRING, shape=(VAR,), required=False),
+    Attr("url", STRING, shape=(VAR,), required=False),
     Attr("modifications", STRING, required=False),
-    Attr("polymer_types", STRING, shape=(VAR,), required=False),
-    Attr("polymer_force_field", STRING, required=False),
-    Attr("solvent_model", STRING, required=False),
-    Attr("solvent_component", STRING, required=False),
-    Attr("solvent_force_field", STRING, required=False),
-    Attr("ion_type", STRING, required=False),
-    Attr("ion_force_field", STRING, required=False),
-    Attr("membrane_components", STRING, shape=(VAR,), required=False),
-    Attr("membrane_force_field", STRING, required=False),
-    Attr("ligand_components", STRING, shape=(VAR,), required=False),
-    Attr("ligand_force_field", STRING, required=False),
 )
+
+#: The two classes an interaction type is stored under (S8).
+FORCE_FIELD_LAYERS = ("bonded", "nonbonded")
 
 # ==========================================================================
 # S10  Topology

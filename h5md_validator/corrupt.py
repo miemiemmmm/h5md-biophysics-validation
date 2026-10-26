@@ -521,11 +521,11 @@ def _m_timestep_unit_missing(f):
     return True
 
 
-def _m_numsteps_missing(f):
+def _m_simulation_type_missing(f):
     rc = f.get("parameters/run_control")
-    if rc is None or "numsteps" not in rc:
+    if rc is None or "simulation_type" not in rc:
         return False
-    del rc["numsteps"]
+    del rc["simulation_type"]
     return True
 
 
@@ -917,9 +917,9 @@ CORRUPTIONS = [
     Corruption(
         "C-PARAM-REQUIRED-MISSING",
         "required element",
-        "remove run_control/numsteps",
+        "remove run_control/simulation_type",
         "STRUCT-MISSING-DATASET",
-        _m_numsteps_missing,
+        _m_simulation_type_missing,
     ),
     # Selection related corruptions
     Corruption(

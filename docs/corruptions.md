@@ -52,7 +52,7 @@ The list mirrors `CORRUPTIONS` in `h5md_validator/corrupt.py`, in the same order
 | `C-TOPO-BLOCKS-MISSING` | remove the molecule_blocks dataset | `STRUCT-MISSING-DATASET` |
 | `C-TOPO-PARTICLE-DATA-MISSING` | remove particle_data from a molecule type | `STRUCT-MISSING-DATASET` |
 | `C-TOPO-NAME-TABLE-MISSING` | remove particle_name_table | `STRUCT-MISSING-DATASET` |
-| `C-PARAM-REQUIRED-MISSING` | remove run_control/numsteps | `STRUCT-MISSING-DATASET` |
+| `C-PARAM-REQUIRED-MISSING` | remove run_control/simulation_type | `STRUCT-MISSING-DATASET` |
 
 ## Physical validity (2)
 

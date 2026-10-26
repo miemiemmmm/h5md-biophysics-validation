@@ -12,10 +12,11 @@ Check families, by code prefix:
     UNIT    presence and syntax of unit / units attributes
     COND    conditional subgroup instantiation (S7)
     TIME    step / time / value first-dimension alignment
-    TOPO    topology invariants (particle and component counts)
-    REF     referential integrity of every index in the file
-    SEL     selection bounds
+    TOPO    topology invariants (particle and residue counts, 1-4 pairing)
+    REF     referential integrity of every index and selection name
+    SEL     selection bounds and coverage
     CONN    connectivity bounds
+    EXT     extensions outside a predefined set (S7, S8)
 
 Used by:
     Validation 3: internal consistency
@@ -23,6 +24,8 @@ Used by:
 """
 
 from __future__ import annotations
+
+import math
 
 import h5py
 import numpy as np
@@ -110,6 +113,7 @@ class Validator:
             topo = self._check_topology(f, report)
             self._check_connectivity(f, report, topo)
             self._check_selections(f, report, topo)
+            self._check_selection_references(f, report, topo)
             self._check_cross_group(f, report)
         return report
 
@@ -519,12 +523,18 @@ class Validator:
                         orphan=name,
                     )
 
-        # S7.3: per-group arrays must match the length of 'groups'.
+        # S7.1, S7.3: per-group arrays must match the length of 'groups'; where
+        # 'groups' is optional and absent, one group of every particle is implied.
         for gpath, names in spec.PER_GROUP_DATASETS.items():
             grp = f.get(gpath)
-            if grp is None or "groups" not in grp:
+            if grp is None:
                 continue
-            n = len(np.atleast_1d(grp["groups"][()]))
+            if "groups" in grp:
+                n = len(np.atleast_1d(grp["groups"][()]))
+            elif gpath in spec.GROUPS_OPTIONAL:
+                n = 1
+            else:
+                continue
             for rel in names:
                 ds = grp.get(rel)
                 if ds is None or not isinstance(ds, h5py.Dataset):
@@ -561,6 +571,35 @@ class Validator:
                         value=value,
                     )
 
+        # S7.1: stochastic dynamics controls the temperature itself.
+        rc = f.get("parameters/run_control")
+        if (
+            rc is not None
+            and "simulation_type" in rc
+            and _read(rc["simulation_type"]) == "stochastic_dynamics"
+            and "temperature_coupling" in params
+        ):
+            rep.add(
+                "COND-SD-TEMPERATURE-COUPLING",
+                Severity.ERROR,
+                "parameters/temperature_coupling",
+                "temperature_coupling is present, but stochastic dynamics controls "
+                "the temperature itself",
+            )
+        # S7.1: Brownian friction is given in exactly one of two ways.
+        bd = f.get("parameters/run_control/stochastic_dynamics/brownian")
+        if isinstance(bd, h5py.Group):
+            given = [k for k in ("coupling_time", "friction_coefficient") if k in bd]
+            if len(given) != 1:
+                rep.add(
+                    "COND-BROWNIAN-FRICTION",
+                    Severity.ERROR,
+                    "parameters/run_control/stochastic_dynamics/brownian",
+                    "exactly one of coupling_time and friction_coefficient must be "
+                    f"present, found {given or 'neither'}",
+                    present=given,
+                )
+
     # --------------------------------------------------------- S6 observables
     def _check_observables(self, f, rep):
         obs = f.get("observables")
@@ -579,14 +618,17 @@ class Validator:
                 self._check_observable_shape(name, node, path, rep)
                 self._check_unit_attr(node, path, rep, required=True)
             elif isinstance(node, h5py.Group):
-                # Per-selection-group nesting: observables/<group>/<observable>.
-                if self.report_deviations:
+                # S6: observables of a subset of particles sit in a subgroup named
+                # after its selection group, which must not shadow an observable.
+                # That the selection exists is checked with the other references.
+                if name in spec.OBSERVABLES:
                     rep.add(
-                        "DEV-OBS-GROUP-NESTING",
-                        Severity.DEVIATION,
+                        "STRUCT-OBS-SUBGROUP-NAME",
+                        Severity.ERROR,
                         path,
-                        DEVIATIONS["DEV-OBS-GROUP-NESTING"].title,
-                        deviation="DEV-OBS-GROUP-NESTING",
+                        f"{name!r} is a predefined observable, so it cannot name a "
+                        "selection subgroup",
+                        name=name,
                     )
                 for sub in node:
                     subnode = node[sub]
@@ -599,6 +641,9 @@ class Validator:
                         self._check_unit_attr(
                             subnode["value"], f"{subpath}/value", rep, required=True
                         )
+                    elif isinstance(subnode, h5py.Dataset):
+                        self._check_observable_shape(sub, subnode, subpath, rep)
+                        self._check_unit_attr(subnode, subpath, rep, required=True)
 
     def _check_observable_shape(self, name, ds, path, rep):
         want = spec.OBSERVABLES.get(name)
@@ -631,17 +676,21 @@ class Validator:
         if ff is None:
             return {}
 
-        # DEV-FF-BONDED-LAYER: the spec puts <type> directly under force_field.
-        layered = {k for k in ff if k in ("bonded", "nonbonded")}
-        if layered and self.report_deviations:
-            rep.add(
-                "DEV-FF-BONDED-LAYER",
-                Severity.DEVIATION,
-                "force_field",
-                DEVIATIONS["DEV-FF-BONDED-LAYER"].title,
-                deviation="DEV-FF-BONDED-LAYER",
-                subgroups=sorted(layered),
-            )
+        # S8: every interaction type sits under bonded or nonbonded.
+        for key in ff:
+            if key in spec.FORCE_FIELD_LAYERS:
+                continue
+            if isinstance(ff[key], h5py.Group):
+                rep.add(
+                    "STRUCT-FF-CLASSIFICATION",
+                    Severity.ERROR,
+                    f"force_field/{key}",
+                    f"{key!r} is stored directly under force_field, outside "
+                    "bonded and nonbonded",
+                    name=key,
+                )
+            else:
+                self._report_undocumented(f"force_field/{key}", rep, "force_field")
 
         for container, base in self._force_field_containers(ff):
             for tname in container:
@@ -649,11 +698,8 @@ class Validator:
                 path = f"{base}/{tname}"
                 itype = spec.INTERACTION_TYPES.get(tname)
                 if itype is None:
-                    # Table SI is not exhaustive by design. Treat an unlisted
-                    # type the way S7 treats an algorithm outside its predefined
-                    # set: permitted, and expected to point at a definition.
-                    # See deviations.DEV-FF-NO-EXTENSION-CONVENTION -- S8 does
-                    # not yet state this, so the check is advisory.
+                    # S8: a type outside Table SI is permitted in the same layout,
+                    # and should carry a doi or url defining its functional form.
                     if not ({"doi", "url"} & set(tgrp.attrs)):
                         rep.add(
                             "EXT-NO-REFERENCE",
@@ -691,7 +737,7 @@ class Validator:
                         f"{tname!r} is a nonbonded interaction type but is stored "
                         "under bonded",
                     )
-                for pname in ("parameters", "parameters_B"):
+                for pname in ("parameters", "parameters_end_state"):
                     if pname not in tgrp:
                         if pname == "parameters":
                             rep.add(
@@ -701,19 +747,69 @@ class Validator:
                                 "interaction type has no parameters dataset",
                             )
                         continue
-                    self._check_parameter_compound(
-                        tgrp[pname], f"{path}/{pname}", itype, rep
-                    )
+                    if itype.grid:
+                        self._check_parameter_grid(tgrp[pname], f"{path}/{pname}", rep)
+                    else:
+                        self._check_parameter_compound(
+                            tgrp[pname], f"{path}/{pname}", itype, rep
+                        )
+                    if not itype.bonded:
+                        self._check_type_matrix(tgrp[pname], f"{path}/{pname}", rep)
+
+        # S8: coulomb_14 is present exactly when lennard_jones_14 is.
+        bonded = ff.get("bonded")
+        if isinstance(bonded, h5py.Group) and (
+            ("lennard_jones_14" in bonded) != ("coulomb_14" in bonded)
+        ):
+            rep.add(
+                "TOPO-COULOMB14-PAIRING",
+                Severity.ERROR,
+                "force_field/bonded",
+                "coulomb_14 must be present exactly when lennard_jones_14 is",
+                lennard_jones_14="lennard_jones_14" in bonded,
+                coulomb_14="coulomb_14" in bonded,
+            )
 
     def _force_field_containers(self, ff):
         """Yield (group, path) pairs that hold interaction-type subgroups."""
-        found = False
-        for layer in ("bonded", "nonbonded"):
+        for layer in spec.FORCE_FIELD_LAYERS:
             if layer in ff and isinstance(ff[layer], h5py.Group):
-                found = True
                 yield ff[layer], f"force_field/{layer}"
-        if not found:
-            yield ff, "force_field"
+
+    def _check_parameter_grid(self, ds, path, rep):
+        """S8: a tabulated potential (cmap) is Float[K][G][G] with one unit."""
+        if _dtype_class(ds.dtype) != spec.FLOAT:
+            rep.add(
+                "STRUCT-DTYPE",
+                Severity.ERROR,
+                path,
+                f"expected Float, found {_dtype_class(ds.dtype)}",
+                expected=spec.FLOAT,
+                actual=_dtype_class(ds.dtype),
+            )
+        if ds.ndim != 3 or ds.shape[1] != ds.shape[2]:
+            rep.add(
+                "STRUCT-SHAPE",
+                Severity.ERROR,
+                path,
+                f"expected Float[K][G][G], found shape {list(ds.shape)}",
+                expected="[K,G,G]",
+                actual=list(ds.shape),
+            )
+        self._check_unit_attr(ds, path, rep, required=True)
+
+    def _check_type_matrix(self, ds, path, rep):
+        """S8: nonbonded parameters form a T x T matrix, K = T^2 records."""
+        k = ds.shape[0] if ds.shape else 0
+        t = math.isqrt(k)
+        if t * t != k:
+            rep.add(
+                "STRUCT-NONBONDED-MATRIX",
+                Severity.ERROR,
+                path,
+                f"{k} records do not form a square matrix of particle types",
+                records=k,
+            )
 
     def _check_parameter_compound(self, ds, path, itype, rep):
         if ds.dtype.names is None:
@@ -792,6 +888,8 @@ class Validator:
             )
 
         ff_params = self._collect_parameter_counts(f)
+        nb = f.get("force_field/nonbonded")
+        nonbonded = sorted(nb) if isinstance(nb, h5py.Group) else []
 
         # --- molecule types -------------------------------------------------
         for name in topo:
@@ -801,7 +899,7 @@ class Validator:
             if not isinstance(mol, h5py.Group):
                 continue
             info["molecule_types"][name] = self._check_molecule_type(
-                mol, f"topology/{name}", rep, ff_params
+                mol, f"topology/{name}", rep, ff_params, nonbonded
             )
 
         # --- molecule_blocks and the S10 count invariants ---------------------
@@ -922,29 +1020,21 @@ class Validator:
                 )
 
     def _collect_parameter_counts(self, f):
-        """Map interaction type name -> number of force-field parameter entries."""
+        """Map interaction type name -> K, its number of parameter records."""
         counts = {}
         ff = f.get("force_field")
         if ff is None:
             return counts
-        for layer in ("bonded", "nonbonded"):
+        for layer in spec.FORCE_FIELD_LAYERS:
             grp = ff.get(layer)
             if isinstance(grp, h5py.Group):
                 for tname in grp:
                     ds = grp[tname].get("parameters")
-                    if isinstance(ds, h5py.Dataset):
+                    if isinstance(ds, h5py.Dataset) and ds.shape:
                         counts[tname] = ds.shape[0]
-        for tname in ff:
-            if tname in ("bonded", "nonbonded"):
-                continue
-            node = ff[tname]
-            if isinstance(node, h5py.Group):
-                ds = node.get("parameters")
-                if isinstance(ds, h5py.Dataset):
-                    counts[tname] = ds.shape[0]
         return counts
 
-    def _check_molecule_type(self, mol, path, rep, ff_params):
+    def _check_molecule_type(self, mol, path, rep, ff_params, nonbonded=()):
         summary = {"particle_count": 0, "residue_count": 0}
 
         for attr in ("particle_count", "residue_count"):
@@ -1011,7 +1101,7 @@ class Validator:
             self._check_sequence(seq, f"{path}/sequence", rep, n_residues, n_cnames)
 
         # --- interactions ----------------------------------------------------
-        # Optional (S10): absent when the molecule type has no bonded interaction.
+        # Optional (S10): absent when the molecule type has no interaction.
         inter = mol.get("interactions")
         if isinstance(inter, h5py.Group):
             for tname in inter:
@@ -1022,6 +1112,39 @@ class Validator:
                     rep,
                     n_particles,
                     ff_params,
+                )
+        # S8: every particle carries a type for each nonbonded interaction.
+        for tname in nonbonded:
+            if not (isinstance(inter, h5py.Group) and tname in inter):
+                rep.add(
+                    "STRUCT-MISSING-DATASET",
+                    Severity.ERROR,
+                    f"{path}/interactions/{tname}/type_id",
+                    f"no type_id for the nonbonded interaction {tname!r}",
+                    name=tname,
+                )
+        # S8: coulomb_14 row k applies to lennard_jones_14 row k.
+        lj14 = inter.get("lennard_jones_14") if isinstance(inter, h5py.Group) else None
+        c14 = inter.get("coulomb_14") if isinstance(inter, h5py.Group) else None
+        if (lj14 is None) != (c14 is None):
+            rep.add(
+                "TOPO-COULOMB14-PAIRING",
+                Severity.ERROR,
+                f"{path}/interactions",
+                "coulomb_14 must be present exactly when lennard_jones_14 is",
+                lennard_jones_14=lj14 is not None,
+                coulomb_14=c14 is not None,
+            )
+        elif lj14 is not None and "parameter_id" in lj14 and "parameter_id" in c14:
+            n_lj, n_c = lj14["parameter_id"].shape[0], c14["parameter_id"].shape[0]
+            if n_lj != n_c:
+                rep.add(
+                    "TOPO-COULOMB14-PAIRING",
+                    Severity.ERROR,
+                    f"{path}/interactions/coulomb_14/parameter_id",
+                    f"coulomb_14 has {n_c} entries for {n_lj} lennard_jones_14 pairs",
+                    expected=n_lj,
+                    actual=n_c,
                 )
 
         # --- exclusions ------------------------------------------------------
@@ -1211,8 +1334,7 @@ class Validator:
                 "TOPO-SEQUENCE-LENGTH",
                 Severity.ERROR,
                 path,
-                f"sequence has {ds.shape[0]} rows but residue_count is "
-                f"{n_residues}",
+                f"sequence has {ds.shape[0]} rows but residue_count is {n_residues}",
                 expected=n_residues,
                 actual=ds.shape[0],
             )
@@ -1253,13 +1375,8 @@ class Validator:
                 )
             return
         if not itype.bonded:
-            rep.add(
-                "STRUCT-FF-CLASSIFICATION",
-                Severity.ERROR,
-                path,
-                f"{tname!r} is a nonbonded type and has no per-molecule "
-                "interaction list",
-            )
+            self._check_type_ids(grp, path, tname, rep, n_particles, ff_params)
+            return
         pid = grp.get("parameter_id")
         ids = grp.get("particle_ids")
         if pid is None:
@@ -1269,6 +1386,11 @@ class Validator:
                 f"{path}/parameter_id",
                 "required dataset parameter_id is absent",
             )
+        if not itype.has_particle_ids:
+            # coulomb_14: only parameter_id, aligned with lennard_jones_14.
+            if pid is not None:
+                self._check_parameter_ids(pid, path, tname, rep, ff_params)
+            return
         if ids is None:
             rep.add(
                 "STRUCT-MISSING-DATASET",
@@ -1300,13 +1422,26 @@ class Validator:
                 Severity.ERROR,
                 f"{path}/particle_ids",
                 f"{tname!r} relates {itype.n_particles} particles but "
-                f"particle_ids has {ids.shape[1]} columns "
-                "(arity assumed; see DEV-SPEC-GAP-ARITY)",
+                f"particle_ids has {ids.shape[1]} columns",
                 expected=itype.n_particles,
                 actual=ids.shape[1],
             )
 
-        # parameter_id must address an existing force-field parameter entry.
+        self._check_parameter_ids(pid, path, tname, rep, ff_params)
+
+        # particle_ids are 0-based and local to the molecule type (S10).
+        id_data = np.asarray(ids[()], dtype=np.int64).ravel()
+        self._check_index_range(
+            id_data,
+            n_particles,
+            f"{path}/particle_ids",
+            rep,
+            "REF-PARTICLE-ID",
+            "particle_id",
+        )
+
+    def _check_parameter_ids(self, pid, path, tname, rep, ff_params):
+        """parameter_id must address a record of the type's parameters (S8)."""
         n_params = ff_params.get(tname)
         pid_data = np.asarray(pid[()], dtype=np.int64).ravel()
         if n_params is None:
@@ -1319,26 +1454,66 @@ class Validator:
                     f"force_field parameters dataset exists for it",
                     name=tname,
                 )
-        else:
-            self._check_index_range(
-                pid_data,
-                n_params,
-                f"{path}/parameter_id",
-                rep,
-                "REF-PARAMETER-ID",
-                "parameter_id",
-            )
-
-        # particle_ids are 0-based and local to the molecule type (S10).
-        id_data = np.asarray(ids[()], dtype=np.int64).ravel()
+            return
         self._check_index_range(
-            id_data,
-            n_particles,
-            f"{path}/particle_ids",
+            pid_data,
+            n_params,
+            f"{path}/parameter_id",
             rep,
-            "REF-PARTICLE-ID",
-            "particle_id",
+            "REF-PARAMETER-ID",
+            "parameter_id",
         )
+
+    def _check_type_ids(self, grp, path, tname, rep, n_particles, ff_params):
+        """S8: a nonbonded type stores type_id, one per particle, in [0, T)."""
+        ds = grp.get("type_id")
+        if ds is None:
+            rep.add(
+                "STRUCT-MISSING-DATASET",
+                Severity.ERROR,
+                f"{path}/type_id",
+                "required dataset type_id is absent",
+            )
+            return
+        if _dtype_class(ds.dtype) != spec.INTEGER:
+            rep.add(
+                "STRUCT-DTYPE",
+                Severity.ERROR,
+                f"{path}/type_id",
+                f"expected Integer, found {_dtype_class(ds.dtype)}",
+            )
+            return
+        if ds.ndim != 1 or ds.shape[0] != n_particles:
+            rep.add(
+                "STRUCT-SHAPE",
+                Severity.ERROR,
+                f"{path}/type_id",
+                f"type_id must hold one entry per particle ({n_particles}), "
+                f"found shape {list(ds.shape)}",
+                expected=[n_particles],
+                actual=list(ds.shape),
+            )
+        k = ff_params.get(tname)
+        if k is None:
+            rep.add(
+                "REF-PARAMETER-TABLE-MISSING",
+                Severity.ERROR,
+                f"{path}/type_id",
+                f"type_id references {tname!r} parameters but no force_field "
+                "parameters dataset exists for it",
+                name=tname,
+            )
+            return
+        t = math.isqrt(k)
+        if t * t == k:
+            self._check_index_range(
+                np.asarray(ds[()], dtype=np.int64).ravel(),
+                t,
+                f"{path}/type_id",
+                rep,
+                "REF-TYPE-ID",
+                "type_id",
+            )
 
     def _check_index_container(self, grp, path, rep, n_particles, prefix):
         """Validate a (ranges, indices) pair against an upper bound."""
@@ -1377,8 +1552,7 @@ class Validator:
                     count=int(bad.size),
                     first_rows=bad[:10].tolist(),
                 )
-            # S9 says 'last' is exclusive; Algorithm S1 says inclusive.  Accept
-            # both bounds here and report the ambiguity once, per the registry.
+            # S9: stop is an exclusive bound, so it may equal the system size.
             bad = np.flatnonzero((last < 0) | (last > n_particles))
             if bad.size:
                 rep.add(
@@ -1389,13 +1563,13 @@ class Validator:
                     count=int(bad.size),
                     first_rows=bad[:10].tolist(),
                 )
-            bad = np.flatnonzero(stride == 0)
+            bad = np.flatnonzero(stride <= 0)
             if bad.size:
                 rep.add(
                     f"REF-{prefix}-STRIDE",
                     Severity.ERROR,
                     f"{path}/ranges",
-                    f"{bad.size} range(s) have a zero stride",
+                    f"{bad.size} range(s) have a stride that is not positive",
                     count=int(bad.size),
                     first_rows=bad[:10].tolist(),
                 )
@@ -1518,6 +1692,71 @@ class Validator:
                     "string-based selection does not name the software that "
                     "can parse it",
                 )
+
+    def _check_selection_references(self, f, rep, topo):
+        """S9: every selection name used elsewhere must exist in selections."""
+        sel = f.get("selections")
+        names = set(sel) if isinstance(sel, h5py.Group) else set()
+        refs = []
+        for dpath in spec.SELECTION_REFERENCES:
+            ds = f.get(dpath)
+            if isinstance(ds, h5py.Dataset):
+                vals = _read(ds)
+                refs += [
+                    (dpath, g) for g in (vals if isinstance(vals, list) else [vals])
+                ]
+        obs = f.get("observables")
+        if isinstance(obs, h5py.Group):
+            for name in obs:
+                node = obs[name]
+                if isinstance(node, h5py.Group) and not _is_time_dependent(node):
+                    refs.append((f"observables/{name}", name))
+        for path, group in refs:
+            if group not in names:
+                rep.add(
+                    "REF-SELECTION-MISSING",
+                    Severity.ERROR,
+                    path,
+                    f"selection {group!r} is referenced but not defined in selections",
+                    name=group,
+                )
+
+        # S7.3: the coupling groups should together cover the whole system.
+        n = topo.get("n_particles") if topo else None
+        tc = f.get("parameters/temperature_coupling/groups")
+        if not (n and isinstance(tc, h5py.Dataset) and isinstance(sel, h5py.Group)):
+            return
+        vals = _read(tc)
+        covered = np.zeros(n, dtype=bool)
+        for g in vals if isinstance(vals, list) else [vals]:
+            idx = self._selection_indices(sel.get(g), n)
+            if idx is None:
+                return  # missing or string-based: coverage cannot be decided
+            covered[idx] = True
+        if not covered.all():
+            rep.add(
+                "SEL-COUPLING-COVERAGE",
+                Severity.WARNING,
+                "parameters/temperature_coupling/groups",
+                f"the temperature-coupling groups leave {int((~covered).sum())} of "
+                f"{n} particles uncoupled",
+                uncovered=int((~covered).sum()),
+            )
+
+    @staticmethod
+    def _selection_indices(grp, n):
+        """The particle indices of an index-based selection, or None."""
+        if not isinstance(grp, h5py.Group) or not ({"ranges", "indices"} & set(grp)):
+            return None
+        parts = []
+        if "indices" in grp:
+            parts.append(np.asarray(grp["indices"][()], dtype=np.int64).ravel())
+        if "ranges" in grp and grp["ranges"].size:
+            for start, stop, stride in np.asarray(grp["ranges"][()], dtype=np.int64):
+                if stride > 0:
+                    parts.append(np.arange(start, stop, stride))
+        idx = np.concatenate(parts) if parts else np.zeros(0, dtype=np.int64)
+        return idx[(idx >= 0) & (idx < n)]
 
 
 def validate(path, **kwargs) -> Report:

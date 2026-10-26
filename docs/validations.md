@@ -216,7 +216,7 @@ $PY_EXE scripts/provenance_recoverability.py
 ```
 
 Measures whether force-field provenance could be recovered automatically from a
-file's contents, which is the evidence behind `DEV-FF-PROVENANCE-UNWRITTEN`.
+file's contents, which is why S8 leaves it to attributes the creator supplies.
 Writes `_results/provenance_recoverability.json`.
 
 ---
