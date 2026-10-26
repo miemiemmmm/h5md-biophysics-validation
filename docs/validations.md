@@ -125,7 +125,7 @@ declares the finding code the validator is required to raise.
 
 ```bash
 $PY_EXE  scripts/validation4_negative_tests.py FILE.h5md    # explicitly define a H5MD file
-$PY_EXE  scripts/validation4_negative_tests.py --quick      # go through five reference files in the config/matrix.py
+$PY_EXE  scripts/validation4_negative_tests.py --quick      # go through the seven reference files in config/matrix.py
 $PY_EXE  scripts/validation4_negative_tests.py --all        # go through all reference files, takes a while
 ```
 
@@ -198,20 +198,6 @@ parametrisation items are total charge, partial charges and masses. The H5MD
 side is rebuilt to the full system from `topology/molecule_blocks`. The H–H
 "bond" AMBER gives rigid water keeps it rigid under SHAKE and is not chemistry,
 so it is removed from the AMBER side and the number removed is reported.
-
----
-
-## Supporting analysis
-
-Not one of the six, but run by `run_all.sh`:
-
-```bash
-$PY_EXE scripts/provenance_recoverability.py
-```
-
-Measures whether force-field provenance could be recovered automatically from a
-file's contents, which is why S8 leaves it to attributes the creator supplies.
-Writes `_results/provenance_recoverability.json`.
 
 ---
 

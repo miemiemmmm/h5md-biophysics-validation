@@ -1239,8 +1239,6 @@ CORRUPTIONS = [
     ),
 ]
 
-CORRUPTIONS_BY_CODE = {c.code: c for c in CORRUPTIONS}
-
 
 def generate(base_file, out_dir, corruptions=None):
     """Write one corrupted copy of ``base_file`` per applicable corruption.

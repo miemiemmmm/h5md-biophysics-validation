@@ -67,16 +67,13 @@ for name in $($PY_EXE -c "from config.matrix import NEGATIVE_TEST_BASES; print('
 done
 $PY_EXE scripts/validation4_negative_tests.py $BASES
 
-echo "==> Validation 5: storage"
+echo "==> Validation 5: storage cost"
 $PY_EXE scripts/validation5_storage.py
 
 echo "==> Validation 6: cross-engine interoperability"
 # Pairs come from AMBER_INTEROP_PAIRS in config/matrix.py, where each reference
 # file is declared with the AMBER topology of the SAME molecule.
 $PY_EXE scripts/validation6_amber_interop.py --run-all
-
-echo "==> supporting analysis: force-field provenance"
-$PY_EXE scripts/provenance_recoverability.py
 
 echo "==> figures"
 $PY_EXE scripts/validation5_cost_figure.py

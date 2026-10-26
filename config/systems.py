@@ -20,12 +20,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from config.matrix import PROTOCOLS, VALIDATION_SYSTEMS, System
-
-_ALL_PROTOCOL_IDS = [p.id for p in PROTOCOLS]
-
-#: protocols that assume a Protein group; skipped for nucleic-acid-only systems
-_NO_PROTEIN_GROUP = {"tcoupl-multigroup", "selection-noncontiguous"}
+from config.matrix import VALIDATION_SYSTEMS, System
 
 
 def _sys(id, description, dimensions, protocols=None, **kw):
@@ -971,31 +966,6 @@ SYSTEMS = [
         },
         protocols=["nvt-vrescale", "npt-berendsen", "nve"],
     ),
-]
-
-#: MISATO protein-ligand complexes, drawn at random with seed 20260922;
-#: see validation_systems/misato/MANIFEST.md.
-MISATO_ENTRIES = [
-    "3f78",
-    "6i77",
-    "2xde",
-    "6nwc",
-    "1z3j",
-    "5ivt",
-    "4xua",
-    "3unz",
-    "4q1n",
-    "1tfq",
-    "5nhj",
-    "4d0w",
-    "6mim",
-    "3ptg",
-    "3s2v",
-    "2zyn",
-    "6dyw",
-    "1fl6",
-    "3lq5",
-    "4zw5",
 ]
 
 SYSTEMS_BY_ID = {s.id: s for s in SYSTEMS}

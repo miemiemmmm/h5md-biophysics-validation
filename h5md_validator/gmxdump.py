@@ -49,7 +49,6 @@ _IATOM = re.compile(
     r"^\s*(?P<entry>\d+)\s+type=(?P<type>\d+)\s+\((?P<kind>[A-Z_0-9]+)\)\s*(?P<atoms>[\d\s]*)$"
 )
 _ILIST_LABEL = re.compile(r"^\s{6}(?P<label>[\w\-\. ]+):\s*$")
-_NR = re.compile(r"^\s*nr:\s*(?P<n>\d+)\s*$")
 
 
 class DumpFloat(float):
@@ -141,12 +140,6 @@ class TprDump:
     #: [(functype_name, {parameter: value})] indexed by GROMACS parameter index
     functypes: list = field(default_factory=list)
     moltypes: list = field(default_factory=list)
-
-    def moltype_by_name(self, name):
-        for m in self.moltypes:
-            if m.name == name:
-                return m
-        return None
 
 
 def run_dump(tpr, gmx="gmx", timeout=1800) -> str:

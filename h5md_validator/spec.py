@@ -46,8 +46,6 @@ class Attr:
     dtype: str
     shape: tuple | None = None
     required: bool = True
-    enum: frozenset | None = None
-    doc: str = ""
 
 
 @dataclass(frozen=True)
@@ -69,12 +67,6 @@ class Dataset:
     enum: frozenset | None = None
     #: True when S4.2 requires a ``unit`` attribute (physical quantity).
     unit: bool = False
-    #: Compound layout, for ``dtype == COMPOUND``.
-    fields: tuple | None = None
-    #: True when the compound requires a ``units`` attribute (S4.2).
-    units: bool = False
-    attrs: tuple = ()
-    doc: str = ""
 
 
 @dataclass(frozen=True)
@@ -86,9 +78,6 @@ class Group:
     attrs: tuple = ()
     datasets: tuple = ()
     groups: tuple = ()
-    #: True for ``<item>``: a group whose *name* is not fixed by the spec.
-    variadic: bool = False
-    doc: str = ""
 
 
 # ==========================================================================
@@ -662,20 +651,8 @@ MOLECULE_BLOCK_FIELDS = (
 )
 
 # ==========================================================================
-# S4.1  Root
+# S2  Module name and version
 # ==========================================================================
-#: Root groups the module either defines or extends.  All are optional; the
-#: only mandatory element is ``h5md/modules/biophysics`` with its version.
-ROOT_GROUPS = (
-    "connectivity",
-    "observables",
-    "parameters",
-    "particles",
-    "force_field",
-    "selections",
-    "topology",
-)
-
 #: The name of the module as it appears in the H5MD module list (S2).
 MODULE_NAME = "biophysics"
 #: The specification version this model implements (S2).

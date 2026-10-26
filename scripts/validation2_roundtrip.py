@@ -117,7 +117,9 @@ def main():
             edr_path = entry.get("edr")
             if edr_path and Path(edr_path).exists():
                 edr = gmxdump.from_edr(edr_path, gmx=GMX, cache_dir=DUMPS)
-            record.update(roundtrip.roundtrip(dump, h5, entry["tpr"], edr=edr).to_dict())
+            record.update(
+                roundtrip.roundtrip(dump, h5, entry["tpr"], edr=edr).to_dict()
+            )
         except Exception as exc:
             record["error"] = f"{type(exc).__name__}: {exc}"
         files[key] = record
@@ -146,7 +148,9 @@ def main():
     )
 
     print("\n" + "=" * 72)
-    print(f"round-trip faithful       : {summary['n_faithful']} of {summary['n_compared']}")
+    print(
+        f"round-trip faithful       : {summary['n_faithful']} of {summary['n_compared']}"
+    )
     print(
         f"every source term written : {summary['n_all_terms_written']} of "
         f"{summary['n_compared']}"

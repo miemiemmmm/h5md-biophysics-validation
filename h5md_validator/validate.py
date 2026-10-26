@@ -121,14 +121,14 @@ class Validator:
 
     # ------------------------------------------------------------- S4.1 root
     def _check_module(self, f, rep):
-        modpath = "h5md/modules/biophysics"
+        modpath = f"h5md/modules/{spec.MODULE_NAME}"
         mod = f.get(modpath)
         if mod is None:
             rep.add(
                 "MOD-MISSING",
                 Severity.ERROR,
                 modpath,
-                "file does not declare the biophysics module",
+                f"file does not declare the {spec.MODULE_NAME} module",
             )
             return
         if "version" not in mod.attrs:
@@ -136,7 +136,7 @@ class Validator:
                 "MOD-VERSION-MISSING",
                 Severity.ERROR,
                 modpath,
-                "biophysics module has no version attribute",
+                f"{spec.MODULE_NAME} module has no version attribute",
             )
             return
         version = tuple(int(v) for v in np.atleast_1d(mod.attrs["version"]))
