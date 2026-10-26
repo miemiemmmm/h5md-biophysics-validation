@@ -59,9 +59,8 @@ for finding in report.errors:
 ```
 
 `report.conformant` is true when no ERROR-level finding was raised. Findings
-come at four levels: `ERROR` (violates a MUST of the specification), `DEVIATION`
-(a registered specification-versus-implementation mismatch, pending an editorial
-decision), `WARNING` (violates a SHOULD), and `INFO`.
+come at three levels: `ERROR` (violates a MUST of the specification), `WARNING`
+(violates a SHOULD), and `INFO`.
 
 Finding codes are listed in [docs/check-codes.md](docs/check-codes.md).
 

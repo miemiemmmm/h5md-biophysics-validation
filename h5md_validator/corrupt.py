@@ -15,6 +15,7 @@ Used by:
 
 from __future__ import annotations
 
+import math
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -281,6 +282,57 @@ def _m_parameter_table_missing(f):
     return False
 
 
+def _m_type_id_truncated(f):
+    mol = _largest_mol(f)
+    inter = mol.get("interactions") if mol is not None else None
+    if inter is None:
+        return False
+    for t in inter:
+        if "type_id" in inter[t]:
+            data = inter[t]["type_id"][()]
+            if data.shape[0] < 1:
+                return False
+            _replace(inter[t], "type_id", data[:-1])
+            return True
+    return False
+
+
+def _m_type_id_out_of_range(f):
+    mol = _largest_mol(f)
+    inter = mol.get("interactions") if mol is not None else None
+    nb = f.get("force_field/nonbonded")
+    if inter is None or nb is None:
+        return False
+    for t in inter:
+        if "type_id" in inter[t] and t in nb and "parameters" in nb[t]:
+            n_types = math.isqrt(nb[t]["parameters"].shape[0])
+            data = inter[t]["type_id"][()]
+            if data.shape[0] < 1:
+                return False
+            data[0] = n_types  # one past the last type of the T x T matrix
+            _replace(inter[t], "type_id", data)
+            return True
+    return False
+
+
+def _m_parameter_table_short(f):
+    grp, name = _first_interaction(f)
+    if grp is None:
+        return False
+    pid = np.asarray(grp["parameter_id"][()]).ravel()
+    if pid.size == 0:
+        return False
+    top = int(pid.max())  # the highest referenced record, so it is cut off
+    for pgrp, tname in _ff_parameters(f):
+        if tname == name:
+            data = pgrp["parameters"][()]
+            if not 0 <= top < data.shape[0]:
+                return False
+            _replace(pgrp, "parameters", data[:top])
+            return True
+    return False
+
+
 def _m_ff_field_renamed(f):
     for pgrp, _ in _ff_parameters(f):
         data = pgrp["parameters"][()]
@@ -421,6 +473,30 @@ def _m_step_value_mismatch(f):
     return True
 
 
+def _m_step_missing(f):
+    obs = _first_observable(f)
+    if obs is None:
+        return False
+    del obs["step"]
+    return True
+
+
+def _m_value_missing(f):
+    obs = _first_observable(f)
+    if obs is None:
+        return False
+    del obs["value"]
+    return True
+
+
+def _m_step_float(f):
+    obs = _first_observable(f)
+    if obs is None:
+        return False
+    _replace(obs, "step", obs["step"][()].astype(np.float64))
+    return True
+
+
 def _m_time_not_monotonic(f):
     obs = _first_observable(f)
     if obs is None or "time" not in obs or obs["time"].shape[0] < 3:
@@ -468,11 +544,87 @@ def _m_observable_unknown(f):
     return True
 
 
-def _m_enum_invalid(f):
+def _m_subgroup_orphan(f):
     rc = f.get("parameters/run_control")
     if rc is None or "simulation_type" not in rc:
         return False
-    _replace(rc, "simulation_type", np.bytes_("quantum_dynamics"))
+    current = rc["simulation_type"][()]
+    current = current.decode() if isinstance(current, bytes) else str(current)
+    # A subgroup for a simulation type that is not the one selected.
+    orphan = (
+        "energy_minimization"
+        if current != "energy_minimization"
+        else "molecular_dynamics"
+    )
+    if orphan in rc:
+        return False
+    rc.create_group(orphan)
+    return True
+
+
+def _m_sd_with_thermostat(f):
+    rc = f.get("parameters/run_control")
+    params = f.get("parameters")
+    if rc is None or "simulation_type" not in rc or "temperature_coupling" in params:
+        return False
+    if rc["simulation_type"][()] not in (b"stochastic_dynamics", "stochastic_dynamics"):
+        return False
+    tc = params.create_group("temperature_coupling")
+    tc["algorithm"] = np.bytes_("stochastic_velocity_rescaling")
+    tc["interval"] = 10
+    tc["groups"] = np.array([b"System"])
+    tc.create_dataset("reference_temperature", data=[300.0]).attrs["unit"] = "K"
+    sub = tc.create_group("stochastic_velocity_rescaling")
+    sub.create_dataset("coupling_time", data=[1.0]).attrs["unit"] = "ps"
+    return True
+
+
+def _m_selection_reference_missing(f):
+    for path in (
+        "parameters/temperature_coupling/groups",
+        "parameters/run_control/stochastic_dynamics/groups",
+        "parameters/run_control/center_of_mass_motion_removal/groups",
+    ):
+        ds = f.get(path)
+        if isinstance(ds, h5py.Dataset) and ds.size:
+            names = [bytes(v) for v in np.atleast_1d(ds[()])]
+            names[0] = b"NO_SUCH_SELECTION"
+            parent, name = path.rsplit("/", 1)
+            _replace(f[parent], name, np.array(names))
+            return True
+    return False
+
+
+def _m_coulomb14_short(f):
+    mol = _largest_mol(f)
+    grp = mol.get("interactions/coulomb_14") if mol is not None else None
+    if grp is None or "parameter_id" not in grp:
+        return False
+    data = grp["parameter_id"][()]
+    if data.shape[0] < 1:
+        return False
+    _replace(grp, "parameter_id", data[:-1])
+    return True
+
+
+def _m_observable_subgroup_name(f):
+    obs = f.get("observables")
+    if obs is None:
+        return False
+    # A selection subgroup holds observables, not step/time/value itself.
+    sub = next(
+        (
+            n
+            for n in obs
+            if isinstance(obs[n], h5py.Group)
+            and not ({"step", "time", "value"} & set(obs[n]))
+        ),
+        None,
+    )
+    free = next((n for n in ("enthalpy", "density") if n not in obs), None)
+    if sub is None or free is None:
+        return False
+    obs.move(sub, free)
     return True
 
 
@@ -518,6 +670,42 @@ def _m_timestep_unit_missing(f):
     if md is None or "timestep" not in md or "unit" not in md["timestep"].attrs:
         return False
     del md["timestep"].attrs["unit"]
+    return True
+
+
+def _m_sequence_missing(f):
+    mol = _largest_mol(f)
+    if mol is None or "sequence" not in mol:
+        return False
+    del mol["sequence"]
+    return True
+
+
+def _m_interaction_particle_ids_missing(f):
+    grp, _ = _first_interaction(f)
+    if grp is None:
+        return False
+    del grp["particle_ids"]
+    return True
+
+
+def _m_type_id_missing(f):
+    mol = _largest_mol(f)
+    inter = mol.get("interactions") if mol is not None else None
+    if inter is None:
+        return False
+    for t in inter:
+        if "type_id" in inter[t]:
+            del inter[t]["type_id"]
+            return True
+    return False
+
+
+def _m_total_particle_count_missing(f):
+    topo = f.get("topology")
+    if topo is None or "total_particle_count" not in topo.attrs:
+        return False
+    del topo.attrs["total_particle_count"]
     return True
 
 
@@ -611,21 +799,21 @@ CORRUPTIONS = [
     Corruption(
         "C-TOPO-TOTAL-PARTICLES",
         "topology invariant",
-        "inflate total_particle_count by one",
+        "increment total_particle_count by one",
         "TOPO-INVARIANT-PARTICLES",
         _m_total_particle_count,
     ),
     Corruption(
         "C-TOPO-TOTAL-RESIDUES",
         "topology invariant",
-        "inflate total_residue_count by one",
+        "increment total_residue_count by one",
         "TOPO-INVARIANT-RESIDUES",
         _m_total_residue_count,
     ),
     Corruption(
         "C-TOPO-BLOCK-COUNT",
         "topology invariant",
-        "inflate the molecule count of the first block",
+        "increment the molecule count of the first block by one",
         "TOPO-INVARIANT-PARTICLES",
         _m_block_count,
     ),
@@ -653,14 +841,28 @@ CORRUPTIONS = [
     Corruption(
         "C-TOPO-PARTICLE-DATA-SHORT",
         "topology invariant",
-        "drop the last row of particle_data",
+        "drop the last row of particle_data of the largest molecule type",
         "TOPO-PARTICLE-DATA-LENGTH",
         _m_particle_data_truncated,
     ),
     Corruption(
+        "C-TOPO-TYPE-ID-SHORT",
+        "topology invariant",
+        "drop the last type_id entry of the largest molecule type",
+        "TOPO-TYPE-ID-LENGTH",
+        _m_type_id_truncated,
+    ),
+    Corruption(
+        "C-TOPO-COULOMB14-COUNT",
+        "topology invariant",
+        "drop the last coulomb_14 entry of the largest molecule type",
+        "TOPO-COULOMB14-PAIRING",
+        _m_coulomb14_short,
+    ),
+    Corruption(
         "C-TOPO-PARTICLE-COUNT-ATTR",
         "topology invariant",
-        "inflate particle_count of a molecule type",
+        "increment particle_count of a molecule type by one",
         "TOPO-PARTICLE-DATA-LENGTH",
         _m_particle_count_attr,
     ),
@@ -734,6 +936,20 @@ CORRUPTIONS = [
         "remove a parameters dataset that an interaction list references",
         "REF-PARAMETER-TABLE-MISSING",
         _m_parameter_table_missing,
+    ),
+    Corruption(
+        "C-FF-PARAM-TABLE-SHORT",
+        "referential integrity",
+        "drop the parameter records from the highest referenced index onward",
+        "REF-PARAMETER-ID",
+        _m_parameter_table_short,
+    ),
+    Corruption(
+        "C-TOPO-TYPE-ID-INDEX",
+        "referential integrity",
+        "set a type_id to the number of nonbonded types, one past the matrix",
+        "REF-TYPE-ID",
+        _m_type_id_out_of_range,
     ),
     Corruption(
         "C-FF-FIELD-RENAMED",
@@ -843,6 +1059,27 @@ CORRUPTIONS = [
         _m_time_not_monotonic,
     ),
     Corruption(
+        "C-TIME-STEP-MISSING",
+        "time alignment",
+        "remove the step dataset of a time-dependent observable",
+        "TIME-STEP-MISSING",
+        _m_step_missing,
+    ),
+    Corruption(
+        "C-TIME-VALUE-MISSING",
+        "time alignment",
+        "remove the value dataset of a time-dependent observable",
+        "TIME-VALUE-MISSING",
+        _m_value_missing,
+    ),
+    Corruption(
+        "C-TIME-STEP-DTYPE",
+        "structure",
+        "store the step dataset of a time-dependent observable as Float",
+        "STRUCT-DTYPE",
+        _m_step_float,
+    ),
+    Corruption(
         "C-TIME-UNIT-MISSING",
         "units",
         "remove the unit attribute of a time dataset",
@@ -871,20 +1108,34 @@ CORRUPTIONS = [
         "STRUCT-UNDOCUMENTED",
         _m_observable_unknown,
     ),
-    # MD Parameter related corruptions
     Corruption(
-        "C-PARAM-ENUM",
-        "enumeration",
-        "set simulation_type to a value outside the defined set",
-        "ENUM-UNDEFINED-VALUE",
-        _m_enum_invalid,
+        "C-OBS-SUBGROUP-NAME",
+        "structure",
+        "rename a selection subgroup of observables to a predefined observable",
+        "STRUCT-OBS-SUBGROUP-NAME",
+        _m_observable_subgroup_name,
     ),
+    # MD Parameter related corruptions
     Corruption(
         "C-PARAM-CONDITIONAL",
         "conditional structure",
         "name a thermostat whose parameter subgroup is absent",
         "COND-SUBGROUP-MISSING",
         _m_conditional_subgroup,
+    ),
+    Corruption(
+        "C-PARAM-COND-ORPHAN",
+        "conditional structure",
+        "add a subgroup for a simulation type that is not selected",
+        "COND-SUBGROUP-ORPHAN",
+        _m_subgroup_orphan,
+    ),
+    Corruption(
+        "C-PARAM-SD-THERMOSTAT",
+        "conditional structure",
+        "add temperature_coupling to a stochastic dynamics run",
+        "COND-SD-TEMPERATURE-COUPLING",
+        _m_sd_with_thermostat,
     ),
     Corruption(
         "C-PARAM-PER-GROUP",
@@ -921,6 +1172,34 @@ CORRUPTIONS = [
         "STRUCT-MISSING-DATASET",
         _m_simulation_type_missing,
     ),
+    Corruption(
+        "C-TOPO-SEQUENCE-MISSING",
+        "required element",
+        "remove sequence from the largest molecule type",
+        "STRUCT-MISSING-DATASET",
+        _m_sequence_missing,
+    ),
+    Corruption(
+        "C-INT-PARTICLE-IDS-MISSING",
+        "required element",
+        "remove particle_ids from a bonded interaction list",
+        "STRUCT-MISSING-DATASET",
+        _m_interaction_particle_ids_missing,
+    ),
+    Corruption(
+        "C-TOPO-TYPE-ID-MISSING",
+        "required element",
+        "remove the nonbonded type_id of the largest molecule type",
+        "STRUCT-MISSING-DATASET",
+        _m_type_id_missing,
+    ),
+    Corruption(
+        "C-TOPO-TOTAL-PARTICLES-MISSING",
+        "required element",
+        "remove the total_particle_count attribute of topology",
+        "STRUCT-MISSING-ATTR",
+        _m_total_particle_count_missing,
+    ),
     # Selection related corruptions
     Corruption(
         "C-SEL-INDEX",
@@ -951,6 +1230,13 @@ CORRUPTIONS = [
         "TOPO-TRAJECTORY-MISMATCH",
         _m_trajectory_mismatch,
     ),
+    Corruption(
+        "C-SEL-REFERENCE-MISSING",
+        "cross-group consistency",
+        "name a parameter group that is not defined in selections",
+        "REF-SELECTION-MISSING",
+        _m_selection_reference_missing,
+    ),
 ]
 
 CORRUPTIONS_BY_CODE = {c.code: c for c in CORRUPTIONS}
@@ -959,7 +1245,8 @@ CORRUPTIONS_BY_CODE = {c.code: c for c in CORRUPTIONS}
 def generate(base_file, out_dir, corruptions=None):
     """Write one corrupted copy of ``base_file`` per applicable corruption.
 
-    Returns a list of ``(Corruption, path)`` for the files actually produced.
+    Returns a list of ``(Corruption, path, skip_reason)``, one per corruption:
+    ``path`` is None and ``skip_reason`` says why when no copy was produced.
     """
     base_file = Path(base_file)
     out_dir = Path(out_dir)

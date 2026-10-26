@@ -4,9 +4,14 @@ Declarative model of the H5MD ``biophysics`` module, version 1.0.0-alpha.
 Normative source: the module specification, version 1.0.0-alpha
 (``SI-specification.pdf`` in the paper's supplementary material), whose files
 carry ``version = [1, 0]``; section numbers in the comments below (S4, S5, ...)
-refer to it. Nothing here is derived from the GROMACS
-reference implementation -- disagreements are recorded in
-:mod:`h5md_validator.deviations` rather than absorbed into the model.
+refer to it. Nothing here is derived from the GROMACS reference implementation
+and disagreements are recorded in findings rather than absorbed into the model.
+
+NOTE: If the future specification bump to 2.0, the structure of the spec need to
+      be updated accordingly.
+h5md_validator/spec/
+    v1_0.py
+    v2_0.py
 
 Used by:
     Validation 1: schema coverage
@@ -671,5 +676,9 @@ ROOT_GROUPS = (
     "topology",
 )
 
+#: The name of the module as it appears in the H5MD module list (S2).
 MODULE_NAME = "biophysics"
+#: The specification version this model implements (S2).
+SPEC_VERSION = "1.0.0-alpha"
+#: What its files store in the version attribute: major and minor only (S2).
 MODULE_VERSION = (1, 0)

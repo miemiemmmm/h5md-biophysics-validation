@@ -32,7 +32,6 @@ import numpy as np
 
 from . import spec
 from . import units as unitmod
-from .deviations import DEVIATIONS
 from .findings import Report, Severity
 
 
@@ -78,16 +77,20 @@ def _dtype_class(dtype) -> str:
 
 
 def _is_time_dependent(obj) -> bool:
-    """H5MD time-dependent element: a group holding 'step' and 'value'."""
-    return isinstance(obj, h5py.Group) and "step" in obj and "value" in obj
+    """H5MD time-dependent element: a group of step, (time) and value (S3.2).
+
+    A group holding any of the three counts, so that an element missing its step
+    or value is checked as a broken time-dependent element, not mistaken for
+    something else.
+    """
+    return isinstance(obj, h5py.Group) and bool({"step", "time", "value"} & set(obj))
 
 
 class Validator:
     """Validates one H5MD file against the ``biophysics`` v1.0 specification."""
 
-    def __init__(self, *, strict_units: bool = True, report_deviations: bool = True):
+    def __init__(self, *, strict_units: bool = True):
         self.strict_units = strict_units
-        self.report_deviations = report_deviations
 
     # ----------------------------------------------------------------- entry
     def validate(self, path) -> Report:
@@ -114,51 +117,7 @@ class Validator:
             self._check_connectivity(f, report, topo)
             self._check_selections(f, report, topo)
             self._check_selection_references(f, report, topo)
-            self._check_cross_group(f, report)
         return report
-
-    def _check_cross_group(self, f, rep):
-        """Checks that need two parts of the file at once."""
-        constraints = f.get("parameters/constraints")
-        if constraints is None:
-            return
-        if "mode" not in constraints and self.report_deviations:
-            rep.add(
-                "DEV-CONSTRAINTS-MODE-UNWRITTEN",
-                Severity.DEVIATION,
-                "parameters/constraints",
-                DEVIATIONS["DEV-CONSTRAINTS-MODE-UNWRITTEN"].title,
-                deviation="DEV-CONSTRAINTS-MODE-UNWRITTEN",
-            )
-        if "algorithm" not in constraints:
-            return
-        # An algorithm is declared; check that something is actually constrained.
-        n_constraints = 0
-        topo = f.get("topology")
-        if topo is not None:
-            for name in topo:
-                mol = topo[name]
-                if not isinstance(mol, h5py.Group):
-                    continue
-                inter = mol.get("interactions")
-                if not isinstance(inter, h5py.Group):
-                    continue
-                # Only 'constraint' entries are solved by LINCS or SHAKE.
-                # SETTLE is a separate analytic algorithm for rigid water and
-                # says nothing about the configured constraint solver (S7.8).
-                node = inter.get("constraint")
-                if node is not None and "parameter_id" in node:
-                    n_constraints += node["parameter_id"].shape[0]
-        if n_constraints == 0 and self.report_deviations:
-            algorithm = _read(constraints["algorithm"])
-            rep.add(
-                "DEV-CONSTRAINTS-ALGORITHM-UNCONDITIONAL",
-                Severity.DEVIATION,
-                "parameters/constraints/algorithm",
-                DEVIATIONS["DEV-CONSTRAINTS-ALGORITHM-UNCONDITIONAL"].title,
-                deviation="DEV-CONSTRAINTS-ALGORITHM-UNCONDITIONAL",
-                algorithm=algorithm,
-            )
 
     # ------------------------------------------------------------- S4.1 root
     def _check_module(self, f, rep):
@@ -473,6 +432,30 @@ class Validator:
                 + ", ".join(f"{k}={v}" for k, v in sorted(present.items())),
                 lengths=present,
             )
+        # S3.2: step is Integer[variable] and time is Float[variable].
+        for key, want in (("step", spec.INTEGER), ("time", spec.FLOAT)):
+            ds = grp.get(key)
+            if not isinstance(ds, h5py.Dataset):
+                continue
+            got = _dtype_class(ds.dtype)
+            if got != want:
+                rep.add(
+                    "STRUCT-DTYPE",
+                    Severity.ERROR,
+                    f"{path}/{key}",
+                    f"{key} must be {want}[variable], found {got}",
+                    expected=want,
+                    actual=got,
+                )
+            if ds.ndim != 1:
+                rep.add(
+                    "STRUCT-SHAPE",
+                    Severity.ERROR,
+                    f"{path}/{key}",
+                    f"{key} must be one-dimensional, found shape {list(ds.shape)}",
+                    expected="[variable]",
+                    actual=list(ds.shape),
+                )
         for key in ("step", "time"):
             if key in grp and isinstance(grp[key], h5py.Dataset):
                 data = np.asarray(grp[key][()]).ravel()
@@ -610,10 +593,11 @@ class Validator:
             path = f"observables/{name}"
             if _is_time_dependent(node):
                 self._check_time_alignment(node, path, rep)
-                self._check_observable_shape(name, node["value"], path, rep)
-                self._check_unit_attr(
-                    node["value"], f"{path}/value", rep, required=True
-                )
+                if isinstance(node.get("value"), h5py.Dataset):
+                    self._check_observable_shape(name, node["value"], path, rep)
+                    self._check_unit_attr(
+                        node["value"], f"{path}/value", rep, required=True
+                    )
             elif isinstance(node, h5py.Dataset):
                 self._check_observable_shape(name, node, path, rep)
                 self._check_unit_attr(node, path, rep, required=True)
@@ -635,12 +619,16 @@ class Validator:
                     subpath = f"{path}/{sub}"
                     if _is_time_dependent(subnode):
                         self._check_time_alignment(subnode, subpath, rep)
-                        self._check_observable_shape(
-                            sub, subnode["value"], subpath, rep
-                        )
-                        self._check_unit_attr(
-                            subnode["value"], f"{subpath}/value", rep, required=True
-                        )
+                        if isinstance(subnode.get("value"), h5py.Dataset):
+                            self._check_observable_shape(
+                                sub, subnode["value"], subpath, rep
+                            )
+                            self._check_unit_attr(
+                                subnode["value"],
+                                f"{subpath}/value",
+                                rep,
+                                required=True,
+                            )
                     elif isinstance(subnode, h5py.Dataset):
                         self._check_observable_shape(sub, subnode, subpath, rep)
                         self._check_unit_attr(subnode, subpath, rep, required=True)
@@ -1004,7 +992,7 @@ class Validator:
             pos = particles[sysname].get("position")
             if pos is None:
                 continue
-            value = pos["value"] if _is_time_dependent(pos) else pos
+            value = pos.get("value") if _is_time_dependent(pos) else pos
             if not isinstance(value, h5py.Dataset) or value.ndim < 2:
                 continue
             n = value.shape[-2]
@@ -1483,15 +1471,24 @@ class Validator:
                 f"expected Integer, found {_dtype_class(ds.dtype)}",
             )
             return
-        if ds.ndim != 1 or ds.shape[0] != n_particles:
+        if ds.ndim != 1:
             rep.add(
                 "STRUCT-SHAPE",
                 Severity.ERROR,
                 f"{path}/type_id",
-                f"type_id must hold one entry per particle ({n_particles}), "
-                f"found shape {list(ds.shape)}",
-                expected=[n_particles],
+                f"type_id must be one-dimensional, found shape {list(ds.shape)}",
+                expected="[N_p]",
                 actual=list(ds.shape),
+            )
+        elif ds.shape[0] != n_particles:
+            rep.add(
+                "TOPO-TYPE-ID-LENGTH",
+                Severity.ERROR,
+                f"{path}/type_id",
+                f"type_id has {ds.shape[0]} entries but particle_count is "
+                f"{n_particles}",
+                expected=n_particles,
+                actual=ds.shape[0],
             )
         k = ff_params.get(tname)
         if k is None:
@@ -1603,7 +1600,7 @@ class Validator:
             return
         if _is_time_dependent(bonds):
             self._check_time_alignment(bonds, "connectivity/bonds", rep)
-            bonds = bonds["value"]
+            bonds = bonds.get("value")
         if not isinstance(bonds, h5py.Dataset):
             return
         if _dtype_class(bonds.dtype) != spec.INTEGER:

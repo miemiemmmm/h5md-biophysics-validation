@@ -3,7 +3,7 @@ Finding types emitted by the validator.
 
 One :class:`Finding` per problem, carrying a check code and a severity; a
 :class:`Report` collects the findings of one file and decides its verdict --
-conformant means no ERROR, deviations excluded.
+conformant means no ERROR.
 
 Used by:
     Validation 3: internal consistency
@@ -26,10 +26,6 @@ class Severity(str, Enum):
 
     #: The file violates a MUST of the specification.  A conformant file has none.
     ERROR = "ERROR"
-    #: A known specification-vs-implementation mismatch, tracked in
-    #: :mod:`h5md_validator.deviations`.  Reported separately so that it does
-    #: not drown out genuine errors while the mismatch is unresolved.
-    DEVIATION = "DEVIATION"
     #: The file violates a SHOULD / RECOMMENDED of the specification, e.g. an
     #: unknown unit symbol or an algorithm name outside the predefined set.
     WARNING = "WARNING"
@@ -87,21 +83,12 @@ class Report:
         return self.by_severity(Severity.ERROR)
 
     @property
-    def deviations(self) -> list:
-        return self.by_severity(Severity.DEVIATION)
-
-    @property
     def warnings(self) -> list:
         return self.by_severity(Severity.WARNING)
 
     @property
     def conformant(self) -> bool:
-        """True when no ERROR-level finding was raised.
-
-        Deviations are deliberately excluded: they are mismatches between the
-        specification text and the reference implementation that are pending an
-        editorial decision, not defects in the file under test.
-        """
+        """True when no ERROR-level finding was raised."""
         return not self.errors
 
     def to_dict(self) -> dict:
@@ -120,8 +107,4 @@ class Report:
         """One line: PASS/FAIL, the file, and the counts per severity."""
         c = {s.value: len(self.by_severity(s)) for s in Severity}
         verdict = "PASS" if self.conformant else "FAIL"
-        return (
-            f"{verdict}  {self.file}  "
-            f"errors={c['ERROR']} deviations={c['DEVIATION']} "
-            f"warnings={c['WARNING']}"
-        )
+        return f"{verdict}  {self.file}  errors={c['ERROR']} warnings={c['WARNING']}"

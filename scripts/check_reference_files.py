@@ -164,7 +164,7 @@ def main():
         r = record.get("roundtrip", {})
         print(
             f"  {'PASS' if v['conformant'] else 'FAIL'}  {key:44s} "
-            f"err={v['counts']['ERROR']:<3d} dev={v['counts']['DEVIATION']:<3d} "
+            f"err={v['counts']['ERROR']:<3d} warn={v['counts']['WARNING']:<3d} "
             f"rt: match={r.get('n_match', '-')} mismatch={r.get('n_mismatch', '-')} "
             f"missing={r.get('n_missing_in_file', '-')} "
             f"dropped={r.get('n_dropped_terms', '-')}"

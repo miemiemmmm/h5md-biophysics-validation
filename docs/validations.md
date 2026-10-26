@@ -66,7 +66,8 @@ the `.tpr` dumps directly and needs no other stage.
 
 Two results need reading rather than quoting. Every never-observed element is
 listed by name under `element_coverage.never_observed`, and each needs an
-explanation (a registered deviation or a gap in the test set) before the
+explanation (not written by the reference implementation, or not exercised by
+the test set) before the
 coverage figure is quoted. Separately,
 `cmap.parameters` cannot be verified at all: `gmx dump` emits the CMAP type
 index and never the grid values, so there is nothing on the source side to
@@ -113,11 +114,6 @@ $PY_EXE scripts/check_reference_files.py
 **Artifacts.** `_results/validation.json` → the `conformance` section of each
 entry: a list of findings with a stable code, a severity and the HDF5 path it is
 anchored to, plus a `conformant` verdict.
-
-Deviations are counted separately and do not make a file non-conformant. Each
-one is a registered disagreement between the specification text and the writer,
-awaiting an editorial decision rather than describing a bad file; they are
-listed in `h5md_validator/deviations.py`.
 
 ---
 

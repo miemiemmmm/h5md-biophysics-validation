@@ -344,8 +344,7 @@ def compare(gmx: dict, amb: dict) -> dict:
 #: Atom names that denote the same atom under different engine conventions.
 #: The schema stores atom names as free strings and defines no canonical
 #: convention, so an alias table is the only way to align two engines'
-#: descriptions of the same molecule -- which is itself a finding, recorded as
-#: deviations.DEV-NO-ATOM-NAME-CONVENTION.
+#: descriptions of the same molecule.
 ATOM_NAME_ALIASES = {
     "O1P": "OP1",
     "O2P": "OP2",  # phosphate oxygens
