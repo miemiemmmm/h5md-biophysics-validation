@@ -14,7 +14,7 @@ Where the two disagree, the disagreement is reported as a finding rather than ab
 | 2 | Does serialising and parsing preserve it? | `roundtrip.json`, `interaction_coverage.json` | [details](docs/validations.md#validation-2--round-trip-fidelity) |
 | 3 | Is a file internally consistent? | `conformance.json` | [details](docs/validations.md#validation-3--internal-consistency) |
 | 4 | Are invalid files detected? | `negative_tests.json` | [details](docs/validations.md#validation-4--negative-tests) |
-| 5 | What does the metadata cost to store? | `storage.json` | [details](docs/validations.md#validation-5--what-the-metadata-costs-to-store) |
+| 5 | What does the metadata cost to store and to write? | `storage.json`, `data/decompose_run*.json` | [details](docs/validations.md#validation-5--what-the-metadata-costs-to-store-and-to-write) |
 | 6 | Do other engines' parameters map onto the same concepts? | `amber_interop.json` | [details](docs/validations.md#validation-6--cross-engine-interoperability) |
 
 Fidelity and coverage are kept apart throughout. A file can carry back everything

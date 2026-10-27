@@ -22,9 +22,25 @@ schema's own vocabulary and compared in two groups:
     formula, atom names, atomic numbers and bond topology. These are properties
     of the molecule, so the two must agree.
 
-  * PARAMETRISATION -- total charge, partial charges and masses. The same force
-    field sits on both sides, so these agree too; what is tested is that the
-    schema's elements carry the AMBER values without loss.
+  * PARAMETRISATION -- total charge, partial charges and masses, and every
+    force-field term: bonds, angles, proper and improper dihedrals, 1-4 pairs
+    and the Lennard-Jones type matrix. The same force field sits on both sides,
+    so these agree too; what is tested is that the schema's elements carry the
+    AMBER values without loss. For the terms the prmtop is read directly rather
+    than through ParmEd, which did the conversion under test, and AMBER units
+    and conventions are converted (kcal -> kJ, A -> nm, rad -> degree; bond and
+    angle force constants x 2 for E = k/2 (x - x0)^2; 1-4 LJ / SCNB, Coulomb
+    1 / SCEE). Compared per term at a relative tolerance of 1e-4:
+
+      bonds       -> bond, or the distance of a constraint or SETTLE (water
+                     O-H and H-H)
+      angles      -> angle
+      dihedrals   -> proper_dihedral / periodic_improper_dihedral, term by term;
+                     a zero-force-constant AMBER term carries no energy, and
+                     grompp removes it from the run input
+      1-4 pairs   -> lennard_jones_14 and coulomb_14
+      LJ A, B     -> the nonbonded T x T matrix; a 10-12 pair with zero
+                     coefficients (water OW-HW in tleap) means no interaction
 
     python scripts/validation6_amber_interop.py -a     # every AMBER_INTEROP_PAIRS entry
     python scripts/validation6_amber_interop.py --h5md <file.h5md> --prmtop <file.prmtop>
@@ -33,10 +49,17 @@ schema's own vocabulary and compared in two groups:
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
+import math
 import pathlib
+import re
 import sys
+from collections import defaultdict
 from pathlib import Path
+
+import h5py
+import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -413,10 +436,404 @@ def _formula(species):
     )
 
 
+# ==========================================================================
+# Force-field terms
+# ==========================================================================
+KCAL = 4.184  # kJ per kcal
+FF_RTOL = 1e-4
+
+
+def read_prmtop(path) -> dict:
+    """Every %FLAG section of a prmtop as a flat list of values."""
+    opener = gzip.open if str(path).endswith(".gz") else open
+    with opener(path, "rt") as fh:
+        lines = fh.read().splitlines()
+    sections, flag, fmt, buf = {}, None, None, []
+    for line in lines:
+        if line.startswith("%FLAG"):
+            if flag:
+                sections[flag] = (fmt, buf)
+            flag, fmt, buf = line.split()[1], None, []
+        elif line.startswith("%FORMAT"):
+            fmt = re.search(r"\((.*)\)", line).group(1)
+        elif not line.startswith("%"):
+            buf.append(line)
+    if flag:
+        sections[flag] = (fmt, buf)
+
+    out = {}
+    for flag, (fmt, body) in sections.items():
+        m = re.match(r"(\d+)([aAiIeEfF])(\d+)", fmt or "")
+        if not m:
+            continue
+        kind, width = m.group(2).upper(), int(m.group(3))
+        conv = {"I": int, "E": float, "F": float}.get(kind, str.strip)
+        out[flag] = [
+            conv(line[i : i + width])
+            for line in body
+            for i in range(0, len(line), width)
+            if line[i : i + width].strip()
+        ]
+    return out
+
+
+def amber_terms(prmtop) -> dict:
+    """Force-field terms of a prmtop, per atom index, in AMBER units."""
+    p = read_prmtop(prmtop)
+    natom, ntypes = p["POINTERS"][0], p["POINTERS"][1]
+    nbidx = np.array(p["NONBONDED_PARM_INDEX"]).reshape(ntypes, ntypes)
+    acoef, bcoef = p["LENNARD_JONES_ACOEF"], p["LENNARD_JONES_BCOEF"]
+    hb_a, hb_b = p.get("HBOND_ACOEF", []), p.get("HBOND_BCOEF", [])
+
+    def lj(a, b):
+        """(A, B) of a type pair. A negative index points to a 10-12 term,
+        which tleap uses with zero coefficients to switch a pair off (water
+        OW-HW): no interaction. A non-zero 10-12 term -> None."""
+        k = nbidx[a, b]
+        if k > 0:
+            return acoef[k - 1], bcoef[k - 1]
+        if hb_a[-k - 1] == 0 and hb_b[-k - 1] == 0:
+            return 0.0, 0.0
+        return None
+
+    ndih = len(p["DIHEDRAL_FORCE_CONSTANT"])
+    scee = p.get("SCEE_SCALE_FACTOR") or [1.2] * ndih
+    scnb = p.get("SCNB_SCALE_FACTOR") or [2.0] * ndih
+
+    def entries(flags, width):
+        for flag in flags:
+            v = p.get(flag, [])
+            for n in range(0, len(v), width):
+                yield v[n : n + width]
+
+    bonds = [
+        (
+            (i // 3, j // 3),
+            p["BOND_FORCE_CONSTANT"][t - 1],
+            p["BOND_EQUIL_VALUE"][t - 1],
+        )
+        for i, j, t in entries(("BONDS_INC_HYDROGEN", "BONDS_WITHOUT_HYDROGEN"), 3)
+    ]
+    angles = [
+        (
+            (i // 3, j // 3, k // 3),
+            p["ANGLE_FORCE_CONSTANT"][t - 1],
+            p["ANGLE_EQUIL_VALUE"][t - 1],
+        )
+        for i, j, k, t in entries(("ANGLES_INC_HYDROGEN", "ANGLES_WITHOUT_HYDROGEN"), 4)
+    ]
+    # A negative third index: no 1-4 pair for this term; a negative fourth
+    # index: an improper.
+    dihedrals = [
+        {
+            "atoms": (i // 3, j // 3, abs(k) // 3, abs(m) // 3),
+            "ignore_end": k < 0,
+            "improper": m < 0,
+            "pk": p["DIHEDRAL_FORCE_CONSTANT"][t - 1],
+            "per": p["DIHEDRAL_PERIODICITY"][t - 1],
+            "phase": p["DIHEDRAL_PHASE"][t - 1],
+            "scee": scee[t - 1],
+            "scnb": scnb[t - 1],
+        }
+        for i, j, k, m, t in entries(
+            ("DIHEDRALS_INC_HYDROGEN", "DIHEDRALS_WITHOUT_HYDROGEN"), 5
+        )
+    ]
+    return {
+        "natom": natom,
+        "names": p["ATOM_NAME"],
+        "types": [t - 1 for t in p["ATOM_TYPE_INDEX"]],
+        "lj": lj,
+        "bonds": bonds,
+        "angles": angles,
+        "dihedrals": dihedrals,
+    }
+
+
+def _s(x):
+    return x.decode() if isinstance(x, bytes) else str(x)
+
+
+def h5md_terms(path) -> dict:
+    """Interaction terms of the whole system, with their parameter rows."""
+    with h5py.File(path, "r") as f:
+        tables = {}
+        for cls in ("bonded", "nonbonded"):
+            for t, g in f["force_field"].get(cls, {}).items():
+                if "parameters" in g:
+                    tables[t] = g["parameters"][()]
+        topo = f["topology"]
+        terms = defaultdict(list)  # type -> [(global atoms, parameter row)]
+        names, type_id, offset = [], [], 0
+        for row in topo["molecule_blocks"][()]:
+            mol = topo[_s(row["name"])]
+            pdata = mol["particle_data"][()]
+            ntab = [_s(x) for x in mol["particle_name_table"][()]]
+            inter = mol.get("interactions", {})
+            local = {
+                t: (g["particle_ids"][()], g["parameter_id"][()])
+                for t, g in inter.items()
+                if "particle_ids" in g
+            }
+            if "coulomb_14" in inter:  # its rows pair with lennard_jones_14's
+                local["coulomb_14"] = (
+                    local["lennard_jones_14"][0],
+                    inter["coulomb_14"]["parameter_id"][()],
+                )
+            tid = (
+                inter["lennard_jones_short_range"]["type_id"][()]
+                if "lennard_jones_short_range" in inter
+                else np.zeros(len(pdata), int)
+            )
+            for _ in range(int(row["count"])):
+                for t, (ids, pid) in local.items():
+                    terms[t] += [
+                        (tuple(int(a) + offset for a in r), tables[t][q])
+                        for r, q in zip(ids, pid)
+                    ]
+                names += [ntab[int(x)] for x in pdata["name"]]
+                type_id += [int(x) for x in tid]
+                offset += len(pdata)
+        lj = tables.get("lennard_jones_short_range")
+    T = math.isqrt(len(lj)) if lj is not None else 0
+    return {
+        "natom": offset,
+        "names": names,
+        "type_id": type_id,
+        "terms": terms,
+        "lj_matrix": lj.reshape(T, T) if lj is not None else None,
+    }
+
+
+class _Tally:
+    """Term counts and the worst relative difference per compared field."""
+
+    def __init__(self):
+        self.n_amber = self.n_file = self.mismatched = self.missing = self.extra = 0
+        self.worst = defaultdict(float)
+
+    def value(self, field, a, b, atol=1e-6):
+        # Both in double: with NumPy 2, a Python float minus a float32 is a float32.
+        a, b = float(a), float(b)
+        d = abs(a - b)
+        scale = max(abs(a), abs(b))
+        self.worst[field] = max(self.worst[field], d / scale if scale else 0.0)
+        return d <= atol or d <= FF_RTOL * scale
+
+    def record(self, ok):
+        self.mismatched += not ok
+
+    @property
+    def agree(self):
+        return self.mismatched == self.missing == self.extra == 0
+
+
+def _canon(atoms):
+    return min(tuple(atoms), tuple(reversed(atoms)))
+
+
+def compare_forcefield(amb: dict, h5: dict) -> dict:
+    """Every force-field term of the two sides, by category."""
+    terms, out = h5["terms"], {}
+
+    # Bonds: a bond, or the distance of a constraint or of a SETTLE.
+    bond = {_canon(a): p for a, p in terms.get("bond", [])}
+    constr = {_canon(a): p for a, p in terms.get("constraint", [])}
+    settle = {}
+    for (o, h1, h2), p in terms.get("settle", []):
+        settle[_canon((o, h1))] = settle[_canon((o, h2))] = p["distance_OH"]
+        settle[_canon((h1, h2))] = p["distance_HH"]
+    t = _Tally()
+    t.n_amber, t.n_file = len(amb["bonds"]), len(bond) + len(constr) + len(settle)
+    seen = set()
+    for atoms, k, r0 in amb["bonds"]:
+        key = _canon(atoms)
+        seen.add(key)
+        if key in bond:
+            p = bond[key]
+            ok = t.value("k", 2 * k * KCAL * 100, p["force_constant"])
+            ok &= t.value("r0", r0 * 0.1, p["equilibrium_distance"])
+        elif key in constr:
+            ok = t.value("r0", r0 * 0.1, constr[key]["distance"])
+        elif key in settle:
+            ok = t.value("r0", r0 * 0.1, settle[key])
+        else:
+            t.missing += 1
+            continue
+        t.record(ok)
+    t.extra = len((set(bond) | set(constr) | set(settle)) - seen)
+    out["bonds"] = (t, {"as constraint": len(constr), "as SETTLE": len(settle)})
+
+    # Angles.
+    ang = {_canon(a): p for a, p in terms.get("angle", [])}
+    t = _Tally()
+    t.n_amber, t.n_file = len(amb["angles"]), len(ang)
+    seen = set()
+    for atoms, k, th in amb["angles"]:
+        key = _canon(atoms)
+        seen.add(key)
+        if key not in ang:
+            t.missing += 1
+            continue
+        p = ang[key]
+        ok = t.value("k", 2 * k * KCAL, p["force_constant"])
+        ok &= t.value("theta0", math.degrees(th), p["equilibrium_angle"])
+        t.record(ok)
+    t.extra = len(set(ang) - seen)
+    out["angles"] = (t, {})
+
+    # Dihedrals, term by term.
+    for label, improper, ftype in (
+        ("proper dihedrals", False, "proper_dihedral"),
+        ("improper dihedrals", True, "periodic_improper_dihedral"),
+    ):
+        fdih = defaultdict(list)
+        for a, p in terms.get(ftype, []):
+            fdih[_canon(a)].append(
+                (int(p["multiplicity"]), float(p["force_constant"]), float(p["phase"]))
+            )
+        adih, n_zero = defaultdict(list), 0
+        for d in amb["dihedrals"]:
+            if d["improper"] != improper:
+                continue
+            if d["pk"] == 0:  # no energy; grompp removes it from the run input
+                n_zero += 1
+                continue
+            adih[_canon(d["atoms"])].append(
+                (round(d["per"]), d["pk"] * KCAL, math.degrees(d["phase"]))
+            )
+        # An improper written with its last two atoms swapped has the opposite
+        # sign of angle; with phase 0 or 180 the energy is the same, so it is
+        # the same term. Only then is the swapped order accepted.
+        n_swapped = 0
+        for key in [k for k in adih if improper and k not in fdih]:
+            alt = _canon((key[0], key[1], key[3], key[2]))
+            if (
+                alt in fdih
+                and alt not in adih
+                and all(round(ph % 180, 3) in (0.0, 180.0) for _, _, ph in adih[key])
+            ):
+                adih[alt] = adih.pop(key)
+                n_swapped += 1
+        t = _Tally()
+        t.n_amber = sum(map(len, adih.values()))
+        t.n_file = sum(map(len, fdih.values()))
+        for key, aterms in adih.items():
+            fterms = sorted(fdih.get(key, []))
+            for at in sorted(aterms):
+                match = next((ft for ft in fterms if ft[0] == at[0]), None)
+                if match is None:
+                    t.missing += 1
+                    continue
+                fterms.remove(match)
+                ok = t.value("k", at[1], match[1])
+                ok &= t.value("phase", at[2] % 360, match[2] % 360, atol=1e-3)
+                t.record(ok)
+            t.extra += len(fterms)
+        t.extra += sum(len(v) for k, v in fdih.items() if k not in adih)
+        out[label] = (
+            t,
+            {"zero-force-constant terms": n_zero, "atom order swapped": n_swapped},
+        )
+
+    # 1-4 pairs, from the AMBER dihedrals that carry one.
+    pairs = {}
+    for d in amb["dihedrals"]:
+        if not d["ignore_end"]:
+            i, _, _, m = d["atoms"]
+            pairs.setdefault(_canon((i, m)), (d["scee"], d["scnb"]))
+    f14 = {_canon(a): p for a, p in terms.get("lennard_jones_14", [])}
+    c14 = {_canon(a): p for a, p in terms.get("coulomb_14", [])}
+    t = _Tally()
+    t.n_amber, t.n_file = len(pairs), len(f14)
+    for key, (scee, scnb) in pairs.items():
+        if key not in f14:
+            t.missing += 1
+            continue
+        ab = amb["lj"](amb["types"][key[0]], amb["types"][key[1]])
+        ok = ab is not None
+        if ok:
+            ok &= t.value("c6", ab[1] / scnb * KCAL * 1e-6, f14[key]["c6"])
+            ok &= t.value("c12", ab[0] / scnb * KCAL * 1e-12, f14[key]["c12"])
+        if key in c14:
+            ok &= t.value("scale", 1 / scee, c14[key]["scale_factor"])
+        t.record(ok)
+    t.extra = len(set(f14) - set(pairs))
+    out["1-4 pairs"] = (t, {})
+
+    # Lennard-Jones matrix, over the (AMBER type, file type) combinations present.
+    M = h5["lj_matrix"]
+    combos = sorted(set(zip(amb["types"], h5["type_id"])))
+    t = _Tally()
+    t.n_amber = t.n_file = len(combos) ** 2
+    for a1, t1 in combos:
+        for a2, t2 in combos:
+            ab = amb["lj"](a1, a2)
+            if ab is None:
+                t.missing += 1
+                continue
+            ok = t.value("c6", ab[1] * KCAL * 1e-6, M[t1, t2]["c6"])
+            ok &= t.value("c12", ab[0] * KCAL * 1e-12, M[t1, t2]["c12"])
+            t.record(ok)
+    out["Lennard-Jones matrix"] = (t, {})
+    return out
+
+
+def forcefield_rows(h5md, prmtop) -> list:
+    """The force-field terms as parametrisation rows of the comparison."""
+    amb, h5 = amber_terms(prmtop), h5md_terms(h5md)
+    if amb["natom"] != h5["natom"] or amb["names"] != h5["names"]:
+        return [
+            {
+                "group": "parametrisation",
+                "item": "force-field terms",
+                "gromacs": h5["natom"],
+                "amber": amb["natom"],
+                "agree": False,
+                "note": "particle order differs; terms are compared per atom index",
+            }
+        ]
+    rows = []
+    for label, (t, extra) in compare_forcefield(amb, h5).items():
+        worst = ", ".join(f"{k} {v:.1e}" for k, v in t.worst.items())
+        notes = [f"worst relative difference: {worst}"] if worst else []
+        notes += [f"{v} {k}" for k, v in extra.items() if v]
+        notes += [
+            f"{n} {what}"
+            for n, what in (
+                (t.mismatched, "differ"),
+                (t.missing, "missing in file"),
+                (t.extra, "only in file"),
+            )
+            if n
+        ]
+        rows.append(
+            {
+                "group": "parametrisation",
+                "item": f"{label} (terms)",
+                "gromacs": t.n_file,
+                "amber": t.n_amber,
+                "agree": t.agree,
+                "note": "; ".join(notes),
+                "worst_relative_difference": dict(t.worst),
+            }
+        )
+    return rows
+
+
 def run_pair(h5md, prmtop) -> dict:
     gmx = h5md_topology(h5md)
     amb = amber_topology(prmtop)
     result = compare(gmx, amb)
+    result["rows"] += forcefield_rows(h5md, prmtop)
+    param = [
+        r
+        for r in result["rows"]
+        if r["group"] == "parametrisation" and r["agree"] is not None
+    ]
+    result["n_parametrisation_items"] = len(param)
+    result["n_parametrisation_agree"] = sum(1 for r in param if r["agree"])
+    result["interoperable"] = result["interoperable"] and all(r["agree"] for r in param)
     result["h5md"] = str(h5md)
     result["prmtop"] = str(prmtop)
     result["gromacs_molecule_blocks"] = gmx["molecule_blocks"]
@@ -439,7 +856,9 @@ def print_result(result):
             print(f"         {r['note']}")
     print(
         f"\nchemistry items in agreement: "
-        f"{result['n_chemistry_agree']}/{result['n_chemistry_items']}"
+        f"{result['n_chemistry_agree']}/{result['n_chemistry_items']}, "
+        f"parametrisation items: "
+        f"{result['n_parametrisation_agree']}/{result['n_parametrisation_items']}"
     )
 
 
@@ -483,15 +902,14 @@ def main():
         if not args.run_all:
             print_result(result)
             continue
-        diff = [
-            r["item"]
-            for r in result["rows"]
-            if r["group"] == "chemistry" and r["agree"] is False
-        ]
+        diff = [r["item"] for r in result["rows"] if r["agree"] is False]
         print(
             f"  {key:40s} {result['n_chemistry_agree']}/"
-            f"{result['n_chemistry_items']}"
-            + (f"  DIFF: {', '.join(diff)}" if diff else "")
+            f"{result['n_chemistry_items']} "
+            f"{result['n_parametrisation_agree']}/"
+            f"{result['n_parametrisation_items']}"
+            + (f"  DIFF: {', '.join(diff)}" if diff else ""),
+            flush=True,
         )
 
     n_ok = sum(r["interoperable"] for r in results.values())
@@ -504,7 +922,10 @@ def main():
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(summary, indent=2))
-    print(f"\n{n_ok}/{len(results)} pairs agree on every chemistry item")
+    print(
+        f"\n{n_ok}/{len(results)} pairs agree on every chemistry and "
+        "parametrisation item"
+    )
     print(f"written to {out}")
     return 0
 

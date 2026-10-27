@@ -23,7 +23,7 @@ LINT=(--select E,F,I,B,UP,SIM,RUF --ignore E501,B005,B008,RUF022,E402,BLE001,RUF
 
 mapfile -d '' PYTHON_FILES < <(
     find "${ROOT}" \
-        \( -name ".git" -o -name "__pycache__" -o -name ".ruff_cache" -o -name ".pytest_cache" \) -prune -o \
+        \( -name ".git" -o -name "__pycache__" -o -name ".ruff_cache" -o -name ".pytest_cache" -o -name "renderer" \) -prune -o \
         -type f -name "*.py" -print0
 )
 

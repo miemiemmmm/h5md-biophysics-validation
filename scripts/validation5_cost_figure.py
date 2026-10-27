@@ -286,7 +286,7 @@ def timing_panel(ax, timing, exemplars=EXEMPLARS):
         ax.bar(x, pct, 0.72, bottom=bottom, label=label, color=PHASE_COLORS[phase])
         bottom += pct
 
-    ax.set_ylabel("Share of write time (%)")
+    ax.set_ylabel("Share of metadata write time (%)")
     ax.set_xticks(x)
     # Eight bars in a narrow panel leave no room for horizontal two-line names;
     # angled single-line labels stay legible and cannot run into each other.

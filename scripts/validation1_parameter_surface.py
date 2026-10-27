@@ -4,13 +4,17 @@ How much of a flat MD parameter file is actually in force?
 
 GROMACS specifies a run as a flat list of key-value pairs. grompp writes the
 complete list, defaults included, to mdout.mdp. Many of those options belong to
-subsystems that are switched off, and the format marks them in no way at all:
+optional features that are switched off, and the format marks them in no way at all:
 `couple-lambda0 = vdw-q` is written with the same syntax and the same apparent
 authority as `dt = 0.002`, even when `free-energy = no` makes it inert.
 
-This measures the ratio, which is the motivation for the conditional subgroups
-of S7: a schema that instantiates a subgroup only for the algorithm actually
-selected records what was in force, rather than the whole option surface.
+Each option is put in one of three classes: represented in the ``parameters``
+group, belonging to a feature the run switches off (or GROMACS no longer
+supports), or an engine-specific setting the specification leaves out to stay
+independent of the MD engine. The inert share is the motivation for the
+conditional subgroups of S7: a schema that instantiates a subgroup only for the
+algorithm actually selected records what was in force, rather than the whole
+option surface.
 
     python scripts/validation1_parameter_surface.py [mdout.mdp ...]
 """
@@ -29,44 +33,105 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from config.matrix import DATA_ROOT, RESULTS_DIR
 
-#: Option families and the master switch that governs them. A family counts as
-#: inert when its switch is absent, "no", "none" or zero.
-
 
 def _r(name: str) -> str:
     return str(pathlib.Path(RESULTS_DIR) / name)
 
 
-FAMILIES = {
-    "free energy": (
-        "free-energy",
-        r"^(free-energy|init-lambda|delta-lambda|fep-lambdas|mass-lambdas|"
-        r"coul-lambdas|vdw-lambdas|bonded-lambdas|restraint-lambdas|"
-        r"temperature-lambdas|calc-lambda|sc-|couple-|dhdl-|separate-dhdl|"
-        r"nstdhdl|init-lambda-state)",
-    ),
-    "pull code": ("pull", r"^pull"),
-    "AWH": ("awh", r"^awh"),
-    "enforced rotation": ("rotation", r"^(rotation|rot-)"),
-    "QM/MM": ("QMMM", r"^QMMM"),
-    "walls": ("nwall", r"^(nwall|wall-)"),
-    "ion/water swapping": (
-        "swapcoords",
-        r"^(swapcoords|swap-|split|massw|"
-        r"solvent-group|coupl-steps|iontype|"
-        r"threshold|bulk-offset)",
-    ),
-    "simulated tempering": ("simulated-tempering", r"^(simulated-tempering|sim-temp)"),
-    "electric field": ("electric-field", r"^electric-field"),
-    "expanded ensemble": (
-        "nstexpanded",
-        r"^(nstexpanded|lmc-|weight-|wl-|"
-        r"init-lambda-weights|lmc)",
-    ),
-    "user hooks": (None, r"^(userint|userreal)"),
-}
+#: .mdp options that the ``parameters`` group represents, directly or through the
+#: selections and topology it refers to; mirrors ``roundtrip.extract_source``.
+SPEC_MAPPED = frozenset(
+    {
+        "integrator", "nsteps", "dt", "ld-seed", "bd-fric", "emstep", "emtol",
+        "comm-mode", "nstcomm", "comm-grps", "mass-repartition-factor",
+        "nstxout", "nstvout", "nstfout", "nstenergy", "nstlog", "energygrps",
+        "tcoupl", "nsttcouple", "tc-grps", "ref-t", "tau-t", "nh-chain-length",
+        "pcoupl", "pcoupltype", "nstpcouple", "ref-p", "compressibility", "tau-p",
+        "coulombtype", "rcoulomb", "epsilon-r", "coulomb-modifier", "epsilon-rf",
+        "vdwtype", "rvdw", "DispCorr", "vdw-modifier", "rvdw-switch", "pbc",
+        "constraints", "constraint-algorithm", "lincs-iter", "lincs-order",
+        "shake-tol",
+    }
+)  # fmt: skip
 
-OFF = {"", "no", "none", "0", "false"}
+
+OFF = {"", "no", "none", "0", "false", "inactive"}
+
+
+def _off(option):
+    """Inactive when the option is absent or every value is "no", "none", 0 ..."""
+    return lambda s: all(v.lower() in OFF for v in s.get(option, "").split() or [""])
+
+
+def _always(s):
+    return True
+
+
+#: Features the run can switch off, each a list of (inactive?, option pattern)
+#: parts. Expanded ensemble is a mode of free energy (``free-energy = expanded``);
+#: grompp writes its options only in that mode, except the ``init-lambda-*`` and
+#: ``init-wl-*`` initial values, which belong to free energy here.
+FAMILIES = {
+    "free energy": [
+        (
+            _off("free-energy"),
+            (
+                r"^(free-energy|init-lambda|delta-lambda|fep-lambdas|mass-lambdas|"
+                r"coul-lambdas|vdw-lambdas|bonded-lambdas|restraint-lambdas|"
+                r"temperature-lambdas|calc-lambda|sc-|couple-|dhdl-|separate-dhdl|"
+                r"nstdhdl|init-wl-|dh_hist)"
+            ),
+        )
+    ],
+    "NMR refinement": [
+        (_off("disre"), r"^(disre|nstdisreout)"),
+        (_off("orire"), r"^(orire|nstorireout)"),
+    ],
+    "user hooks": [(_always, r"^(userint|userreal|user1-grps|user2-grps)")],
+    "non-equilibrium MD": [
+        (_off("acc-grps"), r"^(acc-grps|accelerate)$"),
+        (_off("freezegrps"), r"^(freezegrps|freezedim)$"),
+        (_off("cos-acceleration"), r"^cos-acceleration$"),
+        (_off("deform"), r"^deform"),
+    ],
+    "walls": [(_off("nwall"), r"^(nwall|wall-)")],
+    "external interfaces": [
+        (_off(opt), rf"^{opt}$")
+        for opt in (
+            "density-guided-simulation-active",
+            "qmmm-cp2k-active",
+            "colvars-active",
+            "nnpot-active",
+            "fmm-backend",
+        )
+    ],
+    "simulated annealing": [(_off("annealing"), r"^annealing")],
+    "simulated tempering": [
+        (_off("simulated-tempering"), r"^(simulated-tempering|sim-temp)")
+    ],
+    "electric field": [(_off("electric-field"), r"^electric-field")],
+    # Removed from GROMACS, or undocumented, and without effect.
+    "removed features": [(_always, r"^(implicit-solvent|adress|Shake-SOR)$")],
+    "QM/MM": [(_off("QMMM"), r"^QMMM")],
+    # Used only when the topology has shell particles; the test set has none.
+    "shell MD": [(_always, r"^(niter|fcstep)$")],
+    "pull code": [(_off("pull"), r"^pull")],
+    "AWH": [(_off("awh"), r"^awh")],
+    "enforced rotation": [(_off("rotation"), r"^(rotation|rot-)")],
+    "ion/water swapping": [
+        (
+            _off("swapcoords"),
+            (
+                r"^(swapcoords|swap-|split|massw|solvent-group|coupl-steps|iontype|"
+                r"threshold|bulk-offset)"
+            ),
+        )
+    ],
+    "test particle insertion": [
+        (lambda s: s.get("integrator") not in ("tpi", "tpic"), r"^rtpi$")
+    ],
+    "interactive MD": [(_off("IMD-group"), r"^IMD-group$")],
+}
 
 
 def analyse(path):
@@ -81,20 +146,29 @@ def analyse(path):
             k, v = line.split("=", 1)
             settings[k.strip()] = v.strip()
 
-    inert, families = 0, {}
-    for name, (switch, pattern) in FAMILIES.items():
-        if switch is not None and settings.get(switch, "").lower() not in OFF:
-            continue  # the subsystem is actually in use
-        hits = [k for k in settings if re.match(pattern, k)]
+    mapped = [k for k in settings if k in SPEC_MAPPED]
+    inert, families, counted = 0, {}, set(mapped)
+    for name, parts in FAMILIES.items():
+        hits = []
+        for inactive, pattern in parts:
+            if not inactive(settings):
+                continue  # the feature is actually in use
+            new = [k for k in settings if k not in counted and re.match(pattern, k)]
+            counted.update(new)
+            hits += new
         if hits:
             families[name] = len(hits)
             inert += len(hits)
+    engine = sorted(k for k in settings if k not in counted)
     return {
         "file": str(path),
         "n_options": len(settings),
+        "n_mapped": len(mapped),
         "n_inert": inert,
         "inert_families": families,
         "fraction_inert": inert / len(settings) if settings else 0.0,
+        "n_engine_specific": len(engine),
+        "engine_specific": engine,
     }
 
 
@@ -124,13 +198,14 @@ def main():
     for r in results:
         print(f"{r['file']}")
         print(f"  options written by grompp        : {r['n_options']}")
-        for name, n in sorted(r["inert_families"].items(), key=lambda x: -x[1]):
-            print(f"      {name:22s} {n:4d}")
+        print(f"  represented in parameters        : {r['n_mapped']}")
         print(
-            f"  belonging to disabled subsystems : {r['n_inert']} "
-            f"({100 * r['fraction_inert']:.0f}%)"
+            f"  belonging to disabled features   : {r['n_inert']} "
+            f"({100 * r['fraction_inert']:.0f}%), none marked as inert"
         )
-        print("  none of which the format marks as inert")
+        for name, n in sorted(r["inert_families"].items(), key=lambda x: -x[1]):
+            print(f"      {name:24s} {n:4d}")
+        print(f"  engine-specific                  : {r['n_engine_specific']}")
     print(f"\nwritten to {args.out}")
     return 0
 

@@ -130,7 +130,7 @@ def observed_values(h5_path):
                 parts[1] = "<molecule>"
             elif (parts[0] == "selections" and len(parts) > 1) or (
                 parts[0] == "observables"
-                and len(parts) > 2
+                and len(parts) > 1
                 and parts[1] not in spec.OBSERVABLES
             ):
                 parts[1] = "<group>"
@@ -178,7 +178,7 @@ def observed_elements(h5_path):
                 parts[1] = "<molecule>"
             elif (parts[0] == "selections" and len(parts) > 1) or (
                 parts[0] == "observables"
-                and len(parts) > 2
+                and len(parts) > 1
                 and parts[1] not in spec.OBSERVABLES
             ):
                 parts[1] = "<group>"

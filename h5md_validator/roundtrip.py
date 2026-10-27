@@ -129,9 +129,7 @@ def extract_source(d: TprDump) -> dict:
         put(f"{sd}.dynamics", "categorical", dynamics)
         put(f"{sd}.integrator", "categorical", vocab.INTEGRATOR.get(integrator))
         put(f"{sd}.timestep", "float", ir.get("dt"), "ps")
-        groups = d.groups.get("T-Coupling", [])
-        if groups != ["System"]:  # one group of every particle may be left implied
-            put(f"{sd}.groups", "str_array", groups)
+        put(f"{sd}.groups", "str_array", d.groups.get("T-Coupling", []))
         put(f"{sd}.reference_temperature", "float_array", d.grpopts.get("ref-t"), "K")
         put(f"{sd}.random_seed", "integer", ir.get("ld-seed"))
         if dynamics == "langevin":
@@ -171,8 +169,10 @@ def extract_source(d: TprDump) -> dict:
             "kJ mol-1 nm-1",
         )
 
+    # Centre-of-mass motion is removed during dynamics only; a minimisation
+    # carries GROMACS's default comm-mode but never applies it.
     com_mode = vocab.COM_MODE.get(str(ir.get("comm-mode")))
-    if com_mode is not None:
+    if com_mode is not None and simtype != "energy_minimization":
         put(
             "parameters.run_control.center_of_mass_motion_removal.mode",
             "categorical",

@@ -143,14 +143,15 @@ selections) is skipped and reported as such rather than counted as a pass.
 
 ---
 
-## Validation 5 — what the metadata costs to store
+## Validation 5 — what the metadata costs to store and to write
 
 **Objective.** Show that carrying the metadata is cheap enough to be
 unobjectionable. A schema nobody adopts because it is expensive has not solved
 the problem.
 
-Measured at the HDF5 layer: the stored size of every dataset, attributed to the
-metadata groups or to the trajectory.
+Storage is measured at the HDF5 layer: the stored size of every dataset of each
+reference file, attributed to its root group, and so to the metadata or to the
+trajectory.
 
 ```bash
 $PY_EXE scripts/validation5_storage.py
@@ -159,14 +160,22 @@ $PY_EXE scripts/validation5_storage.py
 Write *time* is measured inside the GROMACS writer instead: whole-process wall
 time and GROMACS's `Write traj.` counter both mix the one-off metadata write with
 start-up and per-frame output. A GROMACS benchmark times each phase of the
-metadata write for every system; its output ships in `data/` (see
-[data/README.md](../data/README.md)) and is panel C of the figure.
+metadata write (H5MD metadata, trajectory scaffold, topology, bond connectivity,
+force field, MD parameters, selection groups) for the `nvt-vrescale` run input
+of every system, ten times; its output ships in `data/` (see
+[data/README.md](../data/README.md)). The cost of writing the metadata is read
+as each phase's share of that time, median over the repeats.
+
+`scripts/validation5_cost_figure.py` (see [Figures](#figures)) plots both:
+metadata stored against system size (panel A), metadata per unique atom without
+connectivity (panel B) and each phase's share of the write time (panel C).
 
 **Artifacts**
 
 | Path | Key contents |
 |:--|:--|
-| `_results/storage.json` | per file: metadata bytes, trajectory bytes, bytes per particle, ratio |
+| `_results/storage.json` | per file: stored bytes per root group, metadata and trajectory bytes, file size, particle and frame counts, and two derived ratios (metadata bytes per particle; metadata over trajectory bytes, which reflects the few frames of a reference run rather than a production trajectory) |
+| `data/decompose_run*.json` | shipped benchmark output: per system and repeat, the elapsed time of each phase of the metadata write |
 
 ---
 
@@ -193,11 +202,27 @@ stated in one place rather than left to the person passing the flags.
 `interoperable` verdict, plus `n_pairs` and `n_interoperable`.
 
 The chemistry items are particle and residue counts, residue sequence,
-molecular formula, atom names, atomic numbers, bond count and bond topology; the
-parametrisation items are total charge, partial charges and masses. The H5MD
-side is rebuilt to the full system from `topology/molecule_blocks`. The H–H
-"bond" AMBER gives rigid water keeps it rigid under SHAKE and is not chemistry,
-so it is removed from the AMBER side and the number removed is reported.
+molecular formula, atom names, atomic numbers, bond count and bond topology. The
+parametrisation items are total charge, partial charges and masses, and every
+force-field term: bonds, angles, proper and improper dihedrals (term by term),
+1-4 pairs and the Lennard-Jones type matrix. The H5MD side is rebuilt to the
+full system from `topology/molecule_blocks`. The H–H "bond" AMBER gives rigid
+water keeps it rigid under SHAKE and is not chemistry, so it is removed from
+the AMBER side of the bond-topology comparison and the number removed is
+reported; among the force-field terms it is matched to the H–H distance of the
+water's SETTLE.
+
+For the force-field terms the prmtop is read directly, not through ParmEd,
+which did the conversion under test. AMBER units and conventions are converted
+before comparing (kcal → kJ, Å → nm, rad → degree; bond and angle force
+constants × 2, since GROMACS writes E = k/2 (x − x₀)²; 1-4 Lennard-Jones divided
+by SCNB and the Coulomb scale is 1/SCEE), at a relative tolerance of 1e-4. A
+bond may be written as a bond, a constraint or a SETTLE distance. Three AMBER
+devices are reported rather than counted as differences: dihedral terms with
+zero force constant (no energy; `grompp` removes them from the run input), a
+10-12 pair with zero coefficients (tleap's way of switching off water O–H
+Lennard-Jones), and an improper written with its last two atoms swapped when its phase is 0° or 180°,
+which leaves the energy unchanged.
 
 ---
 
