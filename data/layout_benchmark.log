@@ -1,0 +1,473 @@
+Note: Google Test filter = BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAs*Topology/*
+[==========] Running 116 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 116 tests from BenchmarkTprs/H5mdTopologyBenchmarkTest
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/0
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_128k__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] bena_128k__nvt-vrescale.tpr                   atoms= 127902  time=10777 us  size=2894032 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/0 (24 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/1
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_12k__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] bena_12k__nvt-vrescale.tpr                    atoms=  12003  time=1030 us  size=277059 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/1 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/2
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_200k__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] bena_200k__nvt-vrescale.tpr                   atoms= 200388  time=15365 us  size=4521428 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/2 (34 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/3
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_22k__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] bena_22k__nvt-vrescale.tpr                    atoms=  21536  time=1304 us  size=492138 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/3 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/4
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_30k__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] bena_30k__nvt-vrescale.tpr                    atoms=  29788  time=1532 us  size=680399 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/4 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/5
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_351k__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] bena_351k__nvt-vrescale.tpr                   atoms= 351078  time=19371 us  size=7945917 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/5 (40 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/6
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_457k__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] bena_457k__nvt-vrescale.tpr                   atoms= 456994  time=25389 us  size=10347562 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/6 (40 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/7
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_49k__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] bena_49k__nvt-vrescale.tpr                    atoms=  48634  time=2810 us  size=1102643 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/7 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/8
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_826k__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] bena_826k__nvt-vrescale.tpr                   atoms= 825546  time=43316 us  size=18659497 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/8 (80 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/9
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_82k__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] bena_82k__nvt-vrescale.tpr                    atoms=  81744  time=4422 us  size=1851155 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/9 (7 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/10
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bench_adh__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] bench_adh__nvt-vrescale.tpr                   atoms=  95561  time=5503 us  size=2118223 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/10 (12 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/11
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bench_aquaporin__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] bench_aquaporin__nvt-vrescale.tpr             atoms= 109992  time=5912 us  size=2378540 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/11 (8 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/12
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bench_ion_channel__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] bench_ion_channel__nvt-vrescale.tpr           atoms= 141677  time=7757 us  size=3107327 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/12 (11 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/13
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bench_rnase__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] bench_rnase__nvt-vrescale.tpr                 atoms=  24040  time=1512 us  size=546739 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/13 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/14
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bench_stmv__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] bench_stmv__nvt-vrescale.tpr                  atoms=1066628  time=53395 us  size=21413123 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/14 (357 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/15
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bench_villin__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] bench_villin__nvt-vrescale.tpr                atoms=   5006  time=399 us  size=118297 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/15 (0 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/16
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/dna_amber__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] dna_amber__nvt-vrescale.tpr                   atoms=  31534  time=1636 us  size=719332 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/16 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/17
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a0017b_dna__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] hexabc_a0017b_dna__nvt-vrescale.tpr           atoms=   1331  time=175 us  size=32731 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/17 (0 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/18
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a0017p_rna__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] hexabc_a0017p_rna__nvt-vrescale.tpr           atoms=    711  time=170 us  size=20225 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/18 (0 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/19
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a0017u_rna__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] hexabc_a0017u_rna__nvt-vrescale.tpr           atoms=   1304  time=162 us  size=32056 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/19 (0 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/20
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a00186_dna__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] hexabc_a00186_dna__nvt-vrescale.tpr           atoms=   3548  time=271 us  size=77351 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/20 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/21
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a001av_dna_protein__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] hexabc_a001av_dna_protein__nvt-vrescale.tpr   atoms=   6747  time=506 us  size=142810 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/21 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/22
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a001fc_dna_protein__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] hexabc_a001fc_dna_protein__nvt-vrescale.tpr   atoms=   3962  time=330 us  size=86341 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/22 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/23
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a001tx_rna_protein__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] hexabc_a001tx_rna_protein__nvt-vrescale.tpr   atoms=  16775  time=1076 us  size=348733 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/23 (5 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/24
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a001u2_rna_protein__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] hexabc_a001u2_rna_protein__nvt-vrescale.tpr   atoms=  17632  time=1260 us  size=365481 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/24 (6 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/25
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/memprotmd_3k1b_cg__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] memprotmd_3k1b_cg__nvt-vrescale.tpr           atoms=  15763  time=1024 us  size=400982 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/25 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/26
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/memprotmd_5bkf__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] memprotmd_5bkf__nvt-vrescale.tpr              atoms= 268221  time=14509 us  size=5857684 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/26 (26 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/27
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/memprotmd_5bkf_cg__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] memprotmd_5bkf_cg__nvt-vrescale.tpr           atoms=  27212  time=1810 us  size=705451 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/27 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/28
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/memprotmd_5nc4__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] memprotmd_5nc4__nvt-vrescale.tpr              atoms= 163686  time=10845 us  size=3570968 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/28 (17 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/29
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/memprotmd_7e6u_cg__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] memprotmd_7e6u_cg__nvt-vrescale.tpr           atoms=  40004  time=2630 us  size=1057323 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/29 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/30
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/memprotmd_8axd__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] memprotmd_8axd__nvt-vrescale.tpr              atoms= 406992  time=22168 us  size=8997664 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/30 (38 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/31
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_1fl6__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] misato_1fl6__nvt-vrescale.tpr                 atoms=  65901  time=3566 us  size=1484293 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/31 (6 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/32
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_1tfq__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] misato_1tfq__nvt-vrescale.tpr                 atoms=  44337  time=2381 us  size=1007360 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/32 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/33
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_1z3j__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] misato_1z3j__nvt-vrescale.tpr                 atoms=  32320  time=1803 us  size=733661 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/33 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/34
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_2xde__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] misato_2xde__nvt-vrescale.tpr                 atoms=  27692  time=1553 us  size=629415 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/34 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/35
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_2zyn__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] misato_2zyn__nvt-vrescale.tpr                 atoms=  64165  time=3470 us  size=1448043 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/35 (6 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/36
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_3f78__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] misato_3f78__nvt-vrescale.tpr                 atoms=  22719  time=1323 us  size=514845 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/36 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/37
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_3lq5__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] misato_3lq5__nvt-vrescale.tpr                 atoms=  78681  time=4251 us  size=1767390 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/37 (8 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/38
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_3ptg__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] misato_3ptg__nvt-vrescale.tpr                 atoms=  48841  time=2691 us  size=1099820 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/38 (5 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/39
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_3s2v__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] misato_3s2v__nvt-vrescale.tpr                 atoms=  56990  time=3080 us  size=1278299 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/39 (6 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/40
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_3unz__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] misato_3unz__nvt-vrescale.tpr                 atoms=  39768  time=2252 us  size=898237 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/40 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/41
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_4d0w__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] misato_4d0w__nvt-vrescale.tpr                 atoms=  46621  time=2567 us  size=1051430 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/41 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/42
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_4q1n__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] misato_4q1n__nvt-vrescale.tpr                 atoms=  43225  time=2415 us  size=973830 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/42 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/43
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_4xua__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] misato_4xua__nvt-vrescale.tpr                 atoms=  38854  time=2156 us  size=882817 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/43 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/44
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_4zw5__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] misato_4zw5__nvt-vrescale.tpr                 atoms=  95418  time=5220 us  size=2137468 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/44 (10 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/45
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_5ivt__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] misato_5ivt__nvt-vrescale.tpr                 atoms=  35522  time=1989 us  size=803975 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/45 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/46
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_5nhj__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] misato_5nhj__nvt-vrescale.tpr                 atoms=  45838  time=2518 us  size=1032969 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/46 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/47
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_6dyw__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] misato_6dyw__nvt-vrescale.tpr                 atoms=  64628  time=3448 us  size=1454092 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/47 (5 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/48
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_6i77__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] misato_6i77__nvt-vrescale.tpr                 atoms=  22967  time=1320 us  size=522051 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/48 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/49
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_6mim__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] misato_6mim__nvt-vrescale.tpr                 atoms=  48041  time=2628 us  size=1090358 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/49 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/50
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_6nwc__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] misato_6nwc__nvt-vrescale.tpr                 atoms=  28692  time=1632 us  size=651386 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/50 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/51
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/prot_amber__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] prot_amber__nvt-vrescale.tpr                  atoms=  31834  time=1647 us  size=725361 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/51 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/52
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/prot_charmm27__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] prot_charmm27__nvt-vrescale.tpr               atoms=  31834  time=1666 us  size=725361 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/52 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/53
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/prot_gromos__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] prot_gromos__nvt-vrescale.tpr                 atoms=  31485  time=1667 us  size=718601 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/53 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/54
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/prot_opls__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] prot_opls__nvt-vrescale.tpr                   atoms=  42619  time=2102 us  size=942274 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/54 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/55
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/protein_dna__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] protein_dna__nvt-vrescale.tpr                 atoms=  86830  time=4631 us  size=1965488 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/55 (7 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/56
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/rna_amber__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] rna_amber__nvt-vrescale.tpr                   atoms=  27614  time=1430 us  size=630389 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/56 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/57
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/solvent_ions__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [compound ] solvent_ions__nvt-vrescale.tpr                atoms=  20827  time=1030 us  size=478460 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsFlatTopology/57 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/0
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_128k__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] bena_128k__nvt-vrescale.tpr                   atoms= 127902  time=720 us  size=133372 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/0 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/1
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_12k__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] bena_12k__nvt-vrescale.tpr                    atoms=  12003  time=353 us  size=27236 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/1 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/2
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_200k__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] bena_200k__nvt-vrescale.tpr                   atoms= 200388  time=1407 us  size=289496 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/2 (12 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/3
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_22k__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] bena_22k__nvt-vrescale.tpr                    atoms=  21536  time=449 us  size=37596 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/3 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/4
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_30k__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] bena_30k__nvt-vrescale.tpr                    atoms=  29788  time=358 us  size=25916 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/4 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/5
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_351k__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] bena_351k__nvt-vrescale.tpr                   atoms= 351078  time=1227 us  size=221512 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/5 (9 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/6
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_457k__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] bena_457k__nvt-vrescale.tpr                   atoms= 456994  time=1048 us  size=223616 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/6 (11 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/7
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_49k__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] bena_49k__nvt-vrescale.tpr                    atoms=  48634  time=587 us  size=76776 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/7 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/8
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_826k__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] bena_826k__nvt-vrescale.tpr                   atoms= 825546  time=2354 us  size=635228 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/8 (23 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/9
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bena_82k__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] bena_82k__nvt-vrescale.tpr                    atoms=  81744  time=618 us  size=98124 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/9 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/10
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bench_adh__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] bench_adh__nvt-vrescale.tpr                   atoms=  95561  time=2284 us  size=460616 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/10 (9 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/11
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bench_aquaporin__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] bench_aquaporin__nvt-vrescale.tpr             atoms= 109992  time=764 us  size=93087 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/11 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/12
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bench_ion_channel__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] bench_ion_channel__nvt-vrescale.tpr           atoms= 141677  time=836 us  size=129388 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/12 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/13
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bench_rnase__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] bench_rnase__nvt-vrescale.tpr                 atoms=  24040  time=431 us  size=53376 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/13 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/14
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bench_stmv__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] bench_stmv__nvt-vrescale.tpr                  atoms=1066628  time=79176 us  size=24361876 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/14 (351 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/15
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/bench_villin__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] bench_villin__nvt-vrescale.tpr                atoms=   5006  time=259 us  size=22256 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/15 (0 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/16
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/dna_amber__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] dna_amber__nvt-vrescale.tpr                   atoms=  31534  time=439 us  size=33128 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/16 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/17
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a0017b_dna__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] hexabc_a0017b_dna__nvt-vrescale.tpr           atoms=   1331  time=314 us  size=37404 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/17 (0 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/18
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a0017p_rna__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] hexabc_a0017p_rna__nvt-vrescale.tpr           atoms=    711  time=228 us  size=25004 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/18 (0 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/19
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a0017u_rna__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] hexabc_a0017u_rna__nvt-vrescale.tpr           atoms=   1304  time=124 us  size=13528 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/19 (0 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/20
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a00186_dna__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] hexabc_a00186_dna__nvt-vrescale.tpr           atoms=   3548  time=437 us  size=81744 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/20 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/21
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a001av_dna_protein__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] hexabc_a001av_dna_protein__nvt-vrescale.tpr   atoms=   6747  time=730 us  size=149972 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/21 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/22
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a001fc_dna_protein__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] hexabc_a001fc_dna_protein__nvt-vrescale.tpr   atoms=   3962  time=668 us  size=96800 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/22 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/23
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a001tx_rna_protein__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] hexabc_a001tx_rna_protein__nvt-vrescale.tpr   atoms=  16775  time=1924 us  size=370944 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/23 (6 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/24
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/hexabc_a001u2_rna_protein__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] hexabc_a001u2_rna_protein__nvt-vrescale.tpr   atoms=  17632  time=2209 us  size=387868 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/24 (7 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/25
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/memprotmd_3k1b_cg__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] memprotmd_3k1b_cg__nvt-vrescale.tpr           atoms=  15763  time=631 us  size=70216 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/25 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/26
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/memprotmd_5bkf__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] memprotmd_5bkf__nvt-vrescale.tpr              atoms= 268221  time=2827 us  size=581596 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/26 (14 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/27
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/memprotmd_5bkf_cg__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] memprotmd_5bkf_cg__nvt-vrescale.tpr           atoms=  27212  time=736 us  size=109324 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/27 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/28
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/memprotmd_5nc4__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] memprotmd_5nc4__nvt-vrescale.tpr              atoms= 163686  time=1238 us  size=236384 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/28 (7 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/29
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/memprotmd_7e6u_cg__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] memprotmd_7e6u_cg__nvt-vrescale.tpr           atoms=  40004  time=698 us  size=100784 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/29 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/30
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/memprotmd_8axd__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] memprotmd_8axd__nvt-vrescale.tpr              atoms= 406992  time=3418 us  size=698848 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/30 (19 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/31
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_1fl6__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] misato_1fl6__nvt-vrescale.tpr                 atoms=  65901  time=1090 us  size=153642 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/31 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/32
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_1tfq__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] misato_1tfq__nvt-vrescale.tpr                 atoms=  44337  time=538 us  size=54136 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/32 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/33
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_1z3j__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] misato_1z3j__nvt-vrescale.tpr                 atoms=  32320  time=559 us  size=65996 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/33 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/34
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_2xde__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] misato_2xde__nvt-vrescale.tpr                 atoms=  27692  time=540 us  size=60076 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/34 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/35
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_2zyn__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] misato_2zyn__nvt-vrescale.tpr                 atoms=  64165  time=825 us  size=140952 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/35 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/36
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_3f78__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] misato_3f78__nvt-vrescale.tpr                 atoms=  22719  time=578 us  size=75736 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/36 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/37
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_3lq5__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] misato_3lq5__nvt-vrescale.tpr                 atoms=  78681  time=1616 us  size=218391 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/37 (5 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/38
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_3ptg__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] misato_3ptg__nvt-vrescale.tpr                 atoms=  48841  time=1018 us  size=135928 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/38 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/39
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_3s2v__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] misato_3s2v__nvt-vrescale.tpr                 atoms=  56990  time=1166 us  size=186055 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/39 (4 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/40
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_3unz__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] misato_3unz__nvt-vrescale.tpr                 atoms=  39768  time=686 us  size=103960 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/40 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/41
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_4d0w__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] misato_4d0w__nvt-vrescale.tpr                 atoms=  46621  time=929 us  size=120208 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/41 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/42
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_4q1n__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] misato_4q1n__nvt-vrescale.tpr                 atoms=  43225  time=889 us  size=124660 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/42 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/43
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_4xua__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] misato_4xua__nvt-vrescale.tpr                 atoms=  38854  time=449 us  size=52916 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/43 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/44
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_4zw5__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] misato_4zw5__nvt-vrescale.tpr                 atoms=  95418  time=1479 us  size=313348 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/44 (6 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/45
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_5ivt__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] misato_5ivt__nvt-vrescale.tpr                 atoms=  35522  time=484 us  size=48876 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/45 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/46
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_5nhj__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] misato_5nhj__nvt-vrescale.tpr                 atoms=  45838  time=773 us  size=131236 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/46 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/47
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_6dyw__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] misato_6dyw__nvt-vrescale.tpr                 atoms=  64628  time=631 us  size=89105 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/47 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/48
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_6i77__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] misato_6i77__nvt-vrescale.tpr                 atoms=  22967  time=553 us  size=62096 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/48 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/49
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_6mim__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] misato_6mim__nvt-vrescale.tpr                 atoms=  48041  time=544 us  size=65552 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/49 (2 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/50
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/misato_6nwc__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] misato_6nwc__nvt-vrescale.tpr                 atoms=  28692  time=539 us  size=66236 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/50 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/51
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/prot_amber__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] prot_amber__nvt-vrescale.tpr                  atoms=  31834  time=412 us  size=39996 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/51 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/52
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/prot_charmm27__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] prot_charmm27__nvt-vrescale.tpr               atoms=  31834  time=417 us  size=39996 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/52 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/53
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/prot_gromos__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] prot_gromos__nvt-vrescale.tpr                 atoms=  31485  time=380 us  size=30616 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/53 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/54
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/prot_opls__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] prot_opls__nvt-vrescale.tpr                   atoms=  42619  time=420 us  size=39996 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/54 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/55
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/protein_dna__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] protein_dna__nvt-vrescale.tpr                 atoms=  86830  time=898 us  size=106512 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/55 (3 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/56
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/rna_amber__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] rna_amber__nvt-vrescale.tpr                   atoms=  27614  time=455 us  size=33448 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/56 (1 ms)
+[ RUN      ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/57
+Reading file /home/yzhang/Dropbox/PublicationProjects/H5MD_metadata/validation_systems/_data/tprs/solvent_ions__nvt-vrescale.tpr, VERSION 2027.0-dev-20261026-3e905b60b3 (single precision)
+  [multids  ] solvent_ions__nvt-vrescale.tpr                atoms=  20827  time=237 us  size=12800 B
+[       OK ] BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAsMoleculeBlockTopology/57 (0 ms)
+[----------] 116 tests from BenchmarkTprs/H5mdTopologyBenchmarkTest (1450 ms total)
+
+[----------] Global test environment tear-down
+[==========] 116 tests from 1 test suite ran. (1450 ms total)
+[  PASSED  ] 116 tests.

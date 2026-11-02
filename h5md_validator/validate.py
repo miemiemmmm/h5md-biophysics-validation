@@ -1679,15 +1679,24 @@ class Validator:
                 )
             if index_based and n is not None:
                 self._check_index_container(grp, path, rep, n, "SEL")
-            # A selection string is unreadable without the software that
-            # parses it, so its absence is an error, not advice.
-            if string_based and "selection" in keys and "software" not in keys:
+            # A string-based selection needs both fields: a selection string is
+            # unreadable without the software that parses it, and a software
+            # name without a string selects nothing.
+            if string_based and "software" not in keys:
                 rep.add(
                     "SEL-NO-SOFTWARE",
                     Severity.ERROR,
                     path,
                     "string-based selection does not name the software that "
                     "can parse it",
+                )
+            if string_based and "selection" not in keys:
+                rep.add(
+                    "SEL-NO-STRING",
+                    Severity.ERROR,
+                    path,
+                    "string-based selection names a software but holds no "
+                    "selection string",
                 )
 
     def _check_selection_references(self, f, rep, topo):

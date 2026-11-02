@@ -136,6 +136,146 @@ def family(system: str) -> str:
 
 
 # --------------------------------------------------------------------------
+# How a family is drawn. Shared with the renderers that plot the systems by
+# family (renderer/render_layout_comparison.py), so that a family reads the
+# same in every figure.
+# --------------------------------------------------------------------------
+#: One colour per family, shared by its markers and its annotations.
+FAMILY_COLORS = {
+    ORDER[0]: COLORS[0],
+    ORDER[1]: COLORS[1],
+    ORDER[2]: COLORS[2],
+    CAPSID_FAMILY: COLORS[3],
+    SOLVENT_ONLY: "black",
+    ALL_SOLUTE: COLORS[5],
+    COARSE: COLORS[6],
+}
+
+#: Scatter keywords per family, in draw order. The hue-coded families are plain
+#: dots; the rest are marked by shape and drawn on top. The two extremes of
+#: solvation are marked by shape rather than by a fourth and fifth hue: what
+#: separates them from the rest is how much of the box is solute, not what
+#: chemistry it contains.
+FAMILY_STYLES = {
+    **{
+        name: {
+            "s": 26,
+            "color": FAMILY_COLORS[name],
+            "edgecolor": "white",
+            "linewidth": 0.7,
+            "zorder": 3,
+        }
+        for name in ORDER
+    },
+    CAPSID_FAMILY: {
+        "marker": "*",
+        "s": 90,
+        "facecolor": FAMILY_COLORS[CAPSID_FAMILY],
+        "edgecolor": "white",
+        "linewidth": 0.6,
+        "zorder": 4,
+    },
+    SOLVENT_ONLY: {
+        "marker": "o",
+        "s": 30,
+        "facecolor": "none",
+        "edgecolor": FAMILY_COLORS[SOLVENT_ONLY],
+        "linewidth": 0.6,
+        "zorder": 4,
+    },
+    ALL_SOLUTE: {
+        "marker": "s",
+        "s": 30,
+        "facecolor": FAMILY_COLORS[ALL_SOLUTE],
+        "edgecolor": "white",
+        "linewidth": 0.6,
+        "zorder": 4,
+    },
+    COARSE: {
+        "marker": "^",
+        "s": 38,
+        "facecolor": FAMILY_COLORS[COARSE],
+        "edgecolor": "white",
+        "linewidth": 0.6,
+        "zorder": 4,
+    },
+}
+
+#: Human-readable names for the systems worth calling out.
+SYSTEM_LABELS = {
+    "bench_stmv": "STMV",
+    "solvent_ions": "water and ions",
+    "bena_826k": "largest\nprotein-in-solvent",
+    "hexabc_a00186_dna": "nucleic-acid\nsolvent-stripped",
+    "prot_gromos": "GROMOS54A7\n(united atom)",
+}
+
+#: Text of a call-out, set in its family's colour; and of a reference line.
+LABEL_STYLE = {"fontsize": 10, "alpha": 0.75}
+REFERENCE_LINE = {
+    "color": "black",
+    "linewidth": 0.8,
+    "linestyle": "--",
+    "alpha": 0.6,
+    "zorder": 2,
+}
+
+
+def leader(color) -> dict:
+    """Leader line from a call-out moved off its point back to the point."""
+    return {
+        "arrowstyle": "-",
+        "color": color,
+        "alpha": 0.6,
+        "linewidth": 0.7,
+        "shrinkA": 0,
+        "shrinkB": 3,
+    }
+
+
+def style_axes(ax) -> None:
+    """Open frame, light grid behind the marks."""
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.grid(True, alpha=0.3)
+    ax.set_axisbelow(True)
+
+
+def scatter_families(ax, points, xkey, ykey) -> None:
+    """One scatter per family present in points, in the draw order of
+    FAMILY_STYLES."""
+    for fam, style in FAMILY_STYLES.items():
+        ps = [p for p in points if p["family"] == fam]
+        if ps:
+            ax.scatter([p[xkey] for p in ps], [p[ykey] for p in ps], label=fam, **style)
+
+
+def family_legend(ax, **kwargs):
+    """The family legend, in LEGEND_ORDER rather than draw order."""
+    handles, labels = ax.get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    ordered = [(by_label[name], name) for name in LEGEND_ORDER if name in by_label]
+    # Anything not named in LEGEND_ORDER still appears, rather than vanishing
+    # silently if a family is added and the list is not updated.
+    ordered += [
+        (h, label) for label, h in by_label.items() if label not in LEGEND_ORDER
+    ]
+    return ax.legend(
+        [h for h, _ in ordered],
+        [label for _, label in ordered],
+        **{
+            "loc": "upper left",
+            "fontsize": 10,
+            "labelcolor": INK2,
+            "handletextpad": 0.35,
+            "borderaxespad": 0.3,
+            "borderpad": 0.2,
+            **kwargs,
+        },
+    )
+
+
+# --------------------------------------------------------------------------
 # Writing-time decomposition, measured by timers inside the GROMACS writer.
 # Process wall time and the 'Write traj.' cycle counter both bracket the file
 # initialisation together with per-frame output, so neither isolates the
@@ -344,25 +484,8 @@ def cost_figure(path_stem: Path, rows, timing=None):
         )
     points.sort(key=lambda p: p["n_particles"])
 
-    order = ORDER
-    #: One colour per family, shared by its markers and its annotations.
-    colors = {
-        order[0]: COLORS[0],
-        order[1]: COLORS[1],
-        order[2]: COLORS[2],
-        CAPSID_FAMILY: COLORS[3],
-        SOLVENT_ONLY: "black",
-        ALL_SOLUTE: COLORS[5],
-        COARSE: COLORS[6],
-    }
-    #: human-readable names for the points worth calling out
-    LABELS = {
-        "bench_stmv": "STMV",
-        "solvent_ions": "water and ions",
-        "bena_826k": "largest\nprotein-in-solvent",
-        "hexabc_a00186_dna": "nucleic-acid\nsolvent-stripped",
-        "prot_gromos": "GROMOS54A7\n(united atom)",
-    }
+    colors = FAMILY_COLORS
+    LABELS = SYSTEM_LABELS
 
     n_panels = 3 if timing else 2
     fig, axes = plt.subplots(1, n_panels, figsize=(6 * n_panels, 5))
@@ -373,10 +496,7 @@ def cost_figure(path_stem: Path, rows, timing=None):
         (axes[1], "n_unique_atoms", "bytes_per_unique_atom"),
     )
     for ax, xkey, _ in PANELS:
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-        ax.grid(True, alpha=0.3)
-        ax.set_axisbelow(True)
+        style_axes(ax)
         ax.set_xscale("log")
         # Derived, not fixed: a hard lower bound silently clipped the six
         # smallest solvent-free deposits (711-6,747 particles) off the plot.
@@ -386,79 +506,8 @@ def cost_figure(path_stem: Path, rows, timing=None):
     axes[0].set_xlabel("particles in the system")
     axes[1].set_xlabel(r"unique atoms across molecule types, $N_{ua}$")
 
-    for name in order:
-        ps = [p for p in points if p["family"] == name]
-        if not ps:
-            continue
-        for ax, xkey, ykey in PANELS:
-            ax.scatter(
-                [p[xkey] for p in ps],
-                [p[ykey] for p in ps],
-                s=26,
-                color=colors[name],
-                label=name,
-                edgecolor="white",
-                linewidth=0.7,
-                zorder=3,
-            )
-
-    # The two extremes of solvation are marked by shape rather than by a fourth
-    # and fifth hue: what separates them from the rest is how much of the box is
-    # solute, not what chemistry it contains.
-    shaped = (
-        (
-            CAPSID_FAMILY,
-            {
-                "marker": "*",
-                "s": 90,
-                "facecolor": colors[CAPSID_FAMILY],
-                "edgecolor": "white",
-                "linewidth": 0.6,
-            },
-        ),
-        (
-            SOLVENT_ONLY,
-            {
-                "marker": "o",
-                "s": 30,
-                "facecolor": "none",
-                "edgecolor": colors[SOLVENT_ONLY],
-                "linewidth": 0.6,
-            },
-        ),
-        (
-            ALL_SOLUTE,
-            {
-                "marker": "s",
-                "s": 30,
-                "facecolor": colors[ALL_SOLUTE],
-                "edgecolor": "white",
-                "linewidth": 0.6,
-            },
-        ),
-        (
-            COARSE,
-            {
-                "marker": "^",
-                "s": 38,
-                "facecolor": colors[COARSE],
-                "edgecolor": "white",
-                "linewidth": 0.6,
-            },
-        ),
-    )
-    for fam, style in shaped:
-        ps = [p for p in points if p["family"] == fam]
-        if not ps:
-            continue
-        for ax, xkey, ykey in PANELS:
-            ax.scatter(
-                [p[xkey] for p in ps],
-                [p[ykey] for p in ps],
-                label=fam,
-                zorder=4,
-                **style,
-            )
+    for ax, xkey, ykey in PANELS:
+        scatter_families(ax, points, xkey, ykey)
 
     axes[0].set_yscale("log")
     axes[0].set_ylabel("metadata stored (kB)")
@@ -480,19 +529,16 @@ def cost_figure(path_stem: Path, rows, timing=None):
     ]
     if atomistic:
         median = st.median(atomistic)
-        axes[1].axhline(
-            median, color="black", linewidth=0.8, linestyle="--", alpha=0.6, zorder=2
-        )
+        axes[1].axhline(median, **REFERENCE_LINE)
         axes[1].annotate(
             f"atomistic median {median:.0f} B",
             xy=(1.0, median),
             xycoords=("axes fraction", "data"),
             xytext=(-4, 5),
             textcoords="offset points",
-            fontsize=10,
-            alpha=0.75,
             ha="right",
             va="bottom",
+            **LABEL_STYLE,
         )
 
     # Every system named in LABELS is annotated, on both storage panels unless
@@ -520,30 +566,18 @@ def cost_figure(path_stem: Path, rows, timing=None):
             if ONLY_IN.get(p["system"], i) != i:
                 continue
             dx, dy, ha = MOVED.get((i, p["system"]), (0, -5, "center"))
-            arrow = (
-                {
-                    "arrowstyle": "-",
-                    "color": color,
-                    "alpha": 0.6,
-                    "linewidth": 0.7,
-                    "shrinkA": 0,
-                    "shrinkB": 3,
-                }
-                if (i, p["system"]) in MOVED
-                else None
-            )
+            arrow = leader(color) if (i, p["system"]) in MOVED else None
             ax.annotate(
                 LABELS[p["system"]],
                 xy=(p[xkey], p[ykey]),
                 xytext=(dx, dy),
                 textcoords="offset points",
-                fontsize=10,
                 color=color,
-                alpha=0.75,
                 ha=ha,
                 va="top",
-                linespacing=1.3,
                 arrowprops=arrow,
+                linespacing=1.3,
+                **LABEL_STYLE,
             )
 
     # A name in LABELS that matches no system is a typo or a renamed system; say
@@ -555,24 +589,7 @@ def cost_figure(path_stem: Path, rows, timing=None):
             f"{', '.join(sorted(unplaced))}"
         )
 
-    handles, labels = axes[0].get_legend_handles_labels()
-    by_label = dict(zip(labels, handles))
-    ordered = [(by_label[name], name) for name in LEGEND_ORDER if name in by_label]
-    # Anything not named in LEGEND_ORDER still appears, rather than vanishing
-    # silently if a family is added and the list is not updated.
-    ordered += [
-        (h, label) for label, h in by_label.items() if label not in LEGEND_ORDER
-    ]
-    axes[0].legend(
-        [h for h, _ in ordered],
-        [label for _, label in ordered],
-        loc="upper left",
-        fontsize=10,
-        labelcolor=INK2,
-        handletextpad=0.35,
-        borderaxespad=0.3,
-        borderpad=0.2,
-    )
+    family_legend(axes[0])
 
     if timing:
         timing_panel(axes[2], timing)
