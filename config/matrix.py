@@ -84,14 +84,18 @@ GMX = os.environ.get("GMX_BIN", "gmx")
 
 #: Bases for the negative tests (Validation 4), chosen for different shapes so
 #: that as many corruptions as possible apply: a protein with a non-contiguous
-#: selection, a nucleic acid, a membrane protein, an ion/solvent box and a
-#: protein-DNA complex. A base missing from the corpus is skipped, not an error.
+#: selection, a nucleic acid, a membrane protein, an ion/solvent box, a
+#: protein-DNA complex, a stochastic dynamics run and a run with several
+#: temperature-coupling groups (and so per-group observables). A base missing
+#: from the corpus is skipped, not an error.
 NEGATIVE_TEST_BASES = (
     "bena_12k__selection-noncontiguous",
     "dna_amber__nvt-vrescale",
     "memprotmd_5bkf__nvt-vrescale",
     "solvent_ions__nvt-vrescale",
     "protein_dna__nvt-vrescale",
+    "bena_12k__sd-langevin",
+    "bena_12k__tcoupl-multigroup",
 )
 
 #: Pairs for the cross-engine comparison (Validation 6): (reference file key,

@@ -44,16 +44,20 @@ if [ "${1:-}" = "--generate" ]; then
     $PY_EXE -u scripts/build_reference_files.py --all --ntomp 16
 fi
 
-echo "==> conformance, round-trip and storage, per reference file"
-$PY_EXE scripts/check_reference_files.py
-
-echo "==> coverage analysis"
+# Each validation reads the reference files (and, for Validation 2, the GROMACS
+# run inputs) and writes its own result; none depends on another's output.
+echo "==> Validation 1: schema coverage"
 $PY_EXE scripts/validation1_schema_coverage.py
-$PY_EXE scripts/validation1_interaction_coverage.py
-$PY_EXE scripts/provenance_recoverability.py
 $PY_EXE scripts/validation1_parameter_surface.py || echo "(skipped)"
 
-echo "==> negative tests"
+echo "==> Validation 2: round trip"
+$PY_EXE scripts/validation2_roundtrip.py
+$PY_EXE scripts/validation2_interaction_coverage.py
+
+echo "==> Validation 3: conformance"
+$PY_EXE scripts/validation3_conformance.py
+
+echo "==> Validation 4: negative tests"
 # The bases are declared in config/matrix.py so that a renamed system carries
 # through here instead of silently dropping out of the test.
 BASES=""
@@ -63,12 +67,13 @@ for name in $($PY_EXE -c "from config.matrix import NEGATIVE_TEST_BASES; print('
 done
 $PY_EXE scripts/validation4_negative_tests.py $BASES
 
+echo "==> Validation 5: storage cost"
+$PY_EXE scripts/validation5_storage.py
 
-echo "==> cross-engine interoperability"
+echo "==> Validation 6: cross-engine interoperability"
 # Pairs come from AMBER_INTEROP_PAIRS in config/matrix.py, where each reference
 # file is declared with the AMBER topology of the SAME molecule.
 $PY_EXE scripts/validation6_amber_interop.py --run-all
 
 echo "==> figures"
 $PY_EXE scripts/validation5_cost_figure.py
-

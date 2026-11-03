@@ -10,11 +10,11 @@ Where the two disagree, the disagreement is reported as a finding rather than ab
 
 | | Question | Artifact | Details |
 |:--|:--|:--|:--|
-| 1 | Can the schema represent the metadata of realistic MD systems? | `coverage.json`, `interaction_coverage.json`, `parameter_surface.json` | [details](docs/validations.md#validation-1--schema-coverage) |
-| 2 | Does serialising and parsing preserve it? | `validation.json` → `roundtrip` | [details](docs/validations.md#validation-2--round-trip-fidelity) |
-| 3 | Is a file internally consistent? | `validation.json` → `conformance` | [details](docs/validations.md#validation-3--internal-consistency) |
+| 1 | Can the schema represent the metadata of realistic MD systems? | `coverage.json`, `parameter_surface.json` | [details](docs/validations.md#validation-1--schema-coverage) |
+| 2 | Does serialising and parsing preserve it? | `roundtrip.json`, `interaction_coverage.json` | [details](docs/validations.md#validation-2--round-trip-fidelity) |
+| 3 | Is a file internally consistent? | `conformance.json` | [details](docs/validations.md#validation-3--internal-consistency) |
 | 4 | Are invalid files detected? | `negative_tests.json` | [details](docs/validations.md#validation-4--negative-tests) |
-| 5 | What does the metadata cost to store? | `validation.json` → `storage` | [details](docs/validations.md#validation-5--what-the-metadata-costs-to-store) |
+| 5 | What does the metadata cost to store and to write? | `storage.json`, `data/decompose_run*.json` | [details](docs/validations.md#validation-5--what-the-metadata-costs-to-store-and-to-write) |
 | 6 | Do other engines' parameters map onto the same concepts? | `amber_interop.json` | [details](docs/validations.md#validation-6--cross-engine-interoperability) |
 
 Fidelity and coverage are kept apart throughout. A file can carry back everything
@@ -59,9 +59,8 @@ for finding in report.errors:
 ```
 
 `report.conformant` is true when no ERROR-level finding was raised. Findings
-come at four levels: `ERROR` (violates a MUST of the specification), `DEVIATION`
-(a registered specification-versus-implementation mismatch, pending an editorial
-decision), `WARNING` (violates a SHOULD), and `INFO`.
+come at three levels: `ERROR` (violates a MUST of the specification), `WARNING`
+(violates a SHOULD), and `INFO`.
 
 Finding codes are listed in [docs/check-codes.md](docs/check-codes.md).
 

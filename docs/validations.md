@@ -7,7 +7,9 @@ root, by default `$H5MD_VALIDATION_DATA`; `DATA_DIR` and `RESULTS_DIR` move
 
 ## Build the reference files
 
-Every validation reads this corpus, so reference files are built only once. 
+Every validation reads this corpus, so reference files are built only once.
+Each validation then runs on its own, in any order: none reads another's
+results. 
 This produces one H5MD file per (system, protocol) pair, together with
 the `.tpr` it came from. Both files are kept: the `.tpr` is the source of the
 round-trip comparison.
@@ -42,35 +44,27 @@ produce, and say exactly which parts of it no run exercised. An element that no
 file ever wrote is an untested branch, not a working one, and the difference
 between those two is what separates a coverage claim from an assumption.
 
-Three stages, in increasing sharpness. The first asks which specified elements
-appear anywhere; the second counts individual bonded interaction entries in the
-run input against the file; the third asks how much of a flat GROMACS parameter
-file is actually in force.
+It compares the specification model with the reference files alone. The first
+script asks which specified elements the files write, and which chemical and
+protocol dimensions they cover; the second asks how much of a flat GROMACS
+parameter file is actually in force.
 
 ```bash
 $PY_EXE scripts/validation1_schema_coverage.py
-$PY_EXE scripts/validation1_interaction_coverage.py
 $PY_EXE scripts/validation1_parameter_surface.py     # every .mdp in _data/resolved_mdp
 ```
-
-The first reads `validation.json`, so run Validation 2/3 first. The second reads
-the `.tpr` dumps directly and needs no other stage.
 
 **Artifacts**
 
 | Path | Key contents |
 |:--|:--|
-| `_results/coverage.json` | `element_coverage` (specified / observed / never observed / constant), `item_fidelity`, `dimensions`, `protocol_targets` |
-| `_results/interaction_coverage.json` | `per_system`, `per_file`, `unsupported` |
+| `_results/coverage.json` | `element_coverage` (specified / observed / never observed / constant), `dimensions`, `protocol_targets` |
 | `_results/parameter_surface.json` | per-option classification of the resolved `.mdp` files |
 
-Two results need reading rather than quoting. Every never-observed element is
-listed by name under `element_coverage.never_observed`, and each needs an
-explanation (a registered deviation or a gap in the test set) before the
-coverage figure is quoted. Separately,
-`cmap.parameters` cannot be verified at all: `gmx dump` emits the CMAP type
-index and never the grid values, so there is nothing on the source side to
-compare against.
+Every never-observed element is listed by name under
+`element_coverage.never_observed`, and each needs an explanation (not written
+by the reference implementation, or not exercised by the test set) before the
+coverage figure is quoted.
 
 ---
 
@@ -80,21 +74,26 @@ compare against.
 The comparison runs against `gmx dump` output rather than the writer's own view,
 so the two sides of the test share no code path.
 
+The first script compares every metadata item; the second counts the bonded
+interaction entries of each type in the run input against the file. Dumps are
+cached after the first run.
+
 ```bash
-$PY_EXE scripts/check_reference_files.py
+$PY_EXE scripts/validation2_roundtrip.py
+$PY_EXE scripts/validation2_interaction_coverage.py
 ```
 
-One pass per file does Validations 2, 3 and 5 together, because all three need
-the file opened and the `.tpr` dumped. Dumps are cached after the first run.
+**Artifacts**
 
-**Artifacts.** `_results/validation.json`, keyed by reference file. The
-`roundtrip` section of each entry holds every compared item with a status of
-`match`, `mismatch`, `missing_in_file` or `missing_in_source`, plus the
-per-category totals and a `faithful` verdict.
+| Path | Key contents |
+|:--|:--|
+| `_results/roundtrip.json` | `files`: per file, every compared item with a status of `match`, `mismatch`, `missing_in_file` or `missing_in_source`, and a `faithful` verdict; `item_fidelity`: the same items aggregated over all files (represented / missing / incorrect) |
+| `_results/interaction_coverage.json` | `per_system`, `per_file`, `unsupported` |
 
 Numerical comparison uses a per-value tolerance bounded by whichever is coarser
 — `gmx dump`'s text precision or the file's float width — rather than one global
-epsilon.
+epsilon. The `cmap` grids cannot be compared: `gmx dump` prints the CMAP type
+index and never the grid values, so there is nothing on the source side.
 
 ---
 
@@ -104,20 +103,16 @@ epsilon.
 types and shapes, enumerated values, unit attributes, time alignment, and the
 referential integrity of every index it contains.
 
-Same command as Validation 2; the two are produced together.
+Each file is checked against the specification model alone.
 
 ```bash
-$PY_EXE scripts/check_reference_files.py
+$PY_EXE scripts/validation3_conformance.py
 ```
 
-**Artifacts.** `_results/validation.json` → the `conformance` section of each
-entry: a list of findings with a stable code, a severity and the HDF5 path it is
-anchored to, plus a `conformant` verdict.
-
-Deviations are counted separately and do not make a file non-conformant. Each
-one is a registered disagreement between the specification text and the writer,
-awaiting an editorial decision rather than describing a bad file; they are
-listed in `h5md_validator/deviations.py`.
+**Artifacts.** `_results/conformance.json`: under `files`, one entry per
+reference file with a list of findings, each with a stable code, a severity and
+the HDF5 path it is anchored to, plus a `conformant` verdict. The codes are
+listed in [check-codes.md](check-codes.md).
 
 ---
 
@@ -130,7 +125,7 @@ declares the finding code the validator is required to raise.
 
 ```bash
 $PY_EXE  scripts/validation4_negative_tests.py FILE.h5md    # explicitly define a H5MD file
-$PY_EXE  scripts/validation4_negative_tests.py --quick      # go through five reference files in the config/matrix.py
+$PY_EXE  scripts/validation4_negative_tests.py --quick      # go through the seven reference files in config/matrix.py
 $PY_EXE  scripts/validation4_negative_tests.py --all        # go through all reference files, takes a while
 ```
 
@@ -148,31 +143,39 @@ selections) is skipped and reported as such rather than counted as a pass.
 
 ---
 
-## Validation 5 — what the metadata costs to store
+## Validation 5 — what the metadata costs to store and to write
 
 **Objective.** Show that carrying the metadata is cheap enough to be
 unobjectionable. A schema nobody adopts because it is expensive has not solved
 the problem.
 
-Measured at the HDF5 layer: the stored size of every dataset, attributed to the
-metadata groups or to the trajectory. It comes from the same pass as
-Validations 2 and 3.
+Storage is measured at the HDF5 layer: the stored size of every dataset of each
+reference file, attributed to its root group, and so to the metadata or to the
+trajectory.
 
 ```bash
-$PY_EXE scripts/check_reference_files.py
+$PY_EXE scripts/validation5_storage.py
 ```
 
 Write *time* is measured inside the GROMACS writer instead: whole-process wall
 time and GROMACS's `Write traj.` counter both mix the one-off metadata write with
 start-up and per-frame output. A GROMACS benchmark times each phase of the
-metadata write for every system; its output ships in `data/` (see
-[data/README.md](../data/README.md)) and is panel C of the figure.
+metadata write (H5MD metadata, trajectory scaffold, topology, bond connectivity,
+force field, MD parameters, selection groups) for the `nvt-vrescale` run input
+of every system, ten times; its output ships in `data/` (see
+[data/README.md](../data/README.md)). The cost of writing the metadata is read
+as each phase's share of that time, median over the repeats.
+
+`scripts/validation5_cost_figure.py` (see [Figures](#figures)) plots both:
+metadata stored against system size (panel A), metadata per unique atom without
+connectivity (panel B) and each phase's share of the write time (panel C).
 
 **Artifacts**
 
 | Path | Key contents |
 |:--|:--|
-| `_results/validation.json` → `storage` | per file: metadata bytes, trajectory bytes, bytes per particle, ratio |
+| `_results/storage.json` | per file: stored bytes per root group, metadata and trajectory bytes, file size, particle and frame counts, and two derived ratios (metadata bytes per particle; metadata over trajectory bytes, which reflects the few frames of a reference run rather than a production trajectory) |
+| `data/decompose_run*.json` | shipped benchmark output: per system and repeat, the elapsed time of each phase of the metadata write |
 
 ---
 
@@ -199,25 +202,27 @@ stated in one place rather than left to the person passing the flags.
 `interoperable` verdict, plus `n_pairs` and `n_interoperable`.
 
 The chemistry items are particle and residue counts, residue sequence,
-molecular formula, atom names, atomic numbers, bond count and bond topology; the
-parametrisation items are total charge, partial charges and masses. The H5MD
-side is rebuilt to the full system from `topology/molecule_blocks`. The H–H
-"bond" AMBER gives rigid water keeps it rigid under SHAKE and is not chemistry,
-so it is removed from the AMBER side and the number removed is reported.
+molecular formula, atom names, atomic numbers, bond count and bond topology. The
+parametrisation items are total charge, partial charges and masses, and every
+force-field term: bonds, angles, proper and improper dihedrals (term by term),
+1-4 pairs and the Lennard-Jones type matrix. The H5MD side is rebuilt to the
+full system from `topology/molecule_blocks`. The H–H "bond" AMBER gives rigid
+water keeps it rigid under SHAKE and is not chemistry, so it is removed from
+the AMBER side of the bond-topology comparison and the number removed is
+reported; among the force-field terms it is matched to the H–H distance of the
+water's SETTLE.
 
----
-
-## Supporting analysis
-
-Not one of the six, but run by `run_all.sh`:
-
-```bash
-$PY_EXE scripts/provenance_recoverability.py
-```
-
-Measures whether force-field provenance could be recovered automatically from a
-file's contents, which is the evidence behind `DEV-FF-PROVENANCE-UNWRITTEN`.
-Writes `_results/provenance_recoverability.json`.
+For the force-field terms the prmtop is read directly, not through ParmEd,
+which did the conversion under test. AMBER units and conventions are converted
+before comparing (kcal → kJ, Å → nm, rad → degree; bond and angle force
+constants × 2, since GROMACS writes E = k/2 (x − x₀)²; 1-4 Lennard-Jones divided
+by SCNB and the Coulomb scale is 1/SCEE), at a relative tolerance of 1e-4. A
+bond may be written as a bond, a constraint or a SETTLE distance. Three AMBER
+devices are reported rather than counted as differences: dihedral terms with
+zero force constant (no energy; `grompp` removes them from the run input), a
+10-12 pair with zero coefficients (tleap's way of switching off water O–H
+Lennard-Jones), and an improper written with its last two atoms swapped when its phase is 0° or 180°,
+which leaves the energy unchanged.
 
 ---
 

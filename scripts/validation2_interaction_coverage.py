@@ -2,8 +2,7 @@
 """
 Does every bonded interaction in the source reach the file?
 
-This is the sharpest form of the Validation 1 question.  For each reference file
-it counts, per interaction type, how many interaction entries the GROMACS run
+Validation 2, per interaction entry.  For each reference file it counts, per interaction type, how many interaction entries the GROMACS run
 input holds and how many the H5MD file holds, and reports the difference.
 
 Table SI of S8 is deliberately not exhaustive -- the set of bonded functional
@@ -19,7 +18,7 @@ and whether its absence is recorded when it does not.  Three outcomes:
     dropped           the form maps to a predefined type, the source has
                       entries, the file has none
 
-    python scripts/validation1_interaction_coverage.py
+    python scripts/validation2_interaction_coverage.py
 """
 
 from __future__ import annotations

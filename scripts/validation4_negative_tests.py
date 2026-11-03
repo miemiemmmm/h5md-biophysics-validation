@@ -193,7 +193,7 @@ def main():
                     "description": corruption.description,
                     "expected": corruption.expect,
                     "status": "detected" if detected else "missed",
-                    "raised": sorted(codes - {f.code for f in report.deviations}),
+                    "raised": sorted(codes),
                     "n_errors": len(report.errors),
                 }
             )

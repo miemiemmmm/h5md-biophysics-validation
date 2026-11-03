@@ -320,7 +320,7 @@ index 0000000000..05f51f78d4
 +
 +    // MD parameters (/parameters)
 +    auto mdParamsStart = std::chrono::high_resolution_clock::now();
-+    file().setupMDParameters(inputRecord, topology);
++    file().setupMDParameters(inputRecord, topology, false);
 +    auto mdParamsEnd = std::chrono::high_resolution_clock::now();
 +    auto mdParamsElapsedUs =
 +            std::chrono::duration_cast<std::chrono::microseconds>(mdParamsEnd - mdParamsStart).count();

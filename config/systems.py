@@ -20,12 +20,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from config.matrix import PROTOCOLS, VALIDATION_SYSTEMS, System
-
-_ALL_PROTOCOL_IDS = [p.id for p in PROTOCOLS]
-
-#: protocols that assume a Protein group; skipped for nucleic-acid-only systems
-_NO_PROTEIN_GROUP = {"tcoupl-multigroup", "selection-noncontiguous"}
+from config.matrix import VALIDATION_SYSTEMS, System
 
 
 def _sys(id, description, dimensions, protocols=None, **kw):
@@ -45,175 +40,175 @@ VS = VALIDATION_SYSTEMS
 SYSTEMS = [
     _sys(
         "bena_12k",
-        "soluble protein in water with K+/Cl- ions, CHARMM36/TIP3P, "
+        "soluble protein in water with K+/Cl- ions, CHARMM36m/TIP3P, "
         "12,003 atoms (PDB 2YSG)",
-        ("protein", "solvent", "ions", "force field: CHARMM36", "water: TIP3P"),
+        ("protein", "solvent", "ions", "force field: CHARMM36m", "water: TIP3P"),
         location=f"{VS}/bena/1tvylq6t",
         structure="conf.tpr",
         index="output.ndx",
-        force_field="charmm36",
+        force_field="charmm36m",
         water_model="tip3p",
     ),
     _sys(
         "bena_22k",
-        "soluble protein in water with K+/Cl- ions, CHARMM36/TIP3P, "
+        "soluble protein in water with K+/Cl- ions, CHARMM36m/TIP3P, "
         "21,536 atoms (PDB 2HUG)",
         (
             "protein",
             "solvent",
             "ions",
-            "force field: CHARMM36",
+            "force field: CHARMM36m",
             "water: TIP3P",
             "small system",
         ),
         location=f"{VS}/bena/l2klCMJy",
         structure="conf.tpr",
         index="output.ndx",
-        force_field="charmm36",
+        force_field="charmm36m",
         water_model="tip3p",
         protocols=["nvt-vrescale", "npt-prahman", "nve"],
     ),
     _sys(
         "bena_30k",
-        "soluble protein in water with K+/Cl- ions, CHARMM36/TIP3P, "
+        "soluble protein in water with K+/Cl- ions, CHARMM36m/TIP3P, "
         "29,788 atoms (PDB 7PHT)",
         (
             "protein",
             "solvent",
             "ions",
-            "force field: CHARMM36",
+            "force field: CHARMM36m",
             "water: TIP3P",
             "small system",
         ),
         location=f"{VS}/bena/s8PD5PTJ",
         structure="conf.tpr",
         index="output.ndx",
-        force_field="charmm36",
+        force_field="charmm36m",
         water_model="tip3p",
         protocols=["nvt-vrescale", "npt-prahman", "nve"],
     ),
     _sys(
         "bena_49k",
-        "soluble protein in water with K+/Cl- ions, CHARMM36/TIP3P, "
+        "soluble protein in water with K+/Cl- ions, CHARMM36m/TIP3P, "
         "48,634 atoms (PDB 1UGN)",
         (
             "protein",
             "solvent",
             "ions",
-            "force field: CHARMM36",
+            "force field: CHARMM36m",
             "water: TIP3P",
             "medium system",
         ),
         location=f"{VS}/bena/gIv9qdpA",
         structure="conf.tpr",
         index="output.ndx",
-        force_field="charmm36",
+        force_field="charmm36m",
         water_model="tip3p",
         mdp={"nsteps": "100", "nstxout": "50", "nstenergy": "50", "nstlog": "50"},
         protocols=["nvt-vrescale", "npt-prahman", "nve"],
     ),
     _sys(
         "bena_82k",
-        "soluble protein in water with K+/Cl- ions, CHARMM36/TIP3P, "
+        "soluble protein in water with K+/Cl- ions, CHARMM36m/TIP3P, "
         "81,744 atoms (PDB 6XAZ)",
         ("protein", "solvent", "ions", "medium system"),
         location=f"{VS}/bena/9pCSVuZW",
         structure="conf.tpr",
         index="output.ndx",
-        force_field="charmm36",
+        force_field="charmm36m",
         water_model="tip3p",
         mdp={"nsteps": "100", "nstxout": "50", "nstenergy": "50", "nstlog": "50"},
         protocols=["nvt-vrescale", "npt-prahman", "em-steep"],
     ),
     _sys(
         "bena_128k",
-        "soluble protein in water with K+/Cl- ions, CHARMM36/TIP3P, "
+        "soluble protein in water with K+/Cl- ions, CHARMM36m/TIP3P, "
         "127,902 atoms (PDB 7CBV)",
         (
             "protein",
             "solvent",
             "ions",
-            "force field: CHARMM36",
+            "force field: CHARMM36m",
             "water: TIP3P",
             "medium system",
         ),
         location=f"{VS}/bena/SBIEksoS",
         structure="conf.tpr",
         index="output.ndx",
-        force_field="charmm36",
+        force_field="charmm36m",
         water_model="tip3p",
         mdp={"nsteps": "100", "nstxout": "50", "nstenergy": "50", "nstlog": "50"},
         protocols=["nvt-vrescale", "npt-prahman", "nve"],
     ),
     _sys(
         "bena_200k",
-        "soluble protein in water with K+/Cl- ions, CHARMM36/TIP3P, "
+        "soluble protein in water with K+/Cl- ions, CHARMM36m/TIP3P, "
         "200,388 atoms (PDB 8IIC)",
         (
             "protein",
             "solvent",
             "ions",
-            "force field: CHARMM36",
+            "force field: CHARMM36m",
             "water: TIP3P",
             "large system",
         ),
         location=f"{VS}/bena/OdNYfRXD",
         structure="conf.tpr",
         index="output.ndx",
-        force_field="charmm36",
+        force_field="charmm36m",
         water_model="tip3p",
         mdp={"nsteps": "40", "nstxout": "20", "nstenergy": "20", "nstlog": "20"},
         protocols=["nvt-vrescale", "npt-prahman"],
     ),
     _sys(
         "bena_351k",
-        "soluble protein in water with K+/Cl- ions, CHARMM36/TIP3P, "
+        "soluble protein in water with K+/Cl- ions, CHARMM36m/TIP3P, "
         "351,078 atoms (PDB 7LLF)",
         (
             "protein",
             "solvent",
             "ions",
-            "force field: CHARMM36",
+            "force field: CHARMM36m",
             "water: TIP3P",
             "large system",
         ),
         location=f"{VS}/bena/Z3No2NVr",
         structure="conf.tpr",
         index="output.ndx",
-        force_field="charmm36",
+        force_field="charmm36m",
         water_model="tip3p",
         mdp={"nsteps": "40", "nstxout": "20", "nstenergy": "20", "nstlog": "20"},
         protocols=["nvt-vrescale", "npt-prahman"],
     ),
     _sys(
         "bena_457k",
-        "soluble protein in water with K+/Cl- ions, CHARMM36/TIP3P, "
+        "soluble protein in water with K+/Cl- ions, CHARMM36m/TIP3P, "
         "456,994 atoms (PDB 1WDA)",
         (
             "protein",
             "solvent",
             "ions",
-            "force field: CHARMM36",
+            "force field: CHARMM36m",
             "water: TIP3P",
             "very large system",
         ),
         location=f"{VS}/bena/2RegE6uF",
         structure="conf.tpr",
         index="output.ndx",
-        force_field="charmm36",
+        force_field="charmm36m",
         water_model="tip3p",
         mdp={"nsteps": "20", "nstxout": "10", "nstenergy": "10", "nstlog": "10"},
         protocols=["nvt-vrescale", "npt-prahman"],
     ),
     _sys(
         "bena_826k",
-        "soluble protein in water with K+/Cl- ions, CHARMM36/TIP3P, "
+        "soluble protein in water with K+/Cl- ions, CHARMM36m/TIP3P, "
         "825,546 atoms (PDB 7BWD)",
         ("protein", "solvent", "ions", "large system"),
         location=f"{VS}/bena/0VtktEjX",
         structure="conf.tpr",
         index="output.ndx",
-        force_field="charmm36",
+        force_field="charmm36m",
         water_model="tip3p",
         mdp={"nsteps": "40", "nstxout": "20", "nstenergy": "20", "nstlog": "20"},
         protocols=["nvt-vrescale", "npt-prahman"],
@@ -874,28 +869,28 @@ SYSTEMS = [
     ),
     _sys(
         "memprotmd_5bkf",
-        "MemProtMD 5BKF: membrane protein 5BKF in a DPPC bilayer, atomistic CHARMM36, back-mapped from coarse grain by MemProtMD",
+        "MemProtMD 5BKF: membrane protein 5BKF in a DPPC bilayer, atomistic CHARMM36m, back-mapped from coarse grain by MemProtMD",
         ("protein", "membrane: DPPC", "solvent", "ions"),
         location=f"{VS}/memprotmd/memprotmd_5bkf",
-        force_field="charmm36",
+        force_field="charmm36m",
         water_model="tip3p",
         protocols=["nvt-vrescale", "npt-semiisotropic"],
     ),
     _sys(
         "memprotmd_5nc4",
-        "MemProtMD 5NC4: membrane protein 5NC4 in a DPPC bilayer, atomistic CHARMM36",
+        "MemProtMD 5NC4: membrane protein 5NC4 in a DPPC bilayer, atomistic CHARMM36m",
         ("protein", "membrane: DPPC", "solvent", "ions"),
         location=f"{VS}/memprotmd/memprotmd_5nc4",
-        force_field="charmm36",
+        force_field="charmm36m",
         water_model="tip3p",
         protocols=["nvt-vrescale", "npt-semiisotropic"],
     ),
     _sys(
         "memprotmd_8axd",
-        "MemProtMD 8AXD: membrane protein 8AXD in a DPPC bilayer, atomistic CHARMM36",
+        "MemProtMD 8AXD: membrane protein 8AXD in a DPPC bilayer, atomistic CHARMM36m",
         ("protein", "membrane: DPPC", "solvent", "ions"),
         location=f"{VS}/memprotmd/memprotmd_8axd",
-        force_field="charmm36",
+        force_field="charmm36m",
         water_model="tip3p",
         protocols=["nvt-vrescale", "npt-semiisotropic"],
     ),
@@ -971,31 +966,6 @@ SYSTEMS = [
         },
         protocols=["nvt-vrescale", "npt-berendsen", "nve"],
     ),
-]
-
-#: MISATO protein-ligand complexes, drawn at random with seed 20260922;
-#: see validation_systems/misato/MANIFEST.md.
-MISATO_ENTRIES = [
-    "3f78",
-    "6i77",
-    "2xde",
-    "6nwc",
-    "1z3j",
-    "5ivt",
-    "4xua",
-    "3unz",
-    "4q1n",
-    "1tfq",
-    "5nhj",
-    "4d0w",
-    "6mim",
-    "3ptg",
-    "3s2v",
-    "2zyn",
-    "6dyw",
-    "1fl6",
-    "3lq5",
-    "4zw5",
 ]
 
 SYSTEMS_BY_ID = {s.id: s for s in SYSTEMS}

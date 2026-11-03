@@ -14,6 +14,11 @@ repeat:
   `bond_connectivity_elapsed_us`, `force_field_elapsed_us`,
   `md_parameters_elapsed_us` and `selection_groups_elapsed_us`, plus `natoms`.
 - `decompose_runN.log`: the console output of the same run.
+- `layout_benchmark.log`: one run of the two layout cases of the same benchmark,
+  `BenchmarkAsFlatTopology` and `BenchmarkAsMoleculeBlockTopology`, on the same
+  58 run inputs. Each prints the size of the topology written in the flat
+  system-based layout (`[compound]`) and in the molecule-block layout
+  (`[multids]`); `renderer/render_layout_comparison.py` plots their ratio.
 
 The input is the `nvt-vrescale` run input of each of the 58 systems, as written
 by `scripts/build_reference_files.py` to `_data/tprs/`; the benchmark reads them
@@ -36,6 +41,12 @@ The runs used a Release build on one AMD Ryzen 9 7950X workstation:
 ```bash
 h5md-test --gtest_filter='BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkDecomposeWritingProcess/*' \
           --gtest_output=json:decompose_run1.json > decompose_run1.log
+```
+
+and, for the layout comparison:
+
+```bash
+h5md-test --gtest_filter='BenchmarkTprs/H5mdTopologyBenchmarkTest.BenchmarkAs*Topology/*' > layout_benchmark.log
 ```
 
 `scripts/validation5_cost_figure.py` reads every `decompose_run*.json`, takes the

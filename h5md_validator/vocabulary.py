@@ -25,16 +25,23 @@ SIMULATION_TYPE = {
     "l-bfgs": "energy_minimization",
 }
 
-# MD parameter -> <simulation_type>/integrator map
+# MD parameter -> <simulation_type>/integrator map; sd is a leap-frog scheme and
+# bd an Euler scheme, the stochastic equation itself being stochastic_dynamics/dynamics
 INTEGRATOR = {
     "md": "leap_frog",
     "md-vv": "velocity_verlet",
     "md-vv-avek": "velocity_verlet",
-    "sd": "langevin",
-    "bd": "brownian",
+    "sd": "leap_frog",
+    "bd": "euler",
     "steep": "steepest_descent",
     "cg": "conjugate_gradient",
     "l-bfgs": "l_bfgs",
+}
+
+# MD parameter -> run_control/stochastic_dynamics/dynamics map
+SD_DYNAMICS = {
+    "sd": "langevin",
+    "bd": "brownian",
 }
 
 # MD parameter -> temperature_coupling/algorithm map
@@ -119,18 +126,6 @@ COM_MODE = {
 CONSTRAINT_ALGORITHM = {
     "Lincs": "lincs",
     "Shake": "shake",
-}
-
-# TODO: MD parameter -> pressure_coupling/reference_coordinate_scaling map
-#:
-#: S7.4 describes this element but, alone among the categorical parameters of
-#: S7, defines no set of allowed values. The spellings on the right are the ones
-#: the reference implementation writes, recovered by inspection rather than from
-#: the specification: see deviations.DEV-REFCOORD-NO-VOCABULARY.
-REFCOORD_SCALING = {
-    "No": "none",
-    "All": "all",
-    "COM": "center_of_mass",
 }
 
 # Interaction type map from GROMACS functype name to schema interaction type

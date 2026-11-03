@@ -8,15 +8,14 @@ Round-trip fidelity test: does the metadata come back unchanged?
         -> compare
 
 Both sides reduce to the same flat vocabulary of metadata items, so every item
-is matched, mismatched, or absent on one side. That same reduction gives the
-coverage matrix: an item in the source and not in the file is a coverage gap.
+is matched, mismatched, or absent on one side; aggregated over every file, the
+same comparisons give the item fidelity of Validation 2.
 
 Numerical comparison uses a per-value tolerance rather than one global epsilon,
 bounded by whichever is coarser -- ``gmx dump``'s field-dependent text
 precision, or the file's float32 / float64 storage.
 
 Used by:
-    Validation 1: schema coverage
     Validation 2: round-trip test
     Validation 6: cross-engine mapping
 """
@@ -108,14 +107,49 @@ def extract_source(d: TprDump) -> dict:
     integrator = ir.get("integrator")
     simtype = vocab.SIMULATION_TYPE.get(integrator)
     put("parameters.run_control.simulation_type", "categorical", simtype)
-    put("parameters.run_control.numsteps", "integer", ir.get("nsteps"))
-    if simtype in ("molecular_dynamics", "stochastic_dynamics"):
+    nsteps = ir.get("nsteps")
+    if isinstance(nsteps, int) and nsteps >= 0:  # -1: no step limit, so no numsteps
+        put("parameters.run_control.numsteps", "integer", nsteps)
+    if simtype == "molecular_dynamics":
         put(
-            f"parameters.run_control.{simtype}.integrator",
+            "parameters.run_control.molecular_dynamics.integrator",
             "categorical",
             vocab.INTEGRATOR.get(integrator),
         )
-        put(f"parameters.run_control.{simtype}.timestep", "float", ir.get("dt"), "ps")
+        put(
+            "parameters.run_control.molecular_dynamics.timestep",
+            "float",
+            ir.get("dt"),
+            "ps",
+        )
+    elif simtype == "stochastic_dynamics":
+        # S7.1: the dynamics carries its own heat bath, per temperature group.
+        sd = "parameters.run_control.stochastic_dynamics"
+        dynamics = vocab.SD_DYNAMICS.get(integrator)
+        put(f"{sd}.dynamics", "categorical", dynamics)
+        put(f"{sd}.integrator", "categorical", vocab.INTEGRATOR.get(integrator))
+        put(f"{sd}.timestep", "float", ir.get("dt"), "ps")
+        put(f"{sd}.groups", "str_array", d.groups.get("T-Coupling", []))
+        put(f"{sd}.reference_temperature", "float_array", d.grpopts.get("ref-t"), "K")
+        put(f"{sd}.random_seed", "integer", ir.get("ld-seed"))
+        if dynamics == "langevin":
+            put(
+                f"{sd}.langevin.coupling_time",
+                "float_array",
+                d.grpopts.get("tau-t"),
+                "ps",
+            )
+        elif dynamics == "brownian":
+            friction = ir.get("bd-fric")
+            if friction:
+                put(f"{sd}.brownian.friction_coefficient", "float", friction, "u ps-1")
+            else:
+                put(
+                    f"{sd}.brownian.coupling_time",
+                    "float_array",
+                    d.grpopts.get("tau-t"),
+                    "ps",
+                )
     elif simtype == "energy_minimization":
         put(
             "parameters.run_control.energy_minimization.algorithm",
@@ -135,8 +169,10 @@ def extract_source(d: TprDump) -> dict:
             "kJ mol-1 nm-1",
         )
 
+    # Centre-of-mass motion is removed during dynamics only; a minimisation
+    # carries GROMACS's default comm-mode but never applies it.
     com_mode = vocab.COM_MODE.get(str(ir.get("comm-mode")))
-    if com_mode is not None:
+    if com_mode is not None and simtype != "energy_minimization":
         put(
             "parameters.run_control.center_of_mass_motion_removal.mode",
             "categorical",
@@ -147,11 +183,15 @@ def extract_source(d: TprDump) -> dict:
             "integer",
             ir.get("nstcomm"),
         )
-        put(
-            "parameters.run_control.center_of_mass_motion_removal.groups",
-            "str_array",
-            d.groups.get("VCM", []),
-        )
+        # GROMACS names the whole system 'rest' when comm-grps is empty; S7.1
+        # leaves groups out for the full system.
+        vcm = d.groups.get("VCM", [])
+        if vcm and vcm != ["rest"]:
+            put(
+                "parameters.run_control.center_of_mass_motion_removal.groups",
+                "str_array",
+                vcm,
+            )
     factor = ir.get("mass-repartition-factor")
     if factor is not None and float(factor) != 1.0:
         put("parameters.run_control.mass_repartitioning.factor", "float", factor)
@@ -213,11 +253,6 @@ def extract_source(d: TprDump) -> dict:
             _flat(ir.get("compressibility")),
             "10-5 Pa-1",
         )
-        put(
-            "parameters.pressure_coupling.reference_coordinate_scaling",
-            "categorical",
-            vocab.REFCOORD_SCALING.get(str(ir.get("refcoord-scaling"))),
-        )
         pfield = vocab.BAROSTAT_TIME_FIELD[barostat]
         put(
             f"parameters.pressure_coupling.{barostat}.{pfield}",
@@ -246,13 +281,6 @@ def extract_source(d: TprDump) -> dict:
             "categorical",
             vocab.POTENTIAL_MODIFIER.get(str(ir.get("coulomb-modifier"))),
         )
-        if ir.get("rcoulomb-switch"):
-            put(
-                "parameters.coulomb_interactions.cutoff.switch_distance",
-                "float",
-                ir.get("rcoulomb-switch"),
-                "nm",
-            )
     if ctype == "reaction_field":
         eps_rf = ir.get("epsilon-rf")
         if isinstance(eps_rf, str):  # "inf" means infinite permittivity
@@ -339,6 +367,20 @@ def _source_topology(d: TprDump) -> dict:
         "int_array", [b["nmol"] for b in d.molblocks]
     )
 
+    # S8: the nonbonded parameters are the T x T matrix of particle types, which
+    # GROMACS keeps as the first atnr^2 entries of its parameter list.
+    atnr = d.header.get("atnr")
+    nb_kind = d.functypes[0][0] if d.functypes and d.functypes[0] else None
+    nb_type = vocab.INTERACTION.get(nb_kind)
+    if isinstance(atnr, int) and nb_type:
+        fields = vocab.PARAMETER_FIELDS.get(nb_kind, {})
+        matrix = []
+        for entry in d.functypes[: atnr * atnr]:
+            if entry is not None:
+                matrix.extend(entry[1][k] for k in fields if k in entry[1])
+        out[f"force_field.{nb_type}.parameters"] = Value("float_array", matrix)
+    fudge_qq = d.header.get("fudgeQQ")
+
     for mol in d.moltypes:
         p = f"topology.{mol.name}"
         out[f"{p}.particle_count"] = Value("integer", mol.n_atoms)
@@ -354,7 +396,25 @@ def _source_topology(d: TprDump) -> dict:
         )
         out[f"{p}.component_names"] = Value("str_array", [r[0] for r in mol.residues])
         out[f"{p}.residue_numbers"] = Value("int_array", [r[1] for r in mol.residues])
-        out[f"{p}.exclusions"] = Value("nested_int", [sorted(e) for e in mol.excls])
+        # Each excluded pair once, (i, j) with i < j, as the file stores it. The
+        # per-particle lists of gmx dump are symmetric and include the particle
+        # itself, both implied by the pairs. Without a pair there is no
+        # exclusions group in the file, so there is no entry here either.
+        pairs = [[i, j] for i, e in enumerate(mol.excls) for j in sorted(e) if j > i]
+        if pairs:
+            out[f"{p}.exclusions"] = Value("nested_int", pairs)
+
+        if nb_type:
+            out[f"{p}.interactions.{nb_type}.type_id"] = Value(
+                "int_array", [a.get("type", -1) for a in mol.atoms]
+            )
+        # S8: coulomb_14 scales the Coulomb part of each lennard_jones_14 pair,
+        # which GROMACS does with the single factor fudgeQQ.
+        n_pairs = len(mol.ilists.get("LJ14", []))
+        if n_pairs and fudge_qq is not None:
+            out[f"{p}.interactions.coulomb_14.parameters"] = Value(
+                "float_array", [float(fudge_qq)] * n_pairs
+            )
 
         for schema_type, entries in _source_interactions(d, mol).items():
             ids, params = entries
@@ -494,6 +554,17 @@ def _target_topology(f, out):
 
     ff_params = _target_ff_parameters(f)
 
+    # S8: the nonbonded parameters, the T x T matrix of particle types.
+    nb = f.get("force_field/nonbonded")
+    if isinstance(nb, h5py.Group):
+        for t in nb:
+            table = ff_params.get(t)
+            if table is not None and table.dtype.names:
+                out[f"force_field.{t}.parameters"] = Value(
+                    "float_array",
+                    [float(row[fl]) for row in table for fl in table.dtype.names],
+                )
+
     for name in topo:
         mol = topo[name]
         if not isinstance(mol, h5py.Group) or "particle_data" not in mol:
@@ -565,6 +636,27 @@ def _target_topology(f, out):
         if isinstance(inter, h5py.Group):
             for tname in sorted(inter):
                 grp = inter[tname]
+                if "type_id" in grp:
+                    out[f"{p}.interactions.{tname}.type_id"] = Value(
+                        "int_array",
+                        [int(v) for v in np.asarray(grp["type_id"][()]).ravel()],
+                    )
+                    continue
+                if "parameter_id" in grp and "particle_ids" not in grp:
+                    # coulomb_14: its pairs are those of lennard_jones_14.
+                    table = ff_params.get(tname)
+                    if table is not None and table.dtype.names:
+                        pid = np.asarray(grp["parameter_id"][()], dtype=np.int64)
+                        out[f"{p}.interactions.{tname}.parameters"] = Value(
+                            "float_array",
+                            [
+                                float(table[i][fl])
+                                for i in pid.ravel()
+                                if 0 <= i < table.shape[0]
+                                for fl in table.dtype.names
+                            ],
+                        )
+                    continue
                 if "particle_ids" not in grp or "parameter_id" not in grp:
                     continue
                 ids = np.asarray(grp["particle_ids"][()], dtype=np.int64)
@@ -604,16 +696,11 @@ def _target_topology(f, out):
 
 
 def _decode_exclusions(grp):
-    """Expand the compressed per-particle exclusion list into plain lists."""
-    if "ranges" not in grp or "indices" not in grp:
+    """The excluded pairs, one [i, j] per row of ``particle_ids``."""
+    if "particle_ids" not in grp:
         return []
-    ranges = np.asarray(grp["ranges"][()], dtype=np.int64)
-    indices = np.asarray(grp["indices"][()], dtype=np.int64)
-    out = []
-    for first, last, stride in ranges:
-        # 1-based, right-closed offsets into ``indices`` (see DEV-EXCL-UNDOCUMENTED)
-        out.append(sorted(indices[first - 1 : last : max(int(stride), 1)].tolist()))
-    return out
+    pairs = np.atleast_2d(np.asarray(grp["particle_ids"][()], dtype=np.int64))
+    return pairs.tolist()
 
 
 def _target_ff_parameters(f):
@@ -934,7 +1021,7 @@ class RoundTripReport:
 
         Deliberately independent of what happens to terms outside the
         predefined set, which is reported by ``all_terms_written`` and by
-        scripts/validation1_interaction_coverage.py.
+        scripts/validation2_interaction_coverage.py.
         """
         return not self.mismatches and not self.missing_in_file
 
