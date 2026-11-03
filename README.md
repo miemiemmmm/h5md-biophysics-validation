@@ -31,7 +31,7 @@ the `_data` (`.tpr`, `.mdp`, output `.h5md`, etc.) and `_results` (`.json`, figu
 in the `$H5MD_VALIDATION_DATA`. `DATA_DIR` and `RESULTS_DIR` override either location; if the dataset
 directory is not writable, both default to `h5md_validation/` under the system temporary directory.
 `run_all.sh` prints the locations it uses.
-Python requires the following packages: `h5py`, `numpy`, `matplotlib` (optional for validation 5), and `pytraj` (optional for validation 6)
+Python requires the following packages: `h5py`, `numpy`, `matplotlib` (optional for validation 5), `scipy` (optional, for `scripts/fit_write_time.py`), and `pytraj` (optional for validation 6)
 
 ```bash
 export H5MD_VALIDATION_DATA=/path/to/validation_systems
