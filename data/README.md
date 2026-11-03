@@ -18,7 +18,7 @@ repeat:
   `BenchmarkAsFlatTopology` and `BenchmarkAsMoleculeBlockTopology`, on the same
   58 run inputs. Each prints the size of the topology written in the flat
   system-based layout (`[compound]`) and in the molecule-block layout
-  (`[multids]`); `renderer/render_layout_comparison.py` plots their ratio.
+  (`[multids]`); `scripts/render_layout_comparison.py` plots their ratio.
 
 The input is the `nvt-vrescale` run input of each of the 58 systems, as written
 by `scripts/build_reference_files.py` to `_data/tprs/`; the benchmark reads them

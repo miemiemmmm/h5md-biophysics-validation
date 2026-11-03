@@ -137,8 +137,9 @@ def family(system: str) -> str:
 
 # --------------------------------------------------------------------------
 # How a family is drawn. Shared with the renderers that plot the systems by
-# family (renderer/render_layout_comparison.py), so that a family reads the
-# same in every figure.
+# family (scripts/render_layout_comparison.py and
+# scripts/render_timing_by_family.py), so that a family reads the same in every
+# figure.
 # --------------------------------------------------------------------------
 #: One colour per family, shared by its markers and its annotations.
 FAMILY_COLORS = {

@@ -1,8 +1,8 @@
 diff --git a/src/gromacs/fileio/h5md/h5md.h b/src/gromacs/fileio/h5md/h5md.h
-index 4c9f1410ae..44ac3bcf28 100644
+index b4e271940d..9f379e5342 100644
 --- a/src/gromacs/fileio/h5md/h5md.h
 +++ b/src/gromacs/fileio/h5md/h5md.h
-@@ -300,7 +300,7 @@ public:
+@@ -301,7 +301,7 @@ public:
       */
      void writeEnergyBins(const t_ebin& energyBins, int64_t step, double time);
  
@@ -25,7 +25,7 @@ index a0d9ae9a02..612d8e33e0 100644
              h5md_datasetbuilder.cpp
 diff --git a/src/gromacs/fileio/h5md/tests/h5md_benchmark.cpp b/src/gromacs/fileio/h5md/tests/h5md_benchmark.cpp
 new file mode 100644
-index 0000000000..05f51f78d4
+index 0000000000..687cabed71
 --- /dev/null
 +++ b/src/gromacs/fileio/h5md/tests/h5md_benchmark.cpp
 @@ -0,0 +1,315 @@
