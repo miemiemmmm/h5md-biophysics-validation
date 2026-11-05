@@ -75,7 +75,7 @@ def _r(name: str) -> str:
     return str(pathlib.Path(RESULTS_DIR) / name)
 
 
-from h5md_validator import roundtrip
+from gmx_roundtrip import roundtrip
 
 
 def amber_topology(prmtop) -> dict:

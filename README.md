@@ -2,7 +2,7 @@
 
 This technical validation associates with the H5MD `biophysics` metadata schema with its publication entitled "A Hierarchical Metadata Schema for Self-Contained Molecular Dynamics Trajectory Archives".
 This directory holds everything needed to reproduce the Technical Validation in its supplementary information (`SI-technical-validation`). 
-The specification (`SI-specification.pdf` in the supplementary material), version 1.0 of the `biophysics` module, is the normative source when building the validation suite and schema model (`h5md_validator/spec.py`). 
+The specification (`SI-specification.pdf` in the supplementary material), version 1.0 of the `biophysics` module, is the normative source of the schema model (`h5md_validator/spec.py`) of the validator maintained with the specification in [gromacs/h5md-biophysics](https://gitlab.com/gromacs/h5md-biophysics/-/tree/main/validator); this repository installs that validator rather than keeping a copy. 
 By generating the H5MD outputs from the GROMACS reference implementation, the validation suite can compare them against the schema model to identify any discrepancies.
 Where the two disagree, the disagreement is reported as a finding rather than absorbed into the model.
 
@@ -31,7 +31,11 @@ the `_data` (`.tpr`, `.mdp`, output `.h5md`, etc.) and `_results` (`.json`, figu
 in the `$H5MD_VALIDATION_DATA`. `DATA_DIR` and `RESULTS_DIR` override either location; if the dataset
 directory is not writable, both default to `h5md_validation/` under the system temporary directory.
 `run_all.sh` prints the locations it uses.
-Python requires the following packages: `h5py`, `numpy`, `matplotlib` (optional for validation 5), `scipy` (optional, for `scripts/fit_write_time.py`), and `pytraj` (optional for validation 6)
+Python requires the following packages: `h5py`, `numpy`, `matplotlib` (optional for validation 5), `scipy` (optional, for `scripts/fit_write_time.py`), and `pytraj` (optional for validation 6), plus the validator from the specification repository (Validations 1, 3 and 4):
+
+```bash
+$PY_EXE -m pip install "h5md-biophysics-validator @ git+https://gitlab.com/gromacs/h5md-biophysics.git@main#subdirectory=validator"
+```
 
 ```bash
 export H5MD_VALIDATION_DATA=/path/to/validation_systems
@@ -49,6 +53,8 @@ bash scripts/run_all.sh              # analysis only, reference files must exist
 Results go to `$H5MD_VALIDATION_DATA/_results`. Each step of the chain is described in [docs/validations.md](docs/validations.md).
 
 ## Validating a single file
+
+With the validator installed as above:
 
 ```python
 from h5md_validator import validate

@@ -32,6 +32,8 @@ command -v "$GMX_BIN" >/dev/null 2>&1 || {
     echo "GMX_BIN=$GMX_BIN is not executable" >&2; exit 1; }
 "$PY_EXE" -c "import h5py, numpy" 2>/dev/null || {
     echo "PY_EXE=$PY_EXE cannot import h5py and numpy" >&2; exit 1; }
+"$PY_EXE" -c "import h5md_validator" 2>/dev/null || {
+    echo "PY_EXE=$PY_EXE cannot import h5md_validator; install the validator (see README)" >&2; exit 1; }
 export GMX_BIN
 cd "$(dirname "$0")/.."
 

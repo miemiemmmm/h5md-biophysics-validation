@@ -2,7 +2,7 @@
 Round-trip fidelity test: does the metadata come back unchanged?
 
     GROMACS run input (.tpr)
-        -> gmx dump            [source side,  h5md_validator.gmxdump]
+        -> gmx dump            [source side,  gmx_roundtrip.gmxdump]
         -> serialize to H5MD   [GROMACS reference implementation]
         -> parse H5MD          [target side,  this module]
         -> compare
