@@ -2,7 +2,7 @@
 
 This technical validation associates with the H5MD `biophysics` metadata schema with its publication entitled "A Hierarchical Metadata Schema for Self-Contained Molecular Dynamics Trajectory Archives".
 This directory holds everything needed to reproduce the Technical Validation in its supplementary information (`SI-technical-validation`). 
-The specification (`SI-specification.pdf` in the supplementary material), version 1.0 of the `biophysics` module, is the normative source of the schema model (`h5md_validator/spec.py`) of the validator maintained with the specification in [gromacs/h5md-biophysics](https://gitlab.com/gromacs/h5md-biophysics/-/tree/main/validator); this repository installs that validator rather than keeping a copy. 
+The specification (`SI-specification.pdf` in the supplementary material), version 1.0.0-alpha of the `biophysics` module (files stamped `version = [1, 0]`), is the normative source of the schema model (`h5md_validator/spec.py`) of the validator maintained with the specification in [gromacs/h5md-biophysics](https://gitlab.com/gromacs/h5md-biophysics/-/tree/main/validator); this repository installs that validator rather than keeping a copy. 
 By generating the H5MD outputs from the GROMACS reference implementation, the validation suite can compare them against the schema model to identify any discrepancies.
 Where the two disagree, the disagreement is reported as a finding rather than absorbed into the model.
 
@@ -49,6 +49,9 @@ export GMX_BIN=/path/to/gromacs/bin/gmx        # reference GROMACS implementatio
 bash scripts/run_all.sh --generate   # build the reference files first (hours)
 bash scripts/run_all.sh              # analysis only, reference files must exist
 ```
+
+`--generate` builds every (system, protocol) pair with `NTOMP` OpenMP threads per run (default 8).
+To try the chain on a few pairs first, build only those and run the validations one by one, as described in [docs/validations.md](docs/validations.md#build-the-reference-files).
 
 Results go to `$H5MD_VALIDATION_DATA/_results`. Each step of the chain is described in [docs/validations.md](docs/validations.md).
 

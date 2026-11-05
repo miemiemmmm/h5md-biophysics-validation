@@ -3,6 +3,8 @@
 #
 #   bash scripts/run_all.sh            # analysis only (reference files must exist)
 #   bash scripts/run_all.sh --generate # build the reference files first (hours)
+#
+# NTOMP sets the OpenMP threads of each mdrun when generating (default 8).
 
 set -eu
 
@@ -43,7 +45,7 @@ $PY_EXE -c "from config.matrix import output_locations; print(output_locations()
 
 if [ "${1:-}" = "--generate" ]; then
     echo "==> generating reference files"
-    $PY_EXE -u scripts/build_reference_files.py --all --ntomp 16
+    $PY_EXE -u scripts/build_reference_files.py --all --ntomp "${NTOMP:-8}"
 fi
 
 # Each validation reads the reference files (and, for Validation 2, the GROMACS

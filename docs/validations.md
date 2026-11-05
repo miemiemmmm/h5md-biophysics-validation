@@ -20,6 +20,21 @@ $PY_EXE scripts/build_reference_files.py --all    # grompp + mdrun every pair
 ```
 
 Existing `.tpr` and `.h5md` files are reused; add `--force` flag to rebuild them.
+`--ntomp N` sets the OpenMP threads of each `mdrun` (default 8).
+
+To build only selected pairs, name the systems and protocols; both options can
+be repeated, and each listed system is built under every listed protocol that
+applies to it. For example, the four example files published with the dataset:
+
+```bash
+$PY_EXE scripts/build_reference_files.py --system hexabc_a001u2_rna_protein --protocol nvt-vrescale
+$PY_EXE scripts/build_reference_files.py --system bench_villin \
+    --protocol tcoupl-multigroup --protocol sd-langevin --protocol selection-noncontiguous
+```
+
+With only some pairs built, `run_all.sh` stops at Validation 4 when none of the
+negative-test bases declared in `config/matrix.py` is among them; run the
+validations one by one instead, and Validation 4 with `--all`.
 
 **Result artifacts**
 
