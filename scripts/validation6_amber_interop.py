@@ -50,6 +50,7 @@ from __future__ import annotations
 
 import argparse
 import gzip
+import importlib.util
 import json
 import math
 import pathlib
@@ -874,6 +875,10 @@ def main():
     ap.add_argument("--prmtop", help="the AMBER topology of the same molecule")
     ap.add_argument("--out", default=_r("amber_interop.json"))
     args = ap.parse_args()
+
+    if importlib.util.find_spec("pytraj") is None:
+        print("pytraj is not installed; Validation 6 skipped")
+        return 0
 
     if args.run_all:
         if args.h5md or args.prmtop:

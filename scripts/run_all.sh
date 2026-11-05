@@ -39,7 +39,6 @@ command -v "$GMX_BIN" >/dev/null 2>&1 || {
 export GMX_BIN
 cd "$(dirname "$0")/.."
 
-REF="$($PY_EXE -c "from config.matrix import DATA_ROOT; print(DATA_ROOT)")/reference_files"
 echo "==> locations"
 $PY_EXE -c "from config.matrix import output_locations; print(output_locations())"
 
@@ -62,21 +61,17 @@ echo "==> Validation 3: conformance"
 $PY_EXE scripts/validation3_conformance.py
 
 echo "==> Validation 4: negative tests"
-# The bases are declared in config/matrix.py so that a renamed system carries
-# through here instead of silently dropping out of the test.
-BASES=""
-for name in $($PY_EXE -c "from config.matrix import NEGATIVE_TEST_BASES; print(' '.join(NEGATIVE_TEST_BASES))"); do
-    f="$REF/$name.h5md"
-    [ -f "$f" ] && BASES="$BASES $f"
-done
-$PY_EXE scripts/validation4_negative_tests.py $BASES
+# Every reference file, as reported in the paper; --quick takes only the bases
+# declared in config/matrix.py.
+$PY_EXE scripts/validation4_negative_tests.py --all
 
 echo "==> Validation 5: storage cost"
 $PY_EXE scripts/validation5_storage.py
 
 echo "==> Validation 6: cross-engine interoperability"
 # Pairs come from AMBER_INTEROP_PAIRS in config/matrix.py, where each reference
-# file is declared with the AMBER topology of the SAME molecule.
+# file is declared with the AMBER topology of the SAME molecule. Skipped
+# without pytraj.
 $PY_EXE scripts/validation6_amber_interop.py --run-all
 
 echo "==> figures"

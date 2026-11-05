@@ -32,9 +32,9 @@ $PY_EXE scripts/build_reference_files.py --system bench_villin \
     --protocol tcoupl-multigroup --protocol sd-langevin --protocol selection-noncontiguous
 ```
 
-With only some pairs built, `run_all.sh` stops at Validation 4 when none of the
-negative-test bases declared in `config/matrix.py` is among them; run the
-validations one by one instead, and Validation 4 with `--all`.
+`run_all.sh` then analyses whichever pairs are built. Results on a subset
+differ from the [expected results](#expected-results), which are for all 379
+pairs.
 
 **Result artifacts**
 
@@ -45,6 +45,7 @@ validations one by one instead, and Validation 4 with `--all`.
 | `_data/reference_files/` | the H5MD corpus |
 | `_data/resolved_mdp/` | grompp `-po`: the complete `.mdp` with every default filled in |
 | `_data/tpr_dumps/` | cached `gmx dump -s` text, written on first read |
+| `_data/edr/` | the GROMACS energy file of each run, the source side of the observables in Validation 2 |
 | `_data/scratch/` | per-pair scratch, deleted after each pair |
 
 A leftover directory under `_data/scratch/` names a pair whose run was
@@ -110,6 +111,10 @@ Numerical comparison uses a per-value tolerance bounded by whichever is coarser
 epsilon. The `cmap` grids cannot be compared: `gmx dump` prints the CMAP type
 index and never the grid values, so there is nothing on the source side.
 
+The two item counts differ: a file counts its topology items once per molecule
+type, whereas `item_fidelity` merges them into one item per kind, so a single
+file can report more items than the aggregate.
+
 ---
 
 ## Validation 3 — internal consistency
@@ -144,8 +149,9 @@ $PY_EXE  scripts/validation4_negative_tests.py --quick      # go through the sev
 $PY_EXE  scripts/validation4_negative_tests.py --all        # go through all reference files, takes a while
 ```
 
-`run_all.sh` passes the bases declared in `config/matrix.py`, chosen for
-different shapes so that as many corruptions as possible apply.
+`run_all.sh` runs it with `--all`, as reported in the paper. The `--quick` set in
+`config/matrix.py` is chosen for different shapes so that as many corruptions as
+possible apply.
 
 **Artifacts.** `_results/negative_tests.json` — `by_category`, the per-file
 outcomes, and the detection counts.
@@ -201,6 +207,9 @@ another name. Every system that was set up in AMBER (the hexABC and MISATO
 groups of the dataset) is compared item by item: its deposited AMBER topology
 against the H5MD file GROMACS writes after ParmEd converted that topology.
 
+It needs `pytraj` to read the AMBER topologies; without it the script reports
+that Validation 6 is skipped and exits normally.
+
 ```bash
 $PY_EXE scripts/validation6_amber_interop.py --run-all     # every pair in AMBER_INTEROP_PAIRS
 $PY_EXE scripts/validation6_amber_interop.py --h5md <file.h5md> --prmtop <file.prmtop>
@@ -241,6 +250,22 @@ which leaves the energy unchanged.
 
 ---
 
+## Expected results
+
+A full run on all 379 pairs, with the GROMACS build of the paper, reproduces the
+numbers of the Technical Validation:
+
+| Validation | Expected result |
+|:--|:--|
+| 1 — schema coverage | 154 specified elements: 137 written, 17 never written; of the 184 options of a processed `.mdp`, 45 are represented in `parameters` and 97 belong to switched-off or removed features |
+| 2 — round trip | 379 of 379 files faithful; 111 item kinds, 110 verified, none missing or incorrect (the CMAP grids cannot be compared); 25,253,375 bonded interaction entries across all files, none dropped |
+| 3 — conformance | 379 of 379 files conformant, no finding of any severity |
+| 4 — negative tests | 65 corruption kinds, all exercised; 23,061 corrupted files, all detected; 1,574 corruption–file combinations not applicable |
+| 5 — storage | 58 systems; median 328 bytes of metadata per unique atom in the atomistic systems, excluding bond connectivity |
+| 6 — cross-engine | 28 AMBER pairs (8 hexABC, 20 MISATO), all interoperable; largest relative difference of a force-field term 1.1 × 10⁻⁶ |
+
+---
+
 ## Figures
 
 ```bash
@@ -249,7 +274,7 @@ $PY_EXE scripts/validation5_cost_figure.py
 
 | Path | What it is |
 |:--|:--|
-| `_results/figures/` | `validation5_cost.png`: metadata storage per system (panels A, B) and the write-time decomposition (panel C) |
+| `_results/figures/` | `validation5_cost.png` and `.pdf`: metadata storage per system (panels A, B) and the write-time decomposition (panel C) |
 
 The figures are derived from the JSON beside them. Re-running the validation
 on different hardware, or with a different GROMACS build, means regenerating

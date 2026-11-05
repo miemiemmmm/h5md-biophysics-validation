@@ -31,7 +31,8 @@ the `_data` (`.tpr`, `.mdp`, output `.h5md`, etc.) and `_results` (`.json`, figu
 in the `$H5MD_VALIDATION_DATA`. `DATA_DIR` and `RESULTS_DIR` override either location; if the dataset
 directory is not writable, both default to `h5md_validation/` under the system temporary directory.
 `run_all.sh` prints the locations it uses.
-Python requires the following packages: `h5py`, `numpy`, `matplotlib` (optional for validation 5), `scipy` (optional, for `scripts/fit_write_time.py`), and `pytraj` (optional for validation 6), plus the validator from the specification repository (Validations 1, 3 and 4):
+Python requires the following packages: `h5py`, `numpy`, `matplotlib` (optional for validation 5), `scipy` (optional, for `scripts/fit_write_time.py`), and `pytraj` (optional for validation 6, which is skipped without it; pytraj is part of AmberTools), plus the validator from the specification repository (Validations 1, 3 and 4).
+`environment.yml` creates such an environment, validator included (`micromamba create -f environment.yml`); to add the validator to an existing environment instead:
 
 ```bash
 $PY_EXE -m pip install "h5md-biophysics-validator @ git+https://gitlab.com/gromacs/h5md-biophysics.git@main#subdirectory=validator"
@@ -53,7 +54,7 @@ bash scripts/run_all.sh              # analysis only, reference files must exist
 `--generate` builds every (system, protocol) pair with `NTOMP` OpenMP threads per run (default 8).
 To try the chain on a few pairs first, build only those and run the validations one by one, as described in [docs/validations.md](docs/validations.md#build-the-reference-files).
 
-Results go to `$H5MD_VALIDATION_DATA/_results`. Each step of the chain is described in [docs/validations.md](docs/validations.md).
+Results go to `$H5MD_VALIDATION_DATA/_results`. Each step of the chain is described in [docs/validations.md](docs/validations.md), and the numbers a full run reproduces are listed under [Expected results](docs/validations.md#expected-results).
 
 ## Validating a single file
 
