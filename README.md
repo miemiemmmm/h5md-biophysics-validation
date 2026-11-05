@@ -74,11 +74,12 @@ come at three levels: `ERROR` (violates a MUST of the specification), `WARNING`
 
 Finding codes are listed in [docs/check-codes.md](docs/check-codes.md).
 
-## Documentation
+## Validation details
 
-- [Validation steps](docs/validations.md) — building the reference files and each of the six validations: objective, command, artifacts
-- [Check codes](docs/check-codes.md) — the finding-code families the validator raises
-- [Corruptions](docs/corruptions.md) — the defects the negative tests inject, and the finding each must trigger
+- [Target specification](docs/target_specification.md) — the specification version the validation checks against, and where to find it
+- [Validation steps](docs/validations.md) — building the reference files, running each of the six validations, their outputs and the expected results
+- [Check codes](docs/check-codes.md) — the finding-code families raised by the validator of gromacs/h5md-biophysics, which Validations 3 and 4 use
+- [Corruptions](docs/corruptions.md) — the 65 corruptions that Validation 4 applies, defined in that validator, and the finding each must raise
 
 ## Licence
 

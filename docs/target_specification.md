@@ -1,4 +1,4 @@
-# Specification
+# Target specification
 
 The validation checks files against version 1.0.0-alpha of the H5MD
 `biophysics` module (files stamped `version = [1, 0]`).
