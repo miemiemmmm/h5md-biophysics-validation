@@ -50,6 +50,7 @@ from __future__ import annotations
 
 import argparse
 import gzip
+import importlib.util
 import json
 import math
 import pathlib
@@ -75,7 +76,7 @@ def _r(name: str) -> str:
     return str(pathlib.Path(RESULTS_DIR) / name)
 
 
-from h5md_validator import roundtrip
+from gmx_roundtrip import roundtrip
 
 
 def amber_topology(prmtop) -> dict:
@@ -874,6 +875,10 @@ def main():
     ap.add_argument("--prmtop", help="the AMBER topology of the same molecule")
     ap.add_argument("--out", default=_r("amber_interop.json"))
     args = ap.parse_args()
+
+    if importlib.util.find_spec("pytraj") is None:
+        print("pytraj is not installed; Validation 6 skipped")
+        return 0
 
     if args.run_all:
         if args.h5md or args.prmtop:

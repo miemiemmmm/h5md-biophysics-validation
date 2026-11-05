@@ -169,30 +169,78 @@ def run_mdrun(tpr: Path, out: Path, ntomp=8, force=False) -> dict:
     }
 
 
+def selected_pairs(systems, protocols):
+    """The (system, protocol) pairs to build: each system under every selected
+    protocol it allows."""
+    for system in systems:
+        allowed = set(system.protocols or [p.id for p in protocols])
+        for protocol in protocols:
+            if protocol.id not in allowed:
+                continue
+            # A non-periodic protocol only makes sense for a vacuum system, and
+            # a periodic system only under a periodic protocol.
+            if (protocol.mdp.get("pbc") == "no") != (not system.periodic):
+                continue
+            yield system, protocol
+
+
 def main():
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--system", action="append", default=[])
-    ap.add_argument("--protocol", action="append", default=[])
-    ap.add_argument("--all", action="store_true")
-    ap.add_argument("--list", action="store_true")
-    ap.add_argument("--force", action="store_true")
-    ap.add_argument("--ntomp", type=int, default=8)
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    ap.add_argument(
+        "--system",
+        action="append",
+        default=[],
+        help="build this system only; repeat for several (see --list)",
+    )
+    ap.add_argument(
+        "--protocol",
+        action="append",
+        default=[],
+        help="build this protocol only; repeat for several (see --list)",
+    )
+    ap.add_argument("--all", action="store_true", help="build every pair")
+    ap.add_argument(
+        "--list",
+        action="store_true",
+        help="list systems, protocols and the pairs that would be built "
+        "(narrowed by --system / --protocol)",
+    )
+    ap.add_argument(
+        "--force", action="store_true", help="rebuild existing .tpr and .h5md files"
+    )
+    ap.add_argument(
+        "--ntomp", type=int, default=8, help="OpenMP threads per mdrun (default 8)"
+    )
     ap.add_argument("--manifest", default=_r("reference_files.json"))
     args = ap.parse_args()
 
-    if args.list:
-        print("SYSTEMS")
-        for s in SYSTEMS:
-            print(f"  {s.id:26s} {s.description}")
-        print("\nPROTOCOLS")
-        for p in PROTOCOLS:
-            print(f"  {p.id:26s} {p.description}")
-        return 0
-
+    unknown = [s for s in args.system if s not in SYSTEMS_BY_ID] + [
+        p for p in args.protocol if p not in PROTOCOLS_BY_ID
+    ]
+    if unknown:
+        ap.error(f"unknown system or protocol: {', '.join(unknown)} (see --list)")
     systems = [SYSTEMS_BY_ID[s] for s in args.system] if args.system else SYSTEMS
     protocols = (
         [PROTOCOLS_BY_ID[p] for p in args.protocol] if args.protocol else PROTOCOLS
     )
+
+    if args.list:
+        print("SYSTEMS")
+        for s in systems:
+            print(f"  {s.id:26s} {s.description}")
+        print("\nPROTOCOLS")
+        for p in protocols:
+            print(f"  {p.id:26s} {p.description}")
+        pairs = list(selected_pairs(systems, protocols))
+        print(f"\nPAIRS ({len(pairs)})")
+        for s in systems:
+            names = [p.id for sys_, p in pairs if sys_ is s]
+            if names:
+                print(f"  {s.id:26s} {', '.join(names)}")
+        return 0
+
     if not args.all and not args.system and not args.protocol:
         ap.error("pass --all, or select with --system / --protocol")
 
@@ -204,43 +252,35 @@ def main():
     if manifest_path.exists():
         manifest = json.loads(manifest_path.read_text())
 
-    for system in systems:
-        allowed = set(system.protocols or [p.id for p in protocols])
-        for protocol in protocols:
-            if protocol.id not in allowed:
-                continue
-            # A non-periodic protocol only makes sense for a vacuum system, and
-            # a periodic system only under a periodic protocol.
-            if (protocol.mdp.get("pbc") == "no") != (not system.periodic):
-                continue
-            key = f"{system.id}__{protocol.id}"
-            work = ROOT / "scratch" / key
-            print(f"--- {key}")
-            try:
-                tpr = build_tpr(system, protocol, work, force=args.force)
-                out = ROOT / "reference_files" / f"{key}.h5md"
-                info = run_mdrun(tpr, out, ntomp=args.ntomp, force=args.force)
-                manifest[key] = {
-                    "system": system.id,
-                    "protocol": protocol.id,
-                    "tpr": str(tpr),
-                    "h5md": str(out),
-                    "dimensions": list(system.dimensions),
-                    "exercises": list(protocol.exercises),
-                    **info,
-                }
-                print(f"    ok  {out.name}  {info.get('size_bytes', 0) / 1e6:.1f} MB")
-            except Exception as exc:
-                manifest[key] = {
-                    "system": system.id,
-                    "protocol": protocol.id,
-                    "error": f"{type(exc).__name__}: {exc}",
-                }
-                print(f"    FAILED: {str(exc)[:400]}")
-            finally:
-                shutil.rmtree(work, ignore_errors=True)
-            manifest_path.parent.mkdir(parents=True, exist_ok=True)
-            manifest_path.write_text(json.dumps(manifest, indent=2))
+    for system, protocol in selected_pairs(systems, protocols):
+        key = f"{system.id}__{protocol.id}"
+        work = ROOT / "scratch" / key
+        print(f"--- {key}")
+        try:
+            tpr = build_tpr(system, protocol, work, force=args.force)
+            out = ROOT / "reference_files" / f"{key}.h5md"
+            info = run_mdrun(tpr, out, ntomp=args.ntomp, force=args.force)
+            manifest[key] = {
+                "system": system.id,
+                "protocol": protocol.id,
+                "tpr": str(tpr),
+                "h5md": str(out),
+                "dimensions": list(system.dimensions),
+                "exercises": list(protocol.exercises),
+                **info,
+            }
+            print(f"    ok  {out.name}  {info.get('size_bytes', 0) / 1e6:.1f} MB")
+        except Exception as exc:
+            manifest[key] = {
+                "system": system.id,
+                "protocol": protocol.id,
+                "error": f"{type(exc).__name__}: {exc}",
+            }
+            print(f"    FAILED: {str(exc)[:400]}")
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+        manifest_path.parent.mkdir(parents=True, exist_ok=True)
+        manifest_path.write_text(json.dumps(manifest, indent=2))
 
     ok = sum(1 for v in manifest.values() if "error" not in v)
     print(

@@ -43,8 +43,8 @@ def _r(name: str) -> str:
 import h5py
 
 from config.matrix import DATA_ROOT
-from h5md_validator import gmxdump
-from h5md_validator import vocabulary as vocab
+from gmx_roundtrip import gmxdump
+from gmx_roundtrip import vocabulary as vocab
 
 DUMPS = Path(DATA_ROOT) / "tpr_dumps"
 

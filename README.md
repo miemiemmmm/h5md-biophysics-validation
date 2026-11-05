@@ -2,7 +2,7 @@
 
 This technical validation associates with the H5MD `biophysics` metadata schema with its publication entitled "A Hierarchical Metadata Schema for Self-Contained Molecular Dynamics Trajectory Archives".
 This directory holds everything needed to reproduce the Technical Validation in its supplementary information (`SI-technical-validation`). 
-The specification (`SI-specification.pdf` in the supplementary material), version 1.0 of the `biophysics` module, is the normative source when building the validation suite and schema model (`h5md_validator/spec.py`). 
+The specification (`SI-specification.pdf` in the supplementary material), version 1.0.0-alpha of the `biophysics` module (files stamped `version = [1, 0]`), is the normative source of the schema model (`h5md_validator/spec.py`) of the validator maintained with the specification in [gromacs/h5md-biophysics](https://gitlab.com/gromacs/h5md-biophysics/-/tree/main/validator); this repository installs that validator rather than keeping a copy. 
 By generating the H5MD outputs from the GROMACS reference implementation, the validation suite can compare them against the schema model to identify any discrepancies.
 Where the two disagree, the disagreement is reported as a finding rather than absorbed into the model.
 
@@ -31,7 +31,12 @@ the `_data` (`.tpr`, `.mdp`, output `.h5md`, etc.) and `_results` (`.json`, figu
 in the `$H5MD_VALIDATION_DATA`. `DATA_DIR` and `RESULTS_DIR` override either location; if the dataset
 directory is not writable, both default to `h5md_validation/` under the system temporary directory.
 `run_all.sh` prints the locations it uses.
-Python requires the following packages: `h5py`, `numpy`, `matplotlib` (optional for validation 5), `scipy` (optional, for `scripts/fit_write_time.py`), and `pytraj` (optional for validation 6)
+Python requires the following packages: `h5py`, `numpy`, `matplotlib` (optional for validation 5), `scipy` (optional, for `scripts/fit_write_time.py`), and `pytraj` (optional for validation 6, which is skipped without it; pytraj is part of AmberTools), plus the validator from the specification repository (Validations 1, 3 and 4).
+`environment.yml` creates such an environment, validator included (`micromamba create -f environment.yml`); to add the validator to an existing environment instead:
+
+```bash
+$PY_EXE -m pip install "h5md-biophysics-validator @ git+https://gitlab.com/gromacs/h5md-biophysics.git@main#subdirectory=validator"
+```
 
 ```bash
 export H5MD_VALIDATION_DATA=/path/to/validation_systems
@@ -46,9 +51,14 @@ bash scripts/run_all.sh --generate   # build the reference files first (hours)
 bash scripts/run_all.sh              # analysis only, reference files must exist
 ```
 
-Results go to `$H5MD_VALIDATION_DATA/_results`. Each step of the chain is described in [docs/validations.md](docs/validations.md).
+`--generate` builds every (system, protocol) pair with `NTOMP` OpenMP threads per run (default 8).
+To try the chain on a few pairs first, build only those and run the validations one by one, as described in [docs/validations.md](docs/validations.md#build-the-reference-files).
+
+Results go to `$H5MD_VALIDATION_DATA/_results`. Each step of the chain is described in [docs/validations.md](docs/validations.md), and the numbers a full run reproduces are listed under [Expected results](docs/validations.md#expected-results).
 
 ## Validating a single file
+
+With the validator installed as above:
 
 ```python
 from h5md_validator import validate
@@ -64,11 +74,12 @@ come at three levels: `ERROR` (violates a MUST of the specification), `WARNING`
 
 Finding codes are listed in [docs/check-codes.md](docs/check-codes.md).
 
-## Documentation
+## Validation details
 
-- [Validation steps](docs/validations.md) — building the reference files and each of the six validations: objective, command, artifacts
-- [Check codes](docs/check-codes.md) — the finding-code families the validator raises
-- [Corruptions](docs/corruptions.md) — the defects the negative tests inject, and the finding each must trigger
+- [Target specification](docs/target_specification.md) — the specification version the validation checks against, and where to find it
+- [Validation steps](docs/validations.md) — building the reference files, running each of the six validations, their outputs and the expected results
+- [Check codes](docs/check-codes.md) — the finding-code families raised by the validator of gromacs/h5md-biophysics, which Validations 3 and 4 use
+- [Corruptions](docs/corruptions.md) — the 65 corruptions that Validation 4 applies, defined in that validator, and the finding each must raise
 
 ## Licence
 

@@ -41,7 +41,7 @@ def _r(name: str) -> str:
 
 
 from config.matrix import DATA_ROOT, GMX
-from h5md_validator import gmxdump, roundtrip
+from gmx_roundtrip import gmxdump, roundtrip
 
 DUMPS = Path(DATA_ROOT) / "tpr_dumps"
 

@@ -143,7 +143,13 @@ def main():
 
     bases = resolve_bases(args)
     if not bases:
-        print("no base files; pass paths, or --all, or --quick")
+        if args.all:
+            print(f"no reference files in {args.manifest}")
+        else:
+            print(
+                "none of the bases in config/matrix.py (NEGATIVE_TEST_BASES) is "
+                "built; pass files, or --all for every reference file"
+            )
         return 1
     print(f"{len(bases)} base file(s) x {len(CORRUPTIONS)} corruptions")
 

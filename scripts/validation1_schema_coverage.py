@@ -66,7 +66,6 @@ def specified_elements():
     for name, itype in spec.INTERACTION_TYPES.items():
         layer = "bonded" if itype.bonded else "nonbonded"
         out[f"force_field/{layer}/{name}/parameters"] = "optional"
-        out[f"force_field/{layer}/{name}/parameters_end_state"] = "optional"
         # Bonded lists hold parameter_id (and particle_ids); nonbonded, type_id.
         out[f"topology/<molecule>/interactions/{name}"] = "optional"
 
