@@ -1,10 +1,13 @@
 # Target specification
 
-The validation checks files against version 1.0.0-alpha of the H5MD
+The validation checks files against version 1.0.0-alpha.1 of the H5MD
 `biophysics` module (files stamped `version = [1, 0]`).
 
 - **As published with the paper:** `SI-specification.pdf`, in the supplementary
   material on figshare: <https://doi.org/10.6084/m9.figshare.31948932>.
+- **This version in the specification repository:** tag
+  [`v1.0.0-alpha.1`](https://gitlab.com/gromacs/h5md-biophysics/-/tree/v1.0.0-alpha.1),
+  from which the validator is installed.
 - **Maintained version and validator:**
   <https://gitlab.com/gromacs/h5md-biophysics>, with the documentation at
   <https://gromacs.gitlab.io/h5md-biophysics/>.

@@ -14,5 +14,6 @@ dependencies:
   - scipy         # scripts/fit_write_time.py
   - pip
   - pip:
-      # The validator maintained with the specification (Validations 1, 3 and 4).
-      - h5md-biophysics-validator @ git+https://gitlab.com/gromacs/h5md-biophysics.git@main#subdirectory=validator
+      # The validator maintained with the specification (Validations 1, 3 and 4),
+      # pinned to the specification version in docs/target_specification.md.
+      - h5md-biophysics-validator @ git+https://gitlab.com/gromacs/h5md-biophysics.git@v1.0.0-alpha.1#subdirectory=validator

@@ -2,7 +2,7 @@
 
 This technical validation associates with the H5MD `biophysics` metadata schema with its publication entitled "A Hierarchical Metadata Schema for Self-Contained Molecular Dynamics Trajectory Archives".
 This directory holds everything needed to reproduce the Technical Validation in its supplementary information (`SI-technical-validation`). 
-The specification (`SI-specification.pdf` in the supplementary material), version 1.0.0-alpha of the `biophysics` module (files stamped `version = [1, 0]`), is the normative source of the schema model (`h5md_validator/spec.py`) of the validator maintained with the specification in [gromacs/h5md-biophysics](https://gitlab.com/gromacs/h5md-biophysics/-/tree/main/validator); this repository installs that validator rather than keeping a copy. 
+The specification (`SI-specification.pdf` in the supplementary material), version 1.0.0-alpha.1 of the `biophysics` module (files stamped `version = [1, 0]`), is the normative source of the schema model (`h5md_validator/spec.py`) of the validator maintained with the specification in [gromacs/h5md-biophysics](https://gitlab.com/gromacs/h5md-biophysics/-/tree/v1.0.0-alpha.1/validator); this repository installs that validator rather than keeping a copy. 
 By generating the H5MD outputs from the GROMACS reference implementation, the validation suite can compare them against the schema model to identify any discrepancies.
 Where the two disagree, the disagreement is reported as a finding rather than absorbed into the model.
 
@@ -35,7 +35,7 @@ Python requires the following packages: `h5py`, `numpy`, `matplotlib` (optional 
 `environment.yml` creates such an environment, validator included (`micromamba create -f environment.yml`); to add the validator to an existing environment instead:
 
 ```bash
-$PY_EXE -m pip install "h5md-biophysics-validator @ git+https://gitlab.com/gromacs/h5md-biophysics.git@main#subdirectory=validator"
+$PY_EXE -m pip install "h5md-biophysics-validator @ git+https://gitlab.com/gromacs/h5md-biophysics.git@v1.0.0-alpha.1#subdirectory=validator"
 ```
 
 ```bash
