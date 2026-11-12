@@ -6,7 +6,7 @@ code (see [check codes](check-codes.md)) for the corrupted file to count as
 detected. A corruption that cannot apply to a given file, for example a
 selection defect on a file without selections, is skipped rather than counted.
 
-The list mirrors `CORRUPTIONS` in `h5md_validator/corrupt.py` of the validator in [gromacs/h5md-biophysics](https://gitlab.com/gromacs/h5md-biophysics/-/tree/main/validator), in the same order.
+The list mirrors `CORRUPTIONS` in `h5md_validator/corrupt.py` of the validator in [gromacs/h5md-biophysics](https://gitlab.com/gromacs/h5md-biophysics/-/tree/v1.0.0-alpha.1/validator), in the same order.
 
 ## Module (3)
 
